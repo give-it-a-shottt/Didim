@@ -1,0 +1,5 @@
+# 비밀값은 커밋하지 않는다. 이름만 적은 .env.example은 커밋한다.
+.env
+.env.*
+!.env.example
+.DS_Store
