@@ -22,28 +22,35 @@ PostgreSQL + pgvector (기록 · 조각 · 임베딩 · 카드 · 공고 · 문�
 
 ## 개발자 상세
 
-### 지금 폴더 구조 (2026-11-08, Q-013 임시)
+### 지금 폴더 구조 (2026-11-09, Q-013 임시)
 ```
 frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   next.config.ts          /api/* → BACKEND_URL 프록시(rewrites), /applications/[id] → 공고 분석 탭(redirects)
-  src/app/                화면(라우트) — 뼈대 19개, 표는 screens.md
-    (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴)
-  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder)
+  playwright.config.ts    Playwright 스모크 · 인증 리다이렉트 테스트 설정 (D-013)
+  src/app/                화면(라우트) — 19개, 표는 screens.md
+    (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
+  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button)
   src/lib/site.ts         사이트 이름 · 설명 · 주소 · 공개/회원 경로 (SEO)
+  src/lib/auth.ts         서버에서 httpOnly 쿠키로 /api/auth/me 확인 · 비로그인 시 /login 이동
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
+  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
-  app/main.py             앱 생성, 라우터를 /api 아래에 붙임
-  app/api/health.py       GET /api/health — 서버 생존 확인
-  tests/test_health.py    pytest
+  app/main.py             앱 생성, lifespan DB 초기화, 라우터를 /api 아래에 붙임
+  app/config.py           환경변수 · 쿠키/상한 상수
+  app/api/                라우터 (health.py, auth.py, deps.py)
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py)
+  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 (base.py, models.py, session.py)
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py)
 ```
-- 레이어(라우터 → 서비스 → DB)는 F-001부터 `app/api/`(라우터) · `app/services/` · `app/db/`로 나눠요. 지금은 라우터 하나뿐이라 폴더를 미리 만들지 않았어요.
+- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다.
 
 ### 상태 관리 지도 (D-012)
 기준: 서버 데이터 → 서버 컴포넌트 또는 TanStack Query / 여러 화면이 같이 쓰는 UI 상태 → Zustand / 화면 하나 → useState. 쓸 때마다 한 줄 추가해요.
 
 | 상태 | 어디에 | 왜 | 기능 |
 |---|---|---|---|
-| (아직 없음 — 첫 사용은 F-001 · F-002 예상) | | | |
+| 현재 로그인한 사용자 정보(`/settings`, 회원 레이아웃 보호) | 서버 컴포넌트(`requireCurrentUser`) | 첫 화면을 그릴 때 쿠키로 서버에서 바로 확인하고 비로그인이면 `/login`으로 보내기 위해 | F-001 |
+| 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
 
 ### SEO (설계 원칙 8)
 - 공통 정보: `frontend/src/lib/site.ts`(사이트 이름 · 설명 · 주소 · 공개/회원 경로)

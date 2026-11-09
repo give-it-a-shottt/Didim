@@ -1,15 +1,15 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 2 · 일부 1 · 다음 11 · 열린 질문 14개
-최종 수정: 2026-11-08
+됨 2 · 일부 1 · 다음 11 · 열린 질문 10개
+최종 수정: 2026-11-09
 
 ## 기능별 상태
 | 기능 | 상태 | 한 줄 설명 | 확인 방법 | 최근 리뷰 | 날짜 |
 |---|---|---|---|---|---|
 | [F-000](features/F-000-dev-setup/feature.md) 개발 환경 세팅 | [됨] | Next.js · FastAPI 뼈대와 `/api` 프록시 동작. 남은 것: 레포 구조(Q-013) · 배포 위치(Q-012), 제안 2건은 시점에 맞춰 고침 | 테스트 backend/tests/test_health.py 2개 통과, 화면 주소의 /api/health → FastAPI 응답 직접 실행(2026-11-08) | 1차 [통과] | 2026-11-08 |
-| [F-013](features/F-013-screen-skeleton/feature.md) 화면 뼈대 | [됨] | 레이아웃 3종 + URL 19개 빈 화면 + SEO 기본(제목 · 설명, 회원 noindex, robots.txt · sitemap.xml). 다시 돌릴 테스트는 F-001 때(Q-014) | tsc · eslint · next build 통과, 운영 서버에서 URL 19개 200 · 307 이동 · 404 · 메타데이터 · robots.txt · sitemap 직접 실행(2026-11-08 · 09), SITE_URL 오류 빌드 직접 확인(2026-11-09) | 4차 [통과] | 2026-11-09 |
-| [F-001](features/F-001-account-isolation/feature.md) 계정 · 데이터 분리 | [일부] | 문제 · 완료 기준 확정, 화면 · API · 데이터 칸 남음. 코드 없음 | - | - | 2026-11-08 |
+| [F-013](features/F-013-screen-skeleton/feature.md) 화면 뼈대 | [됨] | 레이아웃 3종 + URL 19개 빈 화면 + SEO 기본(제목 · 설명, 회원 noindex, robots.txt · sitemap.xml) | tsc · eslint · next build 통과, 운영 서버에서 URL 19개 200 · 307 이동 · 404 · 메타데이터 · robots.txt · sitemap 직접 실행(2026-11-08 · 09), 테스트 frontend/tests/auth-and-routes.spec.ts 4개 통과(2026-11-09) | 4차 [통과] | 2026-11-09 |
+| [F-001](features/F-001-account-isolation/feature.md) 계정 · 데이터 분리 | [일부] | 1주차(구글 OAuth 로그인 · 로그아웃, 회원 화면 16개 가드, users · notes · chunks user_id 격리 · CASCADE 삭제) 완료. 남은 것: 2주차 사용량 기록 · 7주차 사용량 제한/삭제 버튼/사용량 화면 | 테스트 backend/tests/test_auth_and_isolation.py 6개(전체 8개) 통과, frontend/tests/auth-and-routes.spec.ts 4개 통과, tsc · eslint · next build 통과(2026-11-09) | 1차 [통과] (판정 대기) | 2026-11-09 |
 | [F-002](features/F-002-import-markdown/feature.md) 마크다운 가져오기 | [다음] | 1주차 | - | - | - |
 | [F-003](features/F-003-record-search-rag/feature.md) 기록 검색 + 근거 | [다음] | 2주차 | - | - | - |
 | [F-004](features/F-004-quiz-review/feature.md) 퀴즈 · 복습 | [다음] | 3주차 | - | - | - |
