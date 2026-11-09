@@ -9,5 +9,6 @@
 | 번호 | 제목 | 상태 | 날짜 |
 |---|---|---|---|
 | [T-001](T-001-stale-dev-server.md) | 끈 줄 알았던 서버가 남아서 예전 빌드로 확인할 뻔함 | [통과] | 2026-11-09 |
+| [T-002](T-002-postgres-connect-hang-localhost.md) | PostgreSQL 테스트가 연결 단계에서 끝없이 멈춤 (Windows · localhost · IPv6) | [통과] | 2026-11-09 |
 
 최종 수정: 2026-11-09

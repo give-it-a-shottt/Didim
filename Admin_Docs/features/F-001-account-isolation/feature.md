@@ -56,9 +56,15 @@
   - 원칙 7: 직접 쓴 색 · 크기 값 42곳을 `globals.css` `@theme` 토큰으로 교체(로그인 · 설정 · 회원 레이아웃 · 로그아웃 버튼). 오류 안내는 status/error 토큰(bg · base · text)으로 맞춤.
   - 열린 질문 추가: Q-016(마이그레이션 도구), Q-017(세션 서버 무효화), Q-018(글꼴).
 - 2차 확인: pytest 8개 통과(메모리 SQLite) + 같은 8개 PostgreSQL 17(pgvector 이미지)에서 통과, PostgreSQL로 앱 시작 · 테이블 3개 · 외래키 CASCADE 확인, `DATABASE_URL` 없이 시작하면 오류로 멈춤 확인, 테스트 실행 뒤 떠도는 `.db` 파일 없음, lint · tsc · build 통과, 토큰 클래스 CSS 생성 확인, Playwright 4개 통과(2026-11-09)
+- 3차 수정(2026-11-09, 2차 판정 반영):
+  - 테스트 DB 설정을 `tests/conftest.py` 한 곳으로 모음(`db_session` 이동, `tmp_path: Path`). PostgreSQL 테스트는 **테스트 전용 DB**(`didim_test`)만 허용하고 이름이 `_test`로 끝나지 않으면 테스트 시작 전에 멈춤. 셸의 `DATABASE_URL`은 테스트에서 항상 덮어씀.
+  - `tests/test_db_config.py`: DATABASE_URL 기본값 없음 · 빈 값이면 `DatabaseConfigError` 단위 테스트 2개.
+  - docker-compose: 포트 `127.0.0.1:5432:5432`, `docker/postgres-init`이 처음 만들 때 `didim_test` 생성(기존 볼륨엔 수동 생성). PostgreSQL 17 · 포트를 architecture에 기록.
+  - T-002: 포트를 127.0.0.1로 묶은 뒤 `localhost` 연결이 끝없이 멈춤 → 주소를 127.0.0.1로, PostgreSQL 연결에 `connect_timeout` 5초.
+- 3차 확인: pytest 10개(SQLite) 통과, 같은 10개 PostgreSQL `didim_test`(127.0.0.1) 통과, `localhost`로도 멈추지 않고 통과(36초), 개발 DB(`didim`)를 주면 안전장치가 테스트 전에 멈춤, 셸에 개발 DB 주소가 있어도 개발 DB 데이터 그대로(전 1건 · 후 1건), 떠도는 .db 파일 없음, 포트가 127.0.0.1에만 열림 확인(2026-11-09)
 
 ## 리뷰
-- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트, 제안 1건 → 2차에서 반영), 2차 `[주의]`(신규 주의 4 · 제안 4), 최종 판정 대기
+- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트) → 2차 `[주의]`(신규 주의 4 · 제안 4, 전부 반영) → 3차 `[통과]`(신규 제안 3), 최종 판정 대기
 
 ## 열린 질문
 - Q-016, Q-017, Q-018

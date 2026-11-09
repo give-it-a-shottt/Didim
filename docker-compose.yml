@@ -1,4 +1,4 @@
-# 로컬 개발용 PostgreSQL (D-008: PostgreSQL + pgvector).
+# 로컬 개발용 PostgreSQL 17 + pgvector (D-008). 개발 DB는 POSTGRES_DB(기본 didim), 테스트 DB는 didim_test.
 # 실행: docker compose up -d db
 # 접속 주소는 backend/.env의 DATABASE_URL에 넣는다(값은 커밋하지 않음).
 # 계정 · 비밀번호는 이 파일에 적지 않고 같은 폴더의 .env(커밋 안 함)에서 읽는다. 예시는 .env.example.
@@ -11,9 +11,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER를 .env에 넣어 주세요}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD를 .env에 넣어 주세요}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"   # 내 컴퓨터에서만 접속(같은 와이파이의 다른 기기에서 못 들어오게)
     volumes:
       - didim-db:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro   # 처음 만들 때만 실행: didim_test 생성
 
 volumes:
   didim-db:

@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.config import load_settings
+from app.config import DB_CONNECT_TIMEOUT_SECONDS, load_settings
 
 
 class DatabaseConfigError(RuntimeError):
@@ -19,12 +19,14 @@ def create_db_engine(database_url: str) -> Engine:
     """
     if not database_url:
         raise DatabaseConfigError(
-            "환경변수 DATABASE_URL이 비어 있어요. 예) postgresql+psycopg://DB_USER:DB_PASSWORD@localhost:5432/didim "
+            "환경변수 DATABASE_URL이 비어 있어요. 예) postgresql+psycopg://DB_USER:DB_PASSWORD@127.0.0.1:5432/didim "
             "(로컬 DB는 레포 루트의 docker-compose.yml로 띄워요)"
         )
     connect_args: dict[str, Any] = {}
     if database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
+    elif database_url.startswith("postgresql"):
+        connect_args["connect_timeout"] = DB_CONNECT_TIMEOUT_SECONDS
 
     engine = create_engine(database_url, connect_args=connect_args, future=True)
 

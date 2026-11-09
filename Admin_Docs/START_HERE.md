@@ -59,7 +59,7 @@ cd backend
 uv sync
 uv run uvicorn app.main:app --reload --port 8000 --env-file .env   # DATABASE_URL이 없으면 시작하지 않아요
 uv run pytest                    # 테스트(기본은 메모리 SQLite)
-TEST_DATABASE_URL=<로컬 PostgreSQL 주소> uv run pytest   # 같은 테스트를 PostgreSQL에서
+TEST_DATABASE_URL=<…@127.0.0.1:5432/didim_test> uv run pytest   # 같은 테스트를 PostgreSQL에서. DB 이름이 _test로 끝나야 해요(테이블을 지웠다 만듦)
 
 # 화면 (터미널 2)
 cd frontend

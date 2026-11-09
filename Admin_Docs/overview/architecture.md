@@ -53,9 +53,9 @@ backend/                  FastAPI (uv)
 | 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
 
 ### DB (D-008)
-- 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db`(계정은 루트 `.env`, 커밋 안 함).
+- 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.
 - 서버는 `DATABASE_URL`이 없으면 이유를 적은 오류로 시작하지 않는다(조용히 다른 DB로 넘어가지 않음).
-- 테스트는 기본으로 메모리 SQLite를 쓰고(`backend/tests/conftest.py`에 명시), `TEST_DATABASE_URL`을 주면 같은 테스트를 PostgreSQL에서 돌린다.
+- 테스트 DB는 `backend/tests/conftest.py` 한 곳에서 정한다: 기본은 테스트마다 임시 SQLite, `TEST_DATABASE_URL`을 주면 PostgreSQL **테스트 전용 DB**(`didim_test`, 컨테이너를 처음 만들 때 `docker/postgres-init`이 생성). 테스트가 테이블을 지웠다 만들기 때문에 DB 이름이 `_test`로 끝나지 않으면 멈춘다. 셸의 `DATABASE_URL`은 테스트에서 항상 덮어쓴다.
 - 테이블은 서버 시작 때 `create_all`로 만든다. 컬럼 변경은 반영되지 않아 마이그레이션 도구를 정해야 한다(Q-016).
 
 ### 디자인 토큰 (설계 원칙 7)

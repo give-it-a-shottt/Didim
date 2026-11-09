@@ -7,6 +7,8 @@ OAUTH_STATE_COOKIE_NAME = "didim_oauth_state"
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7  # 7일
 OAUTH_STATE_MAX_AGE_SECONDS = 60 * 10  # 10분
 MIN_SESSION_SECRET_LENGTH = 32
+# DB 연결을 기다리는 최대 시간. 없으면 연결이 응답 없이 끝없이 멈출 수 있다(T-002).
+DB_CONNECT_TIMEOUT_SECONDS = 5
 
 # 사용자 기본 하루 AI 호출 상한 (didim-design.md SET_01_001 기준 30회)
 DEFAULT_DAILY_LIMIT = 30
