@@ -7,8 +7,21 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import load_settings
 
 
+class DatabaseConfigError(RuntimeError):
+    """DATABASE_URL 환경변수가 비어 있을 때 발생한다."""
+
+
 def create_db_engine(database_url: str) -> Engine:
-    """DB 엔진을 만든다. SQLite를 쓸 때는 외래키(ON DELETE CASCADE)가 동작하도록 PRAGMA를 켠다."""
+    """DB 엔진을 만든다.
+
+    운영 · 개발 DB는 PostgreSQL이다(D-008). SQLite는 테스트(tests/conftest.py)에서만 명시적으로 쓰고,
+    그때도 외래키(ON DELETE CASCADE)가 동작하도록 PRAGMA를 켠다.
+    """
+    if not database_url:
+        raise DatabaseConfigError(
+            "환경변수 DATABASE_URL이 비어 있어요. 예) postgresql+psycopg://DB_USER:DB_PASSWORD@localhost:5432/didim "
+            "(로컬 DB는 레포 루트의 docker-compose.yml로 띄워요)"
+        )
     connect_args: dict[str, Any] = {}
     if database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
@@ -39,7 +52,11 @@ def get_session_factory() -> sessionmaker[Session]:
 
 
 def init_db() -> None:
-    """앱 시작 시 1주차 테이블(users, notes, chunks)이 없으면 생성한다."""
+    """앱 시작 시 1주차 테이블(users, notes, chunks)이 없으면 생성한다.
+
+    create_all은 "없는 테이블만" 만들고 기존 테이블의 컬럼 변경은 반영하지 않는다.
+    컬럼이 바뀌는 2주차(chunks.embedding) 전에 마이그레이션 도구를 정한다(Q-016).
+    """
     from app.db.base import Base
     import app.db.models  # noqa: F401 — 모델 등록 보장
 

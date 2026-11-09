@@ -40,7 +40,7 @@ async function LoginErrorBanner({
   return (
     <div
       role="alert"
-      className="rounded-[8px] border border-[#B3262B] bg-[#FFF2F2] px-4 py-3 text-[13px] text-[#B3262B]"
+      className="rounded-button border border-error-base bg-error-bg px-4 py-3 text-body-3 text-error-text"
     >
       {message}
     </div>
@@ -53,28 +53,28 @@ export default function Aut01001Page({
   return (
     <section
       data-screen-id="AUT_01_001"
-      className="grid min-h-screen grid-cols-1 bg-white text-[#111111] md:grid-cols-2"
+      className="grid min-h-screen grid-cols-1 bg-bg-default text-text-main md:grid-cols-2"
     >
       {/* 왼쪽 소개 영역 (피그마 AUT_01_001 '소개' 프레임) */}
-      <div className="flex flex-col justify-center gap-6 bg-[#FAFAFA] px-6 py-12 md:px-16">
+      <div className="flex flex-col justify-center gap-6 bg-bg-light px-6 py-12 md:px-16">
         <div className="flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="inline-block h-6 w-6 rounded-[6px] bg-[#00A6B4]"
+            className="inline-block h-6 w-6 rounded-tag bg-primary-accent"
           />
-          <span className="text-[20px] font-semibold tracking-[-0.025em] text-[#111111]">
+          <span className="text-title-2 font-semibold text-text-main">
             디딤
           </span>
         </div>
 
-        <p className="text-[24px] font-semibold leading-[1.42] tracking-[-0.025em] text-[#111111]">
+        <p className="text-headline-3 font-semibold text-text-main">
           내 기록이 근거가 되는 자소서
         </p>
 
         <ul className="flex flex-col gap-3">
           {CHECK_ITEMS.map((item) => (
-            <li key={item} className="flex items-center gap-2 text-[16px] text-[#111111]">
-              <span aria-hidden="true" className="font-semibold text-[#01757F]">
+            <li key={item} className="flex items-center gap-2 text-title-4 font-normal text-text-main">
+              <span aria-hidden="true" className="font-semibold text-primary-text">
                 ✓
               </span>
               <span>{item}</span>
@@ -84,9 +84,9 @@ export default function Aut01001Page({
       </div>
 
       {/* 오른쪽 로그인 영역 (피그마 AUT_01_001 '로그인' 프레임) */}
-      <div className="flex flex-col justify-center gap-5 bg-white px-6 py-12 md:px-16">
+      <div className="flex flex-col justify-center gap-5 bg-bg-default px-6 py-12 md:px-16">
         <div className="mx-auto flex w-full max-w-[400px] flex-col gap-5">
-          <h1 className="text-[20px] font-semibold tracking-[-0.025em] text-[#111111]">
+          <h1 className="text-title-2 font-semibold text-text-main">
             디딤 시작하기
           </h1>
 
@@ -96,23 +96,23 @@ export default function Aut01001Page({
 
           <a
             href="/api/auth/google/login"
-            className="inline-flex h-12 w-full items-center justify-center rounded-[8px] border border-[#111111] bg-white px-5 text-[16px] font-semibold text-[#111111] transition-colors hover:bg-[#F5F5F5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#01808B]"
+            className="inline-flex h-12 w-full items-center justify-center rounded-button border border-line-black bg-bg-default px-5 text-title-4 font-semibold text-text-main transition-colors hover:bg-bg-regular focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-default"
           >
             Google로 계속하기
           </a>
 
-          <div className="flex flex-col gap-2 rounded-[16px] border border-[#EEEEEE] bg-[#FAFAFA] p-4">
-            <h2 className="text-[14px] font-semibold text-[#111111]">
+          <div className="flex flex-col gap-2 rounded-card border border-line-light bg-bg-light p-4">
+            <h2 className="text-body-2 font-semibold text-text-main">
               내 데이터는 이렇게 다뤄요
             </h2>
-            <ul className="flex flex-col gap-1 text-[13px] text-[#424242]">
+            <ul className="flex flex-col gap-1 text-body-3 text-text-sub">
               {DATA_PRINCIPLES.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           </div>
 
-          <div className="flex items-center gap-3 text-[13px] font-medium text-[#757575]">
+          <div className="flex items-center gap-3 text-body-3 font-medium text-text-sub-weak">
             <span>이용약관</span>
             <span>개인정보 처리방침</span>
           </div>

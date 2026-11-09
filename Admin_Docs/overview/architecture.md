@@ -52,6 +52,15 @@ backend/                  FastAPI (uv)
 | 현재 로그인한 사용자 정보(`/settings`, 회원 레이아웃 보호) | 서버 컴포넌트(`requireCurrentUser`) | 첫 화면을 그릴 때 쿠키로 서버에서 바로 확인하고 비로그인이면 `/login`으로 보내기 위해 | F-001 |
 | 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
 
+### DB (D-008)
+- 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db`(계정은 루트 `.env`, 커밋 안 함).
+- 서버는 `DATABASE_URL`이 없으면 이유를 적은 오류로 시작하지 않는다(조용히 다른 DB로 넘어가지 않음).
+- 테스트는 기본으로 메모리 SQLite를 쓰고(`backend/tests/conftest.py`에 명시), `TEST_DATABASE_URL`을 주면 같은 테스트를 PostgreSQL에서 돌린다.
+- 테이블은 서버 시작 때 `create_all`로 만든다. 컬럼 변경은 반영되지 않아 마이그레이션 도구를 정해야 한다(Q-016).
+
+### 디자인 토큰 (설계 원칙 7)
+- `frontend/src/app/globals.css`의 `@theme`: 색(text · line · bg · primary · sub1 · status), 글자 크기(Pretendard 스케일), 라운드(Radius Default). 값은 디자인 원본에서 옮긴 것이고, 바꿀 때는 디자인 원본을 먼저 고친다.
+
 ### SEO (설계 원칙 8)
 - 공통 정보: `frontend/src/lib/site.ts`(사이트 이름 · 설명 · 주소 · 공개/회원 경로)
 - 제목: 루트 레이아웃의 템플릿 `%s | 디딤`, 페이지마다 `metadata.title` · `description`

@@ -36,12 +36,12 @@ export function LogoutButton() {
         type="button"
         onClick={handleLogout}
         disabled={isPending}
-        className="inline-flex h-8 items-center justify-center rounded-[8px] border border-[#111111] bg-white px-3 text-[14px] font-medium text-[#111111] transition-colors hover:bg-[#F5F5F5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#01808B] disabled:cursor-not-allowed disabled:border-[#E0E0E0] disabled:bg-[#F5F5F5] disabled:text-[#9E9E9E]"
+        className="inline-flex h-8 items-center justify-center rounded-button border border-line-black bg-bg-default px-3 text-body-2 font-medium text-text-main transition-colors hover:bg-bg-regular focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-default disabled:cursor-not-allowed disabled:border-line-regular disabled:bg-bg-regular disabled:text-text-disabled"
       >
         {isPending ? "로그아웃 중…" : "로그아웃"}
       </button>
       {errorMessage ? (
-        <p role="alert" className="text-[12px] text-[#B3262B]">
+        <p role="alert" className="text-body-4 text-error-text">
           {errorMessage}
         </p>
       ) : null}

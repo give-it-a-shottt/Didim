@@ -9,13 +9,14 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 2 · 일부 1 · 다음 11 · 열린 질문 10개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 2 · 일부 1 · 다음 11 · 열린 질문 13개
 
 - 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-013, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차 구현 및 1차 리뷰(F-001)
 - 다음(1주차, 이 순서로):
-  1. F-001 1차 리뷰 최종 판정 및 면접 예상 질문 답 확인
-  2. LLM 구조 · 모델 결정(Q-001 · Q-002, D-008)
-  3. F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰
+  1. F-001 2차 리뷰 판정 → 지적 반영(테스트 전용 DB · 가드 등) → 3차 리뷰 → [됨] 판단(1주차 범위), 면접 예상 질문 답
+  2. 마이그레이션 도구(Q-016) — 2주차 chunks.embedding 전에 꼭
+  3. LLM 구조 · 모델 결정(Q-001 · Q-002, D-008)
+  4. F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰
 - 확인 필요: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)에 모아 뒀어요.
 
 **읽는 순서**
@@ -48,18 +49,23 @@
 - AI: LLM API + 임베딩, RAG, 에이전트 루프(쓰기 → 검사 → 고치기)
 
 ### 실행
-비밀값은 각 폴더의 `.env.example`을 보고 `.env`(커밋 안 함)에 직접 넣어요.
+비밀값은 각 폴더의 `.env.example`을 보고 `.env`(커밋 안 함)에 직접 넣어요. 레포 루트 `.env`는 로컬 DB용, `backend/.env`는 서버용이에요.
 ```
+# DB (처음 한 번 + 컴퓨터를 켤 때마다) — Docker Desktop을 켠 뒤
+docker compose up -d db          # 레포 루트에서. PostgreSQL + pgvector (D-008)
+
 # 서버 (터미널 1)
 cd backend
 uv sync
-uv run uvicorn app.main:app --reload --port 8000
-uv run pytest            # 테스트
+uv run uvicorn app.main:app --reload --port 8000 --env-file .env   # DATABASE_URL이 없으면 시작하지 않아요
+uv run pytest                    # 테스트(기본은 메모리 SQLite)
+TEST_DATABASE_URL=<로컬 PostgreSQL 주소> uv run pytest   # 같은 테스트를 PostgreSQL에서
 
 # 화면 (터미널 2)
 cd frontend
 npm install
 npm run dev              # 3000번이 다른 프로젝트와 겹치면: npx next dev --port 3001
+npm run test:e2e         # Playwright (가짜 백엔드로 실행, D-013)
 ```
 - 확인: 브라우저에서 `화면주소/api/health` → `{"status":"ok"}`면 화면 → 서버 연결이 된 거예요.
 

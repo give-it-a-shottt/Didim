@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
 
@@ -49,9 +50,12 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture()
-def db_session( tmp_path: pytest.TempPathFactory ) -> Generator[Session, None, None]:
-    db_file = tmp_path / "test_didim.db"
-    engine = create_db_engine(f"sqlite:///{db_file}")
+def db_session(tmp_path: pytest.TempPathFactory) -> Generator[Session, None, None]:
+    # TEST_DATABASE_URL이 있으면 PostgreSQL(D-008)에서, 없으면 임시 SQLite 파일에서 돌린다(conftest.py).
+    postgres_url = os.getenv("TEST_DATABASE_URL", "")
+    db_url = postgres_url or f"sqlite:///{tmp_path / 'test_didim.db'}"
+    engine = create_db_engine(db_url)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     testing_session_local = sessionmaker(
         bind=engine,
@@ -64,6 +68,8 @@ def db_session( tmp_path: pytest.TempPathFactory ) -> Generator[Session, None, N
         yield session
     finally:
         session.close()
+        if postgres_url:
+            Base.metadata.drop_all(bind=engine)
         engine.dispose()
 
 

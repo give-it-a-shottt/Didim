@@ -50,12 +50,18 @@
     - `src/app/(app)/settings/page.tsx`, `src/components/logout-button.tsx`: 피그마 `SET_01_001` 기반 설정 "계정" 칸 + 로그아웃 버튼
     - `playwright.config.ts`, `tests/mock-backend.mjs`, `tests/auth-and-routes.spec.ts`: 공개·회원 19개 URL 스모크 테스트 + 비로그인 리다이렉트 + 로그인·로그아웃 E2E 테스트 4개 통과
 - 설계 의도와 다른 점: 없음 (1주차 범위 그대로 구현, 사용량 기록은 2주차 · 사용량 제한/삭제 버튼/사용량 화면은 7주차 예정)
+- 2차 수정(2026-11-09, Claude Code가 1차 결과를 점검하고 바로잡음):
+  - DB: `DATABASE_URL` 기본값(SQLite 파일)을 없애 비어 있으면 이유를 적은 오류로 멈춤. 테스트 DB는 `tests/conftest.py`에 명시(기본 메모리 SQLite, `TEST_DATABASE_URL`로 PostgreSQL). 로컬 PostgreSQL용 `docker-compose.yml` · 루트 `.env.example` 추가. 실행 명령에 `--env-file .env` 추가.
+  - 1차 R2 제안 반영: `getCurrentUserOrNull`을 React `cache()`로 감싸 한 요청 안에서 `/api/auth/me`를 한 번만 호출, `server-only` 표시.
+  - 원칙 7: 직접 쓴 색 · 크기 값 42곳을 `globals.css` `@theme` 토큰으로 교체(로그인 · 설정 · 회원 레이아웃 · 로그아웃 버튼). 오류 안내는 status/error 토큰(bg · base · text)으로 맞춤.
+  - 열린 질문 추가: Q-016(마이그레이션 도구), Q-017(세션 서버 무효화), Q-018(글꼴).
+- 2차 확인: pytest 8개 통과(메모리 SQLite) + 같은 8개 PostgreSQL 17(pgvector 이미지)에서 통과, PostgreSQL로 앱 시작 · 테이블 3개 · 외래키 CASCADE 확인, `DATABASE_URL` 없이 시작하면 오류로 멈춤 확인, 테스트 실행 뒤 떠도는 `.db` 파일 없음, lint · tsc · build 통과, 토큰 클래스 CSS 생성 확인, Playwright 4개 통과(2026-11-09)
 
 ## 리뷰
-- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]` (제안 1건, 최종 판정 사용자 확인 대기)
+- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트, 제안 1건 → 2차에서 반영), 2차 `[주의]`(신규 주의 4 · 제안 4), 최종 판정 대기
 
 ## 열린 질문
-- 없음
+- Q-016, Q-017, Q-018
 
 ## 면접 예상 질문
 1. **질문 (AI 작성)**: 왜 인증 토큰을 `localStorage`에 넣지 않고 FastAPI가 발급하는 `httpOnly` 서명 쿠키(`didim_session`)로 처리했나요? 그리고 Next.js 16 App Router에서 회원 화면 16개를 어떻게 보호했나요?

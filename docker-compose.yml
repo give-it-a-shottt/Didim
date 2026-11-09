@@ -1,0 +1,19 @@
+# 로컬 개발용 PostgreSQL (D-008: PostgreSQL + pgvector).
+# 실행: docker compose up -d db
+# 접속 주소는 backend/.env의 DATABASE_URL에 넣는다(값은 커밋하지 않음).
+# 계정 · 비밀번호는 이 파일에 적지 않고 같은 폴더의 .env(커밋 안 함)에서 읽는다. 예시는 .env.example.
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-didim}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER를 .env에 넣어 주세요}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD를 .env에 넣어 주세요}
+    ports:
+      - "5432:5432"
+    volumes:
+      - didim-db:/var/lib/postgresql/data
+
+volumes:
+  didim-db:

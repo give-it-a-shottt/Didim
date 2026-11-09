@@ -13,14 +13,14 @@ export const metadata: Metadata = {
 // Next.js 16 cacheComponents 규칙에 따라 세션 쿠키 확인(MemberAuthGuard)은 Suspense 안에서 수행한다.
 export default function FocusLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#FAFAFA] text-[#111111]">
+    <div className="flex min-h-screen flex-col bg-bg-light text-text-main">
       <header className="p-4">
         <Link href="/records">나가기</Link>
       </header>
       <main className="flex-1">
         <Suspense
           fallback={
-            <div className="p-12 text-[14px] text-[#424242]" role="status">
+            <div className="p-12 text-body-2 text-text-sub" role="status">
               계정 정보를 확인하고 있어요…
             </div>
           }

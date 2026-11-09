@@ -27,7 +27,8 @@ def load_settings() -> Settings:
     """환경변수에서 서버 설정을 읽는다. 비밀키는 코드에 기본값을 두지 않는다."""
     raw_secure = os.getenv("COOKIE_SECURE", "false").strip().lower()
     return Settings(
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./didim_local.db").strip(),
+        # DB는 PostgreSQL(D-008). 기본값을 두지 않는다: 비어 있으면 조용히 다른 DB로 넘어가지 않고 시작할 때 멈춘다.
+        database_url=os.getenv("DATABASE_URL", "").strip(),
         session_secret=os.getenv("SESSION_SECRET", "").strip(),
         google_client_id=os.getenv("GOOGLE_CLIENT_ID", "").strip(),
         google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET", "").strip(),

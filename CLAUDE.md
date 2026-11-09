@@ -47,6 +47,8 @@ Claude Code가 이 레포에서 작업을 시작할 때마다 읽는 규칙이�
 5. **평가 가능하게**: 매칭 · 근거 검사 결과는 평가 세트로 채점할 수 있게 로그를 남긴다. (D-005)
 6. **LLM에 보내는 범위 최소화**: 필요한 조각만 보내고, 무엇을 보내는지 사용자에게 안내한다.
 7. **화면은 디자인 md를 따른다**: 색 · 크기는 토큰 이름으로 쓰고, 없는 값이 필요하면 먼저 묻는다. 명조 = 내 기록 원문, 고딕 = AI와 화면.
+   - 토큰은 `frontend/src/app/globals.css`의 `@theme`에 있다(MyDesign.md Light · Pretendard 스케일 · Radius Default + didim-design.md Brand 02). 이름은 디자인 토큰 그대로: `text/sub` → `text-text-sub`, `bg/light` → `bg-bg-light`, `radius/card` → `rounded-card`, 글자 크기 `text-title-2` · `text-body-3`.
+   - `#111111`, `text-[14px]`, `rounded-[8px]` 같은 직접 값은 쓰지 않는다. 토큰에 없는 값이 필요하면 먼저 묻는다.
 8. **SEO 기본을 항상 넣는다**: 새 페이지마다 `metadata`의 title · description, 시맨틱 태그(`main` · `nav` · `header` · `section`, 화면마다 `h1` 하나), 서버 렌더링(서버 컴포넌트 기본, "use client"는 필요한 곳만). 공개 페이지만 검색 노출, 회원 화면은 noindex. 공통 값은 `frontend/src/lib/site.ts`.
    - robots.txt로 막은 경로에 noindex를 같이 쓰지 않는다(로봇이 noindex를 못 읽어 주소만 색인될 수 있음). robots.txt에는 회원 경로를 적지 않는다.
    - robots.txt · noindex는 접근 차단이 아니다. 회원 화면 접근 차단은 로그인(서버 확인)으로 한다.
