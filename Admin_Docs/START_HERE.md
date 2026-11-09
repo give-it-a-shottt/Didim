@@ -11,7 +11,7 @@
 
 **지금 상태** — [STATUS.md](STATUS.md): 됨 2 · 일부 1 · 다음 11 · 열린 질문 13개
 
-- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-013, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차 구현 및 1차 리뷰(F-001)
+- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-014, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차 구현 및 1차 리뷰(F-001)
 - 다음(1주차, 이 순서로):
   1. F-001 2차 리뷰 판정 → 지적 반영(테스트 전용 DB · 가드 등) → 3차 리뷰 → [됨] 판단(1주차 범위), 면접 예상 질문 답
   2. 마이그레이션 도구(Q-016) — 2주차 chunks.embedding 전에 꼭
@@ -102,6 +102,7 @@ Admin_Docs/
 | [D-011](decisions/D-011-skeleton-first-screens-by-week.md) | 화면은 뼈대(레이아웃 + 라우트) 먼저, 각 화면은 주차별 완성 | [통과] |
 | [D-012](decisions/D-012-state-management.md) | 상태 관리: 서버 데이터는 TanStack Query, 공용 UI 상태만 Zustand (App Router 유지) | [통과] |
 | [D-013](decisions/D-013-frontend-test-playwright.md) | 프론트엔드 테스트 도구는 Playwright로 한다 | [통과] |
+| [D-014](decisions/D-014-llm-exaone-swappable.md) | LLM은 K-EXAONE 2.5 메인, mock · exaone · local 교체 구조 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
