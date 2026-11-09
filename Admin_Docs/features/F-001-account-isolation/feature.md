@@ -63,8 +63,18 @@
   - T-002: 포트를 127.0.0.1로 묶은 뒤 `localhost` 연결이 끝없이 멈춤 → 주소를 127.0.0.1로, PostgreSQL 연결에 `connect_timeout` 5초.
 - 3차 확인: pytest 10개(SQLite) 통과, 같은 10개 PostgreSQL `didim_test`(127.0.0.1) 통과, `localhost`로도 멈추지 않고 통과(36초), 개발 DB(`didim`)를 주면 안전장치가 테스트 전에 멈춤, 셸에 개발 DB 주소가 있어도 개발 DB 데이터 그대로(전 1건 · 후 1건), 떠도는 .db 파일 없음, 포트가 127.0.0.1에만 열림 확인(2026-11-09)
 
+- 4차 수정(2026-11-09, 3차 판정 반영):
+  - `backend/.env.example`: `SESSION_SECRET` 예시 값을 32자 미만(`CHANGE_ME`)으로 바꾸고 만드는 명령을 주석으로. 길이 검사는 서버 시작이 아니라 로그인 · 세션 요청 때 돌아서, 예시 값을 그대로 두면 로그인부터 실패함.
+  - `tests/test_db_config.py`: 테스트 2개 추가 — `_test` 가드가 개발 DB 주소에서 멈추는지, PostgreSQL 엔진에 `connect_timeout`이 들어가는지(`create_engine`을 가짜로 바꿔 DB 없이 확인). 각 테스트에 무엇을 · 왜 · 실패하면 무슨 뜻인지 설명을 적음.
+  - `START_HERE.md` 실행 절: 기존 볼륨에 `didim_test`를 만드는 `createdb` 한 줄.
+- 4차 확인: pytest 12개(SQLite) 통과, 같은 12개 PostgreSQL `didim_test` 통과(2026-11-09)
+- 5차 수정(2026-11-09, 4차 판정 반영):
+  - `tests/conftest.py`: 가드 함수를 넘겨주는 fixture `test_db_url_guard` 추가 → `test_db_config.py`가 conftest를 직접 import하지 않음(`tests/__init__.py`나 import 방식이 바뀌어도 안 깨짐).
+  - `tests/test_auth_and_isolation.py`: `.env.example`의 예시 SESSION_SECRET을 파일에서 읽어, 그 값으로는 로그인이 시작되지 않고(`oauth_not_configured`, state 쿠키 없음) `/api/auth/me`가 500인지 확인하는 테스트 2개.
+- 5차 확인: pytest 14개(SQLite) 통과, 같은 14개 PostgreSQL `didim_test` 통과(2026-11-09)
+
 ## 리뷰
-- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트) → 2차 `[주의]`(신규 주의 4 · 제안 4, 전부 반영) → 3차 `[통과]`(신규 제안 3), 최종 판정 대기
+- [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트) → 2차 `[주의]`(신규 주의 4 · 제안 4, 전부 반영) → 3차 `[통과]`(신규 제안 3, 전부 반영) → 4차 `[통과]`(신규 제안 2, 전부 반영) → 5차 진행 중
 
 ## 열린 질문
 - Q-016, Q-017, Q-018

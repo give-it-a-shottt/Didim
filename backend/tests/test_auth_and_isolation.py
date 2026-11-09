@@ -1,4 +1,6 @@
 from collections.abc import Generator
+from dataclasses import replace
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -8,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_settings
 from app.config import (
+    MIN_SESSION_SECRET_LENGTH,
     OAUTH_STATE_COOKIE_NAME,
     SESSION_COOKIE_NAME,
     Settings,
@@ -32,6 +35,19 @@ from app.services.note_service import (
 )
 
 TEST_SECRET = "test-only-session-secret-at-least-32-bytes-long"
+ENV_EXAMPLE_PATH = Path(__file__).resolve().parent.parent / ".env.example"
+
+
+def _read_example_session_secret() -> str:
+    """backend/.env.example에 적힌 SESSION_SECRET 예시 값을 그대로 읽는다.
+
+    테스트 안에 "CHANGE_ME"를 직접 적지 않고 파일에서 읽는 이유: 누가 나중에 예시 값을
+    다시 32자 이상으로 바꾸면 이 테스트가 그 변경을 잡아내야 하기 때문이다.
+    """
+    for line in ENV_EXAMPLE_PATH.read_text(encoding="utf-8").splitlines():
+        if line.startswith("SESSION_SECRET="):
+            return line.removeprefix("SESSION_SECRET=").strip()
+    raise AssertionError("backend/.env.example에 SESSION_SECRET 줄이 없어요.")
 
 
 @pytest.fixture()
@@ -183,6 +199,67 @@ def test_google_callback_rejects_mismatched_state_and_oauth_failure(
         exchange_fail_resp.headers["location"]
         == "http://localhost:3000/login?error=token_exchange_failed"
     )
+
+
+def test_login_refuses_to_start_with_example_session_secret(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """.env.example의 예시 SESSION_SECRET을 그대로 쓰면 로그인이 시작되지 않아야 한다(F-001 3차 R2 · 4차 R3).
+
+    왜 중요한가: 예시 값은 레포에 공개돼 있다. 그 값이 서명 키로 쓰이면 누구나 세션 쿠키를 위조할 수 있다.
+    그래서 예시 값을 일부러 32자보다 짧게 두고, 짧은 키로는 서버가 서명을 거부하게 했다.
+
+    무엇을 하는가:
+    1. .env.example에서 예시 값을 읽고, 그 값이 정말 32자(MIN_SESSION_SECRET_LENGTH)보다 짧은지 먼저 확인한다.
+    2. 서버 설정의 SESSION_SECRET만 그 예시 값으로 바꿔 끼운다(나머지 설정은 정상 테스트 값 그대로).
+    3. GET /api/auth/google/login을 부른다.
+    4. 구글로 보내지 않고 /login?error=oauth_not_configured로 돌려보내는지,
+       위조 방지용 state 쿠키를 발급하지 않았는지 확인한다.
+
+    이 테스트가 실패한다면: 예시 값이 다시 길어졌거나(1번에서 실패),
+    짧은 키를 거부하는 검사(auth_service._require_secret)가 사라졌다는 뜻.
+    """
+    example_secret = _read_example_session_secret()
+    assert len(example_secret) < MIN_SESSION_SECRET_LENGTH
+
+    weak_settings = replace(test_settings, session_secret=example_secret)
+    app.dependency_overrides[get_settings] = lambda: weak_settings
+
+    response = client.get("/api/auth/google/login", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "http://localhost:3000/login?error=oauth_not_configured"
+    assert response.cookies.get(OAUTH_STATE_COOKIE_NAME) is None
+
+
+def test_me_returns_500_when_session_secret_is_example_value(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """예시 SESSION_SECRET으로는 세션 쿠키 확인도 하지 않고 500(서버 설정 오류)을 돌려줘야 한다.
+
+    왜 중요한가: 로그인 시작만 막고 세션 확인은 짧은 키로 통과시키면, 공개된 예시 값으로 만든
+    가짜 쿠키가 받아들여질 수 있다. 세션 확인도 같은 키 검사를 거쳐야 한다.
+    401(로그인 필요)이 아니라 500인 이유: 사용자 잘못이 아니라 서버 설정이 잘못된 상황이기 때문이다.
+
+    무엇을 하는가:
+    1. 서버 설정의 SESSION_SECRET을 .env.example 예시 값으로 바꿔 끼운다.
+    2. 아무 값이나 넣은 세션 쿠키를 붙여 GET /api/auth/me를 부른다.
+       (쿠키가 없으면 키 검사 전에 401로 끝나므로, 키 검사까지 가게 하려고 쿠키를 붙인다.)
+    3. 500과 "서버 인증 설정이 완료되지 않았어요." 메시지가 오는지 확인한다.
+
+    이 테스트가 실패한다면: 세션 확인(deps.get_current_user)에서 짧은 키 검사가 빠졌거나,
+    설정 오류를 다른 응답 코드로 바꿨다는 뜻.
+    """
+    weak_settings = replace(test_settings, session_secret=_read_example_session_secret())
+    app.dependency_overrides[get_settings] = lambda: weak_settings
+
+    client.cookies.set(SESSION_COOKIE_NAME, "any-cookie-value")
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "서버 인증 설정이 완료되지 않았어요."}
 
 
 def test_user_a_note_is_never_visible_to_user_b(db_session: Session) -> None:

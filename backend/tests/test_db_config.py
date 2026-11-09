@@ -6,6 +6,7 @@
 - PostgreSQL 연결에 시간 제한이 들어간다(없으면 연결이 무한 대기할 수 있음, T-002).
 """
 
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -25,7 +26,10 @@ def test_create_db_engine_rejects_empty_url() -> None:
         create_db_engine("")
 
 
-def test_test_db_guard_stops_when_url_points_to_dev_db(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_test_db_guard_stops_when_url_points_to_dev_db(
+    monkeypatch: pytest.MonkeyPatch,
+    test_db_url_guard: Callable[[], str],
+) -> None:
     """TEST_DATABASE_URL이 개발 DB(didim)를 가리키면 pytest가 바로 멈춰야 한다.
 
     왜 중요한가: 테스트는 시작 · 끝에 그 DB의 테이블을 모두 지운다(conftest.py의 drop_all).
@@ -34,21 +38,20 @@ def test_test_db_guard_stops_when_url_points_to_dev_db(monkeypatch: pytest.Monke
     무엇을 하는가:
     1. 환경변수 TEST_DATABASE_URL을 이름이 `_test`로 끝나지 않는 DB(didim)로 바꾼다.
        monkeypatch라서 이 테스트가 끝나면 원래 값으로 돌아온다.
-    2. conftest.py의 가드 함수 `_read_postgres_test_url()`을 직접 부른다.
-       (DB에 실제로 붙지 않는다. 주소 문자열에서 DB 이름만 읽어 검사한다.)
+    2. conftest.py의 가드 함수 `_read_postgres_test_url()`을 부른다.
+       함수는 fixture `test_db_url_guard`로 받는다(conftest를 직접 import하지 않음 — 이유는 그 fixture 설명).
+       DB에 실제로 붙지 않는다. 주소 문자열에서 DB 이름만 읽어 검사한다.
     3. pytest.exit()가 던지는 예외(pytest.exit.Exception)가 나오는지,
        메시지에 지금 DB 이름(didim)이 들어 있는지 확인한다.
 
     이 테스트가 실패한다면: 가드가 지워졌거나, 이름 검사가 느슨해져 개발 DB로 테스트가 돌 수 있다는 뜻.
     """
-    from conftest import _read_postgres_test_url  # tests/conftest.py (pytest가 tests 폴더를 경로에 넣어 줌)
-
     monkeypatch.setenv(
         "TEST_DATABASE_URL", "postgresql+psycopg://DB_USER:DB_PASSWORD@127.0.0.1:5432/didim"
     )
 
     with pytest.raises(pytest.exit.Exception, match="'didim'"):
-        _read_postgres_test_url()
+        test_db_url_guard()
 
 
 def test_create_db_engine_sets_connect_timeout_for_postgresql(monkeypatch: pytest.MonkeyPatch) -> None:

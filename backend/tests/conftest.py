@@ -7,7 +7,7 @@
 """
 
 import os
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pytest
@@ -35,6 +35,16 @@ POSTGRES_TEST_URL = _read_postgres_test_url()
 # 앱은 DATABASE_URL이 없으면 시작하지 않는다. 셸에 개발용 DATABASE_URL이 있어도 테스트가 그 DB를
 # 건드리지 않도록 항상 덮어쓴다. (서버 시작 단계의 init_db만 이 값을 쓰고, 요청은 아래 db_session을 쓴다.)
 os.environ["DATABASE_URL"] = POSTGRES_TEST_URL or "sqlite://"
+
+
+@pytest.fixture()
+def test_db_url_guard() -> Callable[[], str]:
+    """위 가드 함수를 테스트에 넘겨준다(test_db_config.py에서 가드가 제대로 막는지 확인할 때 씀).
+
+    테스트 파일이 `from conftest import ...`로 직접 가져오면 tests/__init__.py가 생기거나
+    pytest import 방식이 바뀔 때 깨질 수 있다. fixture는 pytest가 이어 주므로 그런 변화에 영향을 받지 않는다.
+    """
+    return _read_postgres_test_url
 
 
 @pytest.fixture()
