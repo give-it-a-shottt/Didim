@@ -53,6 +53,7 @@
 ```
 # DB (처음 한 번 + 컴퓨터를 켤 때마다) — Docker Desktop을 켠 뒤
 docker compose up -d db          # 레포 루트에서. PostgreSQL + pgvector (D-008)
+docker compose exec db createdb -U <DB 계정> didim_test   # 테스트 DB가 없을 때만. 볼륨을 처음 만들 때는 자동으로 생기지만, 그 전에 만든 볼륨에는 없어요
 
 # 서버 (터미널 1)
 cd backend
