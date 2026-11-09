@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // APL_02_001 지원 상세에는 자체 내용이 없어서 첫 탭(공고 분석)으로 보낸다. (screens.md)
+  async redirects() {
+    return [
+      {
+        source: "/applications/:id",
+        destination: "/applications/:id/analysis",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

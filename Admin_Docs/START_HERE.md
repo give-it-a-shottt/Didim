@@ -9,10 +9,14 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 1 · 일부 1 · 다음 11 · 열린 질문 12개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 2 · 일부 1 · 다음 11 · 열린 질문 14개
 
-- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-011, 개발 환경 세팅
-- 다음: 1주차 — 화면 뼈대(D-011), 로그인, 마크다운 업로드, DB 설계(F-001 · F-002). 코드 전에 각 feature.md 설계 의도부터 받아요.
+- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-012, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본(F-013)
+- 다음(1주차, 이 순서로):
+  1. F-001 설계 의도 남은 칸(화면 · API · 데이터) 받기 — 관련 질문 Q-009(로그인 후 이동) · Q-010(로그아웃 위치)
+  2. 프론트 테스트 도구 정하기(Q-014) — F-013 판정대로 URL 스모크 테스트를 F-001 시작 때 추가
+  3. DB 설계: data-model 확정(Q-003), LLM 구조 · 모델(Q-001 · Q-002, D-008)
+  4. F-001 구현 → 리뷰, F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰
 - 확인 필요: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)에 모아 뒀어요.
 
 **읽는 순서**
@@ -91,11 +95,13 @@ Admin_Docs/
 | [D-009](decisions/D-009-design-direction.md) | 디자인 4안 "작업대 위의 각주" | [통과] |
 | [D-010](decisions/D-010-auth-in-fastapi.md) | 구글 로그인은 FastAPI가 처리(httpOnly 쿠키) | [통과] |
 | [D-011](decisions/D-011-skeleton-first-screens-by-week.md) | 화면은 뼈대(레이아웃 + 라우트) 먼저, 각 화면은 주차별 완성 | [통과] |
+| [D-012](decisions/D-012-state-management.md) | 상태 관리: 서버 데이터는 TanStack Query, 공용 UI 상태만 Zustand (App Router 유지) | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
 |---|---|---|---|
 | [F-000](features/F-000-dev-setup/feature.md) | 개발 환경 세팅 | 1 | [됨] R2 1차 [통과] |
+| [F-013](features/F-013-screen-skeleton/feature.md) | 화면 뼈대(레이아웃 + URL 19개) | 1 | [됨] 4차 [통과] |
 | [F-001](features/F-001-account-isolation/feature.md) | 계정 · 데이터 분리 · 사용량 제한 | 1 · 2 · 7 | [일부] 설계 의도 받는 중 |
 | [F-002](features/F-002-import-markdown/feature.md) | 마크다운 가져오기 | 1 | 설계 의도 전 |
 | [F-003](features/F-003-record-search-rag/feature.md) | 기록 검색 + 근거 (RAG) | 2 | 설계 의도 전 |
