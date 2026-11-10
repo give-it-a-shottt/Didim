@@ -13,6 +13,7 @@
 | notes | 가져온 기록(원문) | `user_id`(FK `ON DELETE CASCADE`), source(markdown · notion), kind(학습 노트 · 프로젝트 경험), 원문 해시(중복 확인), 수정일 (1주차 생성) |
 | chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 순서(`position`), 제목 경로(`heading_path`, 예: `# React > ## useEffect`, 제목 한 단계는 200자까지 · 넘으면 '…'), 원문 위치(`start_offset` · `end_offset`, 조각 내용 == 노트 원문[시작:끝], 파이썬 문자 단위) (1주차 생성, 위치 컬럼은 F-002 · 버전 0002). 키워드 검색 색인 `ix_chunks_user_content_trgm` — GIN (`user_id`, `content` gin_trgm_ops), pg_trgm + btree_gin 확장(버전 0003, F-003). 사용자 조건과 본문 비슷함을 한 색인으로 같이 거른다(따로 두면 내 조각을 전부 읽는 계획이 나옴 — 1차 리뷰 뒤 실측 · 사용자 확인). embedding(vector)은 평가로 비교한 뒤 붙임(D-016) — 지금 모델에는 없음 |
 | search_logs | 검색 로그 | `user_id`(FK `ON DELETE CASCADE`), `query`(검색어), `method`(검색 방식, 지금 `keyword`), `results`(JSON — 순위 순서 `[{chunk_id, score}]`), `created_at`. 평가 채점용(D-005) (2주차 생성, F-003 · 버전 0003) |
+| ai_usage_logs | AI 사용량 | `user_id`(FK `ON DELETE CASCADE`), `feature`, `calls`, `prompt_tokens`, `completion_tokens`, `outcome`, `created_at`, 색인 (`user_id`, `created_at`). 모든 AI 기능이 같이 쓰고 하루 상한(`users.daily_limit`)을 이 표의 호출 수 합계로 센다(D-018, 3주차 · 버전 0004 예정) |
 | quizzes | 문제 | note_id · chunk_id 근거, 유형(객관식 · OX, D-006), 정답 · 해설 |
 | review_logs | 풀이 기록 | 맞음 · 틀림, 다음 복습일(당일 → 1 → 3 → 7 → 14), 연속 정답 수(오답노트 2번) |
 | cards | 경험 카드 | 상황 · 과제 · 행동 · 결과(사용자 답만), 상태(후보 · 완성) |
