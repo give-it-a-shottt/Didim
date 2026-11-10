@@ -6,7 +6,7 @@ const MEMBER_SCREENS = [
   { path: "/home", screenId: "HOM_01_001" },
   { path: "/demo", screenId: "DEM_01_001" },
   { path: "/records", screenId: "REV_01_001" },
-  { path: "/records/n1", screenId: "REV_01_002" },
+  { path: "/records/1", screenId: "REV_01_002" }, // F-003부터 실제 노트를 불러온다(가짜 백엔드의 노트 1)
   { path: "/records/manage", screenId: "REV_01_003" },
   { path: "/records/wrong-answers", screenId: "REV_03_001" },
   { path: "/quiz/s1", screenId: "REV_02_001" },
@@ -66,11 +66,8 @@ test("로그인 상태에서 회원 화면 16개가 열리고, 설정(/settings)
     const resp = await page.goto(path);
     expect(resp?.status()).toBe(200);
     await expect(page.locator("h1")).toHaveCount(1);
-    if (screenId === "SET_01_001") {
-      await expect(page.locator('[data-screen-id="SET_01_001"]')).toBeVisible();
-    } else {
-      await expect(page.getByText(screenId)).toBeVisible();
-    }
+    // 빈 화면(ScreenPlaceholder)과 완성된 화면 모두 data-screen-id로 확인한다.
+    await expect(page.locator(`[data-screen-id="${screenId}"]`)).toBeVisible();
   }
 
   // 설정 화면 계정 표시 및 로그아웃 동작 확인

@@ -1,18 +1,14 @@
 import "server-only";
 
 import { cache } from "react";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-export const SESSION_COOKIE_NAME = "didim_session";
+import { fetchBackendAsUser } from "@/lib/backend";
 
 export type CurrentUser = {
   id: number;
   email: string;
   name: string;
 };
-
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 
 /**
  * 브라우저가 보낸 httpOnly 세션 쿠키를 FastAPI `/api/auth/me`에 전달해
@@ -23,25 +19,13 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
  * 요청이 끝나면 캐시도 사라져서 다른 사용자 · 다음 요청과 섞이지 않는다.
  */
 export const getCurrentUserOrNull = cache(async (): Promise<CurrentUser | null> => {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!sessionToken) {
+  // 쿠키가 없거나 연결이 안 되면 null → 비로그인으로 본다
+  const response = await fetchBackendAsUser("/api/auth/me");
+  if (!response?.ok) {
     return null;
   }
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
-      method: "GET",
-      headers: {
-        Cookie: `${SESSION_COOKIE_NAME}=${sessionToken}`,
-      },
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
     const data: unknown = await response.json();
     if (
       typeof data === "object" &&

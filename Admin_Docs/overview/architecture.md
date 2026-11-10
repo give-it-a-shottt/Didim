@@ -29,25 +29,31 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   playwright.config.ts    Playwright 스모크 · 인증 리다이렉트 테스트 설정 (D-013)
   src/app/                화면(라우트) — 19개, 표는 screens.md
     (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
-  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog)
+  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog, highlighted-text)
   src/lib/site.ts         사이트 이름 · 설명 · 주소 · 공개/회원 경로 (SEO)
   src/lib/auth.ts         서버에서 httpOnly 쿠키로 /api/auth/me 확인 · 비로그인 시 /login 이동
   src/lib/import-records.ts   기록 가져오기 요청 · 응답 모양, 보내기 전 개수 · 용량 확인 (F-002)
+  src/lib/backend.ts      서버 컴포넌트 → FastAPI 호출 한 곳(BACKEND_URL · 세션 쿠키 붙이기, `fetchBackendAsUser`). auth.ts · records.ts가 같이 씀 (F-003 1차 리뷰 B)
+  src/lib/records.ts      검색 · 노트 상세 API를 부르고 응답 모양 확인 (F-003)
+  src/lib/text-range.ts   서버의 글자 위치(코드 포인트)로 원문 자르기 — 이모지 등 UTF-16 차이 보정 (F-003)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
-  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, mock-backend.mjs)
+  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, record-search.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
-  app/api/                라우터 (health.py, auth.py, notes.py, deps.py) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/api/                라우터 (health.py, auth.py, notes.py, search.py, deps.py) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
   app/importers/          가져오기 어댑터(D-001) — 파일을 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py). 지금은 마크다운 하나라 함수(read_markdown_file)만 두고, 어댑터 인터페이스(Protocol)는 4주차 노션을 붙일 때 만든다(사용자 확인). 줄 읽기 도구를 공용 위치로 옮길지도 그때 정한다
-  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py)
-  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py)
+  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk, SearchLog) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
   alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
-  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py)
-  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py)
+  app/search/             기록 검색(F-003, D-016) — 검색 약속(Searcher) · 키워드 방식(pg_trgm) · 낱말 뽑기 · 발췌 · 평가 채점(evaluation.py)
+  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py, search_eval.py — 로컬 평가 세트로 검색 채점)
+  eval/                   검색 평가 세트 예시(search_eval.example.json). 실제 세트 *.local.json · 결과 results/는 레포에 안 올림
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py, test_search.py, test_search_eval.py)
 ```
-- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/`는 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다.
+- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/`는 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다. `app/search/`도 서비스가 부르는 아래층인데, 검색 방식 자체가 "DB에서 어떻게 찾나"라서 db 모델은 읽는다(api · services는 가져다 쓰지 않음).
+- 기록 검색(F-003): 라우터(`GET /api/search`)가 `Depends(get_searcher)`로 검색 방식을 받아 서비스에 넘기고 → 서비스가 낱말을 뽑아 검색 → 발췌를 만들고 → 검색 로그를 남긴다. 화면은 서버 컴포넌트가 주소의 `?q=`로 결과를 그리고, 결과를 누르면 노트 상세가 `?chunk=`의 조각 위치를 강조한다.
 - 기록 가져오기(F-002): 라우터가 파일 앞부분(상한 + 1바이트)만 읽어 서비스에 넘기고 → 서비스가 파일마다 어댑터로 읽기 → 내 노트 안에서 중복 확인 → 나누기 → 저장(파일마다 커밋)한다. 조각은 노트 원문의 구간이고 제목 경로 · 원문 위치를 같이 저장한다(설계 원칙 1).
 
 ### 상태 관리 지도 (D-012)
@@ -58,6 +64,8 @@ backend/                  FastAPI (uv)
 | 현재 로그인한 사용자 정보(`/settings`, 회원 레이아웃 보호) | 서버 컴포넌트(`requireCurrentUser`) | 첫 화면을 그릴 때 쿠키로 서버에서 바로 확인하고 비로그인이면 `/login`으로 보내기 위해 | F-001 |
 | 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
 | 기록 추가 모달 열림 · 단계(올리기 · 처리 중 · 결과 · 오류) · 고른 파일 · 기록 종류 · 가져오기 결과 | 컴포넌트 안(`useState`, `import-records-dialog.tsx`) | 모달 하나에서만 쓰고, 결과는 한 번 보여 주고 버리는 응답이라 캐시할 서버 데이터가 아니라서. 저장 뒤에는 `router.refresh()`로 서버 컴포넌트 화면을 새로 받는다. 노트 목록 화면(서버 데이터)을 만들 때 TanStack Query를 검토 | F-002 |
+| 기록 검색어 · 검색 결과(`/records?q=`) | 주소(`?q=`) + 서버 컴포넌트(`records/page.tsx`, `lib/records.ts`) | 서버 데이터라서. 검색어를 주소에 두면 새로 고침 · 뒤로 가기 · 링크 공유에도 같은 결과가 나오고, 화면 쪽 상태가 필요 없다(입력칸은 `next/form`, 사용자 확인: GET) | F-003 |
+| 노트 원문 · 강조할 조각(`/records/[noteId]?chunk=`) | 주소(`?chunk=`) + 서버 컴포넌트(`records/[noteId]/page.tsx`) | 서버 데이터라서. 강조할 조각도 주소에 두어 검색 결과 · 나중의 근거 칩이 같은 링크 모양을 쓴다 | F-003 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.

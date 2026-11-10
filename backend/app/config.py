@@ -31,6 +31,23 @@ MAX_CHUNKS_PER_NOTE = 2000
 # 제목 경로에 넣는 제목 한 단계의 글자 수 상한. 긴 제목이 조각마다 복사돼 커지는 것을 막는다(F-002 1차 R2).
 HEADING_PATH_TEXT_MAX_CHARS = 200
 
+# 기록 검색 (F-003 설계 의도, 사용자 확인). 검색창(frontend REV_01_001)도 같은 글자 수 상한을 쓴다.
+MAX_SEARCH_QUERY_CHARS = 200
+MAX_SEARCH_RESULTS = 5  # 완료 기준 1: 최대 5개
+# 질문에서 쓰는 낱말 수 · 최소 글자 수. 낱말마다 조건이 하나씩 붙으므로 개수를 막아 둔다.
+MAX_SEARCH_TERMS = 10
+MIN_SEARCH_TERM_CHARS = 2
+# 결과 줄에 보여 줄 발췌 길이(글자 수)와, 찾은 낱말 앞에 남길 글자 수
+SEARCH_EXCERPT_CHARS = 160
+SEARCH_EXCERPT_LEAD_CHARS = 40
+# 검색 한 번의 DB 시간 상한(밀리초). 넘으면 멈추고 다시 찾아 달라고 안내한다(F-003 1차 리뷰 A, 사용자 확인 3초).
+SEARCH_TIMEOUT_MS = 3000
+# 낱말이 조각 안의 구간과 이 정도 이상 비슷해야 "맞음"으로 본다(pg_trgm word_similarity, 기본값과 같은 0.6).
+# 검색할 때 DB 설정(pg_trgm.word_similarity_threshold)도 이 값으로 맞춰, 색인 조건과 점수 기준이 어긋나지 않게 한다.
+SEARCH_WORD_SIMILARITY_THRESHOLD = 0.6
+# 검색 로그 · 평가 결과에 남기는 점수 자릿수
+SEARCH_SCORE_DIGITS = 4
+
 
 @dataclass(frozen=True)
 class Settings:

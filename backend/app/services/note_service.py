@@ -110,6 +110,16 @@ def list_chunks_for_user(db: Session, *, user_id: int) -> list[Chunk]:
     return list(db.execute(stmt).scalars().all())
 
 
+def list_chunks_for_note_for_user(db: Session, *, user_id: int, note_id: int) -> list[Chunk]:
+    """노트 하나의 조각을 순서대로 돌려준다. 노트 주인이 아니면 빈 목록(user_id 조건, D-004)."""
+    stmt = (
+        select(Chunk)
+        .where(Chunk.user_id == user_id, Chunk.note_id == note_id)
+        .order_by(Chunk.position.asc())
+    )
+    return list(db.execute(stmt).scalars().all())
+
+
 def delete_user_account(db: Session, *, user_id: int) -> bool:
     """사용자를 삭제한다. 연결된 notes · chunks는 ON DELETE CASCADE로 함께 지워진다."""
     stmt = select(User).where(User.id == user_id)

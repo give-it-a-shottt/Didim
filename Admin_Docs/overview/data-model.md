@@ -11,7 +11,8 @@
 |---|---|---|
 | users | 계정 | `id`, `google_sub`(UNIQUE), `email`, `name`, 하루 사용량 상한(`daily_limit`), `created_at` (1주차 생성) |
 | notes | 가져온 기록(원문) | `user_id`(FK `ON DELETE CASCADE`), source(markdown · notion), kind(학습 노트 · 프로젝트 경험), 원문 해시(중복 확인), 수정일 (1주차 생성) |
-| chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 순서(`position`), 제목 경로(`heading_path`, 예: `# React > ## useEffect`, 제목 한 단계는 200자까지 · 넘으면 '…'), 원문 위치(`start_offset` · `end_offset`, 조각 내용 == 노트 원문[시작:끝], 파이썬 문자 단위) (1주차 생성, 위치 컬럼은 F-002 · 버전 0002). embedding(vector)은 2주차(F-003)에 다음 버전 파일로 추가 — 지금 모델에는 없음 |
+| chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 순서(`position`), 제목 경로(`heading_path`, 예: `# React > ## useEffect`, 제목 한 단계는 200자까지 · 넘으면 '…'), 원문 위치(`start_offset` · `end_offset`, 조각 내용 == 노트 원문[시작:끝], 파이썬 문자 단위) (1주차 생성, 위치 컬럼은 F-002 · 버전 0002). 키워드 검색 색인 `ix_chunks_user_content_trgm` — GIN (`user_id`, `content` gin_trgm_ops), pg_trgm + btree_gin 확장(버전 0003, F-003). 사용자 조건과 본문 비슷함을 한 색인으로 같이 거른다(따로 두면 내 조각을 전부 읽는 계획이 나옴 — 1차 리뷰 뒤 실측 · 사용자 확인). embedding(vector)은 평가로 비교한 뒤 붙임(D-016) — 지금 모델에는 없음 |
+| search_logs | 검색 로그 | `user_id`(FK `ON DELETE CASCADE`), `query`(검색어), `method`(검색 방식, 지금 `keyword`), `results`(JSON — 순위 순서 `[{chunk_id, score}]`), `created_at`. 평가 채점용(D-005) (2주차 생성, F-003 · 버전 0003) |
 | quizzes | 문제 | note_id · chunk_id 근거, 유형(객관식 · OX, D-006), 정답 · 해설 |
 | review_logs | 풀이 기록 | 맞음 · 틀림, 다음 복습일(당일 → 1 → 3 → 7 → 14), 연속 정답 수(오답노트 2번) |
 | cards | 경험 카드 | 상황 · 과제 · 행동 · 결과(사용자 답만), 상태(후보 · 완성) |
@@ -25,7 +26,8 @@
 | eval_runs | 평가 실행 기록 | 데이터 세트 버전, 지표 3개, 날짜 |
 
 - 모든 사용자 데이터 테이블에 `user_id`(외래키 `ON DELETE CASCADE`)를 두고, 조회할 때 항상 `user_id` 조건을 건다.
-- 전체 테이블 계획은 위 표대로 유지하되, 실제 DB 마이그레이션은 주차별로 쓰는 테이블부터 만든다(1주차: `users`, `notes`, `chunks`).
+- 전체 테이블 계획은 위 표대로 유지하되, 실제 DB 마이그레이션은 주차별로 쓰는 테이블부터 만든다(1주차: `users`, `notes`, `chunks` / 2주차: `search_logs`, 조각 검색 색인).
+- 검색 평가 세트와 결과는 DB가 아니라 로컬 파일(`backend/eval/`, 레포 밖)에 둔다(F-003, 사용자 확인). `eval_runs`는 F-010 평가 리포트 때 정한다.
 - 샘플 체험 데이터는 읽기 전용 별도 표시(같은 테이블에 플래그 vs 별도 스키마 — Q-004).
 
-최종 수정: 2026-11-09 · 관련: D-003, D-004, D-005, F-001
+최종 수정: 2026-11-10 · 관련: D-003, D-004, D-005, D-016, F-001, F-003

@@ -15,7 +15,7 @@ export function ScreenPlaceholder({
 }: ScreenPlaceholderProps) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
-    <section className="p-8" aria-labelledby={`${screenId}-title`}>
+    <section data-screen-id={screenId} className="p-8" aria-labelledby={`${screenId}-title`}>
       <p className="text-sm">{screenId}</p>
       <Heading id={`${screenId}-title`} className="text-2xl font-semibold">
         {name}

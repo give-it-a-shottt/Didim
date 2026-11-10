@@ -1,0 +1,18 @@
+{
+  "_설명": "복사해서 search_eval.local.json으로 저장하고 내 기록으로 바꿔 쓴다(레포에 올리지 않음). heading_path를 빼면 그 노트의 어느 조각이든 정답. tag '다른낱말' = 뜻은 같고 낱말은 다른 질문.",
+  "items": [
+    {
+      "query": "useEffect는 언제 다시 실행되나요",
+      "expected": [{ "note_title": "React 정리", "heading_path": "# React 정리 > ## useEffect" }]
+    },
+    {
+      "query": "렌더링 뒤에 하는 작업",
+      "expected": [{ "note_title": "React 정리", "heading_path": "# React 정리 > ## useEffect" }],
+      "tag": "다른낱말"
+    },
+    {
+      "query": "인덱스",
+      "expected": [{ "note_title": "데이터베이스" }]
+    }
+  ]
+}
