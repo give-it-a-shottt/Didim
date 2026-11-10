@@ -13,6 +13,24 @@ DB_CONNECT_TIMEOUT_SECONDS = 5
 # 사용자 기본 하루 AI 호출 상한 (didim-design.md SET_01_001 기준 30회)
 DEFAULT_DAILY_LIMIT = 30
 
+BYTES_PER_MB = 1024 * 1024
+
+# 노트 제목 길이. DB 컬럼(app/db/models.py Note.title)과 가져오기 어댑터가 같이 쓴다.
+NOTE_TITLE_MAX_CHARS = 255
+
+# 기록 가져오기 상한 (F-002 설계 의도, 사용자 확인). 화면(frontend/src/lib/import-records.ts)에도 같은 값이 있다.
+MAX_IMPORT_FILES = 20
+MAX_IMPORT_FILE_BYTES = 1 * BYTES_PER_MB  # 파일당 1MB
+MAX_IMPORT_TOTAL_BYTES = MAX_IMPORT_FILES * MAX_IMPORT_FILE_BYTES  # 파일 합계 20MB
+# 요청 본문 전체 상한: 파일 합계 + 여러 파일을 묶는 형식(multipart)의 머리말 몫 1MB
+MAX_IMPORT_REQUEST_BYTES = MAX_IMPORT_TOTAL_BYTES + 1 * BYTES_PER_MB
+# 조각 기준 길이(글자 수). 넘으면 문단 경계에서 다시 자른다. 임시값 — 2주차 검색 품질을 보고 조정.
+CHUNK_MAX_CHARS = 1500
+# 노트 하나의 조각 수 상한(사용자 확인, F-002 1차 리뷰). 넘으면 그 파일만 실패. 2주차 임베딩 비용 상한도 된다.
+MAX_CHUNKS_PER_NOTE = 2000
+# 제목 경로에 넣는 제목 한 단계의 글자 수 상한. 긴 제목이 조각마다 복사돼 커지는 것을 막는다(F-002 1차 R2).
+HEADING_PATH_TEXT_MAX_CHARS = 200
+
 
 @dataclass(frozen=True)
 class Settings:

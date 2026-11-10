@@ -11,6 +11,12 @@ from app.services.auth_service import (
 )
 
 
+# 인증 오류 문구. 가져오기 업로드 가드(app/api/upload_limit.py)도 같은 문구를 쓴다.
+LOGIN_REQUIRED_DETAIL = "로그인이 필요해요."
+SESSION_EXPIRED_DETAIL = "로그인이 만료되었어요. 다시 로그인해 주세요."
+AUTH_NOT_CONFIGURED_DETAIL = "서버 인증 설정이 완료되지 않았어요."
+
+
 def get_settings() -> Settings:
     return load_settings()
 
@@ -27,7 +33,7 @@ def get_current_user(
     if not session_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="로그인이 필요해요.",
+            detail=LOGIN_REQUIRED_DETAIL,
         )
 
     try:
@@ -35,13 +41,13 @@ def get_current_user(
     except SessionConfigError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="서버 인증 설정이 완료되지 않았어요.",
+            detail=AUTH_NOT_CONFIGURED_DETAIL,
         ) from exc
 
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="로그인이 만료되었어요. 다시 로그인해 주세요.",
+            detail=SESSION_EXPIRED_DETAIL,
         )
 
     user = get_user_by_id(db, user_id)

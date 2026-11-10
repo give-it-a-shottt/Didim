@@ -35,7 +35,7 @@ from app.db.schema_version import (
     ensure_db_migrated,
     expected_heads,
 )
-from app.db.session import DatabaseConfigError, create_db_engine
+from app.db.session import DatabaseConfigError, create_db_engine, dispose_engine
 from app.main import app
 
 APP_TABLES = {"users", "notes", "chunks"}
@@ -77,6 +77,38 @@ def test_downgrade_removes_all_app_tables(empty_db_engine: Engine) -> None:
     assert current_heads(empty_db_engine) == ()
 
 
+def test_chunk_location_upgrade_keeps_existing_chunks(empty_db_engine: Engine) -> None:
+    """0002(조각 위치 컬럼)는 이미 있는 조각을 지우지 않는다. 옛 조각의 위치는 임시 기본값('' · 0)으로 남는다."""
+    _run_alembic(empty_db_engine, "upgrade", FIRST_VERSION)
+    with empty_db_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO users (id, google_sub, email, name, daily_limit, created_at) "
+                "VALUES (1, 'sub-1', 'a@example.com', 'A', 30, CURRENT_TIMESTAMP)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO notes (id, user_id, title, content, source, kind, content_hash, created_at, updated_at) "
+                "VALUES (1, 1, 't', 'body', 'markdown', 'study', 'h', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO chunks (id, user_id, note_id, position, content, created_at) "
+                "VALUES (1, 1, 1, 0, 'body', CURRENT_TIMESTAMP)"
+            )
+        )
+
+    _run_alembic(empty_db_engine, "upgrade", "head")
+
+    with empty_db_engine.connect() as connection:
+        row = connection.execute(
+            text("SELECT content, heading_path, start_offset, end_offset FROM chunks WHERE id = 1")
+        ).one()
+    assert tuple(row) == ("body", "", 0, 0)
+
+
 def test_migrated_db_passes_the_check(empty_db_engine: Engine) -> None:
     _run_alembic(empty_db_engine, "upgrade", "head")
     ensure_db_migrated(empty_db_engine)  # 오류 없이 지나가야 한다
@@ -101,13 +133,25 @@ def test_db_made_by_create_all_is_not_treated_as_migrated(empty_db_engine: Engin
     assert STAMP_FIRST_VERSION_COMMAND in str(info.value)
 
 
-def test_create_all_db_passes_after_stamping_first_version(empty_db_engine: Engine) -> None:
-    """오류 문구가 안내하는 길: create_all DB에 `stamp 0001`을 하면 그 뒤로는 통과한다."""
-    Base.metadata.create_all(bind=empty_db_engine)
-    _run_alembic(empty_db_engine, "stamp", FIRST_VERSION)
+def test_old_create_all_db_reaches_latest_after_stamp_and_upgrade(empty_db_engine: Engine) -> None:
+    """오류 문구가 안내하는 길: Alembic 전에 create_all로 만든 DB(= 0001 구조, 버전 기록 없음)는
+    `stamp 0001` → (뒤처짐 안내) → `upgrade head` 순서로 최신이 된다."""
+    _run_alembic(empty_db_engine, "upgrade", FIRST_VERSION)
+    with empty_db_engine.begin() as connection:
+        connection.execute(text("DROP TABLE alembic_version"))  # 옛 create_all DB에는 버전 기록이 없었다
 
+    with pytest.raises(DatabaseNotMigratedError, match="버전 기록 없음"):
+        ensure_db_migrated(empty_db_engine)
+
+    _run_alembic(empty_db_engine, "stamp", FIRST_VERSION)
+    with pytest.raises(DatabaseNotMigratedError) as behind:
+        ensure_db_migrated(empty_db_engine)  # 0001은 최신보다 뒤처져 있다
+    assert f"지금: {FIRST_VERSION}" in str(behind.value)
+    assert UPGRADE_COMMAND in str(behind.value)
+
+    _run_alembic(empty_db_engine, "upgrade", "head")
     ensure_db_migrated(empty_db_engine)  # 오류 없이 지나가야 한다
-    assert current_heads(empty_db_engine) == (FIRST_VERSION,)
+    assert current_heads(empty_db_engine) == expected_heads()
 
 
 def test_db_newer_than_code_is_reported_separately(empty_db_engine: Engine) -> None:
@@ -190,9 +234,8 @@ def test_server_starts_when_db_is_migrated(empty_db_engine: Engine, startup_uses
 def test_server_refuses_to_start_without_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
     """architecture.md 규칙: DATABASE_URL이 비면 서버가 시작하지 않는다 — lifespan 경로에서 확인."""
     monkeypatch.setenv("DATABASE_URL", "")
-    # 아직 엔진을 만들지 않은 "처음 켜는" 상태로 되돌린다(모듈이 기억해 둔 엔진을 비움)
-    monkeypatch.setattr(db_session_module, "_engine", None)
-    monkeypatch.setattr(db_session_module, "_session_factory", None)
+    # 아직 엔진을 만들지 않은 "처음 켜는" 상태로 되돌린다. 다음 get_engine()은 그때의 환경변수로 새로 만든다.
+    dispose_engine()
 
     with pytest.raises(DatabaseConfigError):
         with TestClient(app):

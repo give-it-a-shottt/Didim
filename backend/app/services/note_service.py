@@ -6,16 +6,27 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Chunk, Note, User
+from app.services.chunking import ChunkDraft
 
 
 class DuplicateNoteError(ValueError):
     """같은 사용자가 이미 같은 원문(content_hash)의 노트를 올렸을 때 발생한다."""
 
 
+class ChunkLocationError(ValueError):
+    """조각 내용이 노트 원문의 [start_offset:end_offset] 구간과 다를 때 발생한다(근거 위치가 틀린 조각은 저장하지 않음)."""
+
+
 def compute_content_hash(content: str) -> str:
     """노트 원문의 중복 여부를 확인하기 위한 SHA-256 해시를 계산한다."""
     normalized = content.strip().encode("utf-8")
     return hashlib.sha256(normalized).hexdigest()
+
+
+def _check_chunk_locations(content: str, chunks: Sequence[ChunkDraft]) -> None:
+    for index, chunk in enumerate(chunks):
+        if content[chunk.start_offset : chunk.end_offset] != chunk.content or chunk.start_offset >= chunk.end_offset:
+            raise ChunkLocationError(f"{index}번째 조각의 위치가 원문과 맞지 않아요.")
 
 
 def create_note_for_user(
@@ -26,9 +37,13 @@ def create_note_for_user(
     content: str,
     source: str = "markdown",
     kind: str = "study",
-    chunk_contents: Sequence[str] | None = None,
+    chunks: Sequence[ChunkDraft] = (),
 ) -> Note:
-    """특정 사용자의 노트(및 조각)를 저장한다. 항상 user_id를 함께 기록한다."""
+    """특정 사용자의 노트(및 조각)를 저장한다. 항상 user_id를 함께 기록한다.
+
+    조각은 원문의 구간이어야 한다(content == 원문[start:end]). 아니면 아무것도 저장하지 않고 ChunkLocationError.
+    """
+    _check_chunk_locations(content, chunks)
     content_hash = compute_content_hash(content)
     note = Note(
         user_id=user_id,
@@ -41,22 +56,25 @@ def create_note_for_user(
     db.add(note)
     try:
         db.flush()
-        if chunk_contents:
-            for idx, chunk_text in enumerate(chunk_contents):
-                db.add(
-                    Chunk(
-                        user_id=user_id,
-                        note_id=note.id,
-                        position=idx,
-                        content=chunk_text,
-                    )
+        for position, chunk in enumerate(chunks):
+            db.add(
+                Chunk(
+                    user_id=user_id,
+                    note_id=note.id,
+                    position=position,
+                    heading_path=chunk.heading_path,
+                    start_offset=chunk.start_offset,
+                    end_offset=chunk.end_offset,
+                    content=chunk.content,
                 )
+            )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
         raise DuplicateNoteError("이미 같은 내용의 노트가 등록되어 있어요.") from exc
 
-    db.refresh(note)
+    # commit 뒤에 다시 읽지(refresh) 않는다. 세션이 expire_on_commit=False라 id · 값이 그대로 남아 있고,
+    # 다시 읽다 실패하면 "저장됐는데 실패로 보이는" 일이 생긴다(F-002 1차 R3-6).
     return note
 
 
@@ -68,6 +86,12 @@ def list_notes_for_user(db: Session, *, user_id: int) -> list[Note]:
         .order_by(Note.created_at.desc(), Note.id.desc())
     )
     return list(db.execute(stmt).scalars().all())
+
+
+def find_note_by_content_hash_for_user(db: Session, *, user_id: int, content_hash: str) -> Note | None:
+    """같은 사용자가 같은 원문을 이미 올렸는지 찾는다(중복 안내용). 다른 사용자의 노트는 보지 않는다(D-004)."""
+    stmt = select(Note).where(Note.user_id == user_id, Note.content_hash == content_hash)
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def get_note_for_user(db: Session, *, user_id: int, note_id: int) -> Note | None:

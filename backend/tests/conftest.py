@@ -9,11 +9,17 @@
 import os
 from collections.abc import Callable, Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
 
 TEST_DB_NAME_SUFFIX = "_test"
 
@@ -79,6 +85,43 @@ def db_session(tmp_path: Path) -> Generator[Session, None, None]:
         if POSTGRES_TEST_URL:
             Base.metadata.drop_all(bind=engine)
         engine.dispose()
+
+
+@pytest.fixture()
+def test_settings() -> "Settings":
+    """API 테스트용 서버 설정. 비밀키는 테스트 전용 값(32자 이상)이다."""
+    from app.config import Settings
+
+    return Settings(
+        database_url="sqlite:///:memory:",
+        session_secret="test-only-session-secret-at-least-32-bytes-long",
+        google_client_id="test-client-id.apps.googleusercontent.com",
+        google_client_secret="test-client-secret",
+        google_redirect_uri="http://localhost:3000/api/auth/google/callback",
+        frontend_url="http://localhost:3000",
+        cookie_secure=False,
+    )
+
+
+@pytest.fixture()
+def client(db_session: Session, test_settings: "Settings") -> Generator["TestClient", None, None]:
+    """요청이 db_session · test_settings를 쓰는 테스트 클라이언트. 끝나면 바꿔 끼운 것을 되돌린다."""
+    from fastapi.testclient import TestClient
+
+    from app.api.deps import get_settings
+    from app.db.session import get_db
+    from app.main import app
+
+    def _override_get_db() -> Generator[Session, None, None]:
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture()

@@ -11,7 +11,7 @@
 |---|---|---|
 | users | 계정 | `id`, `google_sub`(UNIQUE), `email`, `name`, 하루 사용량 상한(`daily_limit`), `created_at` (1주차 생성) |
 | notes | 가져온 기록(원문) | `user_id`(FK `ON DELETE CASCADE`), source(markdown · notion), kind(학습 노트 · 프로젝트 경험), 원문 해시(중복 확인), 수정일 (1주차 생성) |
-| chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 위치 (1주차 생성). embedding(vector)은 2주차(F-003)에 버전 파일 0002로 추가 — 지금 모델 · 0001에는 없음 |
+| chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 순서(`position`), 제목 경로(`heading_path`, 예: `# React > ## useEffect`, 제목 한 단계는 200자까지 · 넘으면 '…'), 원문 위치(`start_offset` · `end_offset`, 조각 내용 == 노트 원문[시작:끝], 파이썬 문자 단위) (1주차 생성, 위치 컬럼은 F-002 · 버전 0002). embedding(vector)은 2주차(F-003)에 다음 버전 파일로 추가 — 지금 모델에는 없음 |
 | quizzes | 문제 | note_id · chunk_id 근거, 유형(객관식 · OX, D-006), 정답 · 해설 |
 | review_logs | 풀이 기록 | 맞음 · 틀림, 다음 복습일(당일 → 1 → 3 → 7 → 14), 연속 정답 수(오답노트 2번) |
 | cards | 경험 카드 | 상황 · 과제 · 행동 · 결과(사용자 답만), 상태(후보 · 완성) |

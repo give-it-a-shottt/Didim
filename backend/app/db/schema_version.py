@@ -87,7 +87,8 @@ def ensure_db_migrated(engine: Engine) -> None:
     if current == expected:
         return
 
-    unknown = [revision for revision in current if revision not in known_revisions()]
+    known = known_revisions()
+    unknown = [revision for revision in current if revision not in known]
     if unknown:
         raise DatabaseAheadOfCodeError(
             f"DB가 이 코드보다 새 버전이에요(DB: {', '.join(unknown)}, 코드 최신: {', '.join(expected)}). "

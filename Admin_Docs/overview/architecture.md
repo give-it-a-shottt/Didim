@@ -29,23 +29,26 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   playwright.config.ts    Playwright 스모크 · 인증 리다이렉트 테스트 설정 (D-013)
   src/app/                화면(라우트) — 19개, 표는 screens.md
     (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
-  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button)
+  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog)
   src/lib/site.ts         사이트 이름 · 설명 · 주소 · 공개/회원 경로 (SEO)
   src/lib/auth.ts         서버에서 httpOnly 쿠키로 /api/auth/me 확인 · 비로그인 시 /login 이동
+  src/lib/import-records.ts   기록 가져오기 요청 · 응답 모양, 보내기 전 개수 · 용량 확인 (F-002)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
-  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, mock-backend.mjs)
+  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
-  app/main.py             앱 생성, lifespan에서 DB 버전 확인, 라우터를 /api 아래에 붙임
-  app/config.py           환경변수 · 쿠키/상한 상수
-  app/api/                라우터 (health.py, auth.py, deps.py)
-  app/services/           비즈니스 로직 (auth_service.py, note_service.py)
+  app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
+  app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
+  app/api/                라우터 (health.py, auth.py, notes.py, deps.py) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/importers/          가져오기 어댑터(D-001) — 파일을 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py). 지금은 마크다운 하나라 함수(read_markdown_file)만 두고, 어댑터 인터페이스(Protocol)는 4주차 노션을 붙일 때 만든다(사용자 확인). 줄 읽기 도구를 공용 위치로 옮길지도 그때 정한다
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py)
   app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
   alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
   scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py)
-  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py)
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py)
 ```
-- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/`은 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다.
+- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/`는 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다.
+- 기록 가져오기(F-002): 라우터가 파일 앞부분(상한 + 1바이트)만 읽어 서비스에 넘기고 → 서비스가 파일마다 어댑터로 읽기 → 내 노트 안에서 중복 확인 → 나누기 → 저장(파일마다 커밋)한다. 조각은 노트 원문의 구간이고 제목 경로 · 원문 위치를 같이 저장한다(설계 원칙 1).
 
 ### 상태 관리 지도 (D-012)
 기준: 서버 데이터 → 서버 컴포넌트 또는 TanStack Query / 여러 화면이 같이 쓰는 UI 상태 → Zustand / 화면 하나 → useState. 쓸 때마다 한 줄 추가해요.
@@ -54,6 +57,7 @@ backend/                  FastAPI (uv)
 |---|---|---|---|
 | 현재 로그인한 사용자 정보(`/settings`, 회원 레이아웃 보호) | 서버 컴포넌트(`requireCurrentUser`) | 첫 화면을 그릴 때 쿠키로 서버에서 바로 확인하고 비로그인이면 `/login`으로 보내기 위해 | F-001 |
 | 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
+| 기록 추가 모달 열림 · 단계(올리기 · 처리 중 · 결과 · 오류) · 고른 파일 · 기록 종류 · 가져오기 결과 | 컴포넌트 안(`useState`, `import-records-dialog.tsx`) | 모달 하나에서만 쓰고, 결과는 한 번 보여 주고 버리는 응답이라 캐시할 서버 데이터가 아니라서. 저장 뒤에는 `router.refresh()`로 서버 컴포넌트 화면을 새로 받는다. 노트 목록 화면(서버 데이터)을 만들 때 TanStack Query를 검토 | F-002 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.
@@ -78,6 +82,6 @@ backend/                  FastAPI (uv)
 - AI 출력: 정해진 스키마로 받고, 형식이 틀리면 재시도 · 실패 처리.
 - LLM에 보내는 범위 최소화: 필요한 조각만, 무엇을 보내는지 안내.
 - 평가 가능하게: 매칭 · 근거 검사 결과를 로그로 남겨 평가 세트로 채점(D-005).
-- 오래 걸리는 처리(가져오기 · 초안 생성)는 진행 상태를 저장해서 나갔다 와도 이어 보기(IMP_01_002). 방식(백그라운드 작업 · 폴링 · 스트리밍)은 F-002 설계 의도에서 정해요(Q-008).
+- 오래 걸리는 처리(가져오기 · 초안 생성)는 진행 상태를 저장해서 나갔다 와도 이어 보기(IMP_01_002). 1주차 가져오기는 AI 호출이 없어 요청 한 번에 처리하고, 이어 보기 방식(백그라운드 작업 · 폴링 · 스트리밍)은 AI 단계를 붙일 때 정해요(F-002 설계 의도, Q-008).
 
-최종 수정: 2026-11-08 · 관련: D-001, D-003, D-004, D-008, D-010
+최종 수정: 2026-11-10 · 관련: D-001, D-003, D-004, D-008, D-010

@@ -80,6 +80,10 @@ def _sign_payload(payload: dict[str, object], secret: str) -> str:
 
 def _verify_payload(token: str, secret: str, expected_purpose: str) -> dict[str, object] | None:
     key = _require_secret(secret)
+    if not token.isascii():
+        # 우리가 만든 토큰은 base64url(ASCII)뿐이다. 다른 글자가 있으면 위조로 보고 401 쪽(None)으로 보낸다.
+        # (아래 encode("ascii")에서 예외가 나 500 · ERROR 로그가 되던 것을 막음, F-002 3차 R2)
+        return None
     parts = token.split(".")
     if len(parts) != 2:
         return None

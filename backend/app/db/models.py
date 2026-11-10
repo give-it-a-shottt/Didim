@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.config import DEFAULT_DAILY_LIMIT
+from app.config import DEFAULT_DAILY_LIMIT, NOTE_TITLE_MAX_CHARS
 from app.db.base import Base
 
 
@@ -51,7 +51,7 @@ class Note(Base):
         nullable=False,
         index=True,
     )
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(String(NOTE_TITLE_MAX_CHARS), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source: Mapped[str] = mapped_column(String(32), nullable=False)
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -68,8 +68,11 @@ class Note(Base):
 
 
 class Chunk(Base):
-    """기록 조각 테이블 (data-model.md — 1주차 생성).
+    """기록 조각 테이블 (data-model.md — 1주차 생성, 위치 컬럼은 F-002 · 버전 0002).
 
+    조각은 노트 원문의 한 구간이다: content == note.content[start_offset:end_offset].
+    위치는 파이썬 문자 단위(유니코드 코드 포인트)다. 근거를 "어느 노트의 어느 제목 아래, 원문 몇 번째 글자"로
+    보여 주기 위해 저장한다(설계 원칙 1, D-003).
     임베딩 벡터 컬럼은 2주차(F-003 RAG)에서 pgvector와 함께 붙인다.
     """
 
@@ -89,6 +92,10 @@ class Chunk(Base):
         index=True,
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 조각이 속한 제목 경로. 예) "# React > ## useEffect". 첫 제목 앞의 글이면 빈 문자열.
+    heading_path: Mapped[str] = mapped_column(Text, nullable=False)
+    start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 

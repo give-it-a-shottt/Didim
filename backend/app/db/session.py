@@ -29,7 +29,8 @@ def create_db_engine(database_url: str) -> Engine:
     elif database_url.startswith("postgresql"):
         connect_args["connect_timeout"] = DB_CONNECT_TIMEOUT_SECONDS
 
-    engine = create_engine(database_url, connect_args=connect_args, future=True)
+    # hide_parameters: DB 오류 메시지 · 로그에 INSERT 값(노트 원문 등 개인 기록)이 찍히지 않게 한다(F-002 1차 R2)
+    engine = create_engine(database_url, connect_args=connect_args, future=True, hide_parameters=True)
 
     if database_url.startswith("sqlite"):
         @event.listens_for(engine, "connect")
@@ -58,6 +59,18 @@ def get_session_factory() -> sessionmaker[Session]:
     if _session_factory is None:
         _session_factory = sessionmaker(bind=get_engine(), autoflush=False, autocommit=False, expire_on_commit=False)
     return _session_factory
+
+
+def dispose_engine() -> None:
+    """엔진의 연결을 모두 닫고 잊는다. 서버가 꺼질 때 부른다(app/main.py).
+
+    다음에 get_engine()을 부르면 그때의 DATABASE_URL로 새로 만든다.
+    """
+    global _engine, _session_factory
+    if _engine is not None:
+        _engine.dispose()
+    _engine = None
+    _session_factory = None
 
 
 def ensure_db_ready() -> None:
