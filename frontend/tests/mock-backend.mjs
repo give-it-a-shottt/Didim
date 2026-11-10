@@ -5,7 +5,22 @@ const VALID_TOKEN = "playwright-valid-session-token";
 
 // 기록 검색 · 노트 상세(F-003) 가짜 데이터. 이모지(UTF-16 2칸)를 두 번째 조각 앞에 넣어,
 // 화면이 서버의 코드 포인트 위치를 그대로 쓰면(text.slice) 강조가 한 글자 어긋나는 것을 잡는다.
-const NOTE_CONTENT = "# React 정리\n\n## useEffect\nuseEffect는 그려진 뒤 부수 효과를 실행해요 😀\n\n## useState\n상태를 바꾸면 다시 그려져요.\n";
+// useEffect 칸에는 원문 안전 확인용으로 HTML · javascript: 링크 · 이미지를 넣는다(실행 · 이동 · 자동 불러오기가 없어야 함).
+const NOTE_CONTENT =
+  "# React 정리\n\n## useEffect\nuseEffect는 그려진 뒤 부수 효과를 실행해요.\n\n" +
+  "<script>window.__didimXss = 1</script>\n\n[나쁜 링크](javascript:alert(1))\n\n![다이어그램](https://example.com/a.png)\n\n" +
+  "마지막 문장 😀\n\n## useState\n상태를 바꾸면 다시 그려져요.\n";
+// 마크다운 대신 글자 그대로 보여 주는 큰 노트(200KB 초과)
+const BIG_NOTE_CONTENT = "# 큰 노트\n\n" + "가나다라 ".repeat(45000) + "\n";
+const BIG_NOTE = {
+  id: 2,
+  title: "큰 노트",
+  kind: "study",
+  source: "markdown",
+  created_at: "2026-11-10T00:00:00Z",
+  content: BIG_NOTE_CONTENT,
+  chunks: [{ id: 21, position: 0, heading_path: "# 큰 노트", start_offset: 0, end_offset: Array.from(BIG_NOTE_CONTENT).length }],
+};
 const codePointIndex = (sub) => Array.from(NOTE_CONTENT.slice(0, NOTE_CONTENT.indexOf(sub))).length;
 const NOTE_LENGTH = Array.from(NOTE_CONTENT).length;
 const MOCK_NOTE = {
@@ -32,6 +47,41 @@ const MOCK_NOTE = {
     },
   ],
 };
+
+// 이상한 노트(안전장치 확인): 제목 줄에 `*a` 5만 자(조각이 아닌 빈 구간) + 보통 조각 + `>` 3천 단 조각
+const cp = (text, sub) => Array.from(text.slice(0, text.indexOf(sub))).length;
+const ODD_CONTENT = "# " + "*a".repeat(25000) + "\n\n## 본문\n본문 문장\n\n" + ">".repeat(3000) + " 깊은 인용\n";
+const ODD_NOTE = {
+  id: 3, title: "이상한 노트", kind: "study", source: "markdown", created_at: "2026-11-10T00:00:00Z", content: ODD_CONTENT,
+  chunks: [
+    { id: 31, position: 0, heading_path: "## 본문", start_offset: cp(ODD_CONTENT, "## 본문"), end_offset: cp(ODD_CONTENT, ">>>") },
+    { id: 32, position: 1, heading_path: "## 본문", start_offset: cp(ODD_CONTENT, ">>>"), end_offset: Array.from(ODD_CONTENT).length },
+  ],
+};
+// 코드 울타리가 조각 경계에 걸린 노트 + 위치가 원문을 벗어난 조각(49)
+const FENCE_CONTENT = "# 코드\n\n## 예시\n```js\nconst a = 1;\n\n## 이어짐\nconst b = 2;\n```\n끝\n";
+const FENCE_NOTE = {
+  id: 4, title: "코드 노트", kind: "study", source: "markdown", created_at: "2026-11-10T00:00:00Z", content: FENCE_CONTENT,
+  chunks: [
+    { id: 41, position: 0, heading_path: "# 코드 > ## 예시", start_offset: cp(FENCE_CONTENT, "## 예시"), end_offset: cp(FENCE_CONTENT, "## 이어짐") },
+    { id: 42, position: 1, heading_path: "# 코드 > ## 이어짐", start_offset: cp(FENCE_CONTENT, "## 이어짐"), end_offset: Array.from(FENCE_CONTENT).length },
+    { id: 49, position: 2, heading_path: "# 코드", start_offset: 0, end_offset: 999999 },
+  ],
+};
+// 시간 예산 확인용: 묶음 하나하나는 안전장치(3,000자 · 깊이 20)를 통과하지만 파싱이 느린 조각이 60개 —
+// 앞쪽 몇 개만 마크다운이고, 300ms를 넘긴 뒤는 글자 그대로여야 한다.
+const SLOW_SECTIONS = Array.from({ length: 60 }, (_, index) => `## 느린 절 ${index}\n${"*a".repeat(1400)}\n\n`);
+const SLOW_CONTENT = "# 느린 노트\n\n" + SLOW_SECTIONS.join("");
+let slowCursor = Array.from("# 느린 노트\n\n").length;
+const SLOW_NOTE = {
+  id: 5, title: "느린 노트", kind: "study", source: "markdown", created_at: "2026-11-10T00:00:00Z", content: SLOW_CONTENT,
+  chunks: SLOW_SECTIONS.map((section, index) => {
+    const start = slowCursor;
+    slowCursor += Array.from(section).length;
+    return { id: 500 + index, position: index, heading_path: `## 느린 절 ${index}`, start_offset: start, end_offset: slowCursor };
+  }),
+};
+const EXTRA_NOTES = new Map([[3, ODD_NOTE], [4, FENCE_NOTE], [5, SLOW_NOTE]]);
 
 const isLoggedIn = (req) => (req.headers.cookie ?? "").includes(`didim_session=${VALID_TOKEN}`);
 
@@ -80,7 +130,7 @@ const server = http.createServer((req, res) => {
               heading_path: chunk.heading_path,
               start_offset: chunk.start_offset,
               end_offset: chunk.end_offset,
-              excerpt: "## useState 상태를 바꾸면 다시 그려져요.",
+              excerpt: "useState 상태를 바꾸면 다시 그려져요.", // 서버는 발췌에서 마크다운 기호를 뺀다
               matched_terms: ["useState"],
               score: 1,
             },
@@ -98,6 +148,10 @@ const server = http.createServer((req, res) => {
     }
     if (Number(noteMatch[1]) === MOCK_NOTE.id) {
       sendJson(res, 200, MOCK_NOTE);
+    } else if (Number(noteMatch[1]) === BIG_NOTE.id) {
+      sendJson(res, 200, BIG_NOTE);
+    } else if (EXTRA_NOTES.has(Number(noteMatch[1]))) {
+      sendJson(res, 200, EXTRA_NOTES.get(Number(noteMatch[1])));
     } else if (Number(noteMatch[1]) === 500) {
       sendJson(res, 500, { detail: "Internal Server Error" });
     } else {

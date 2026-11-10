@@ -30,8 +30,78 @@ test("검색어를 넣으면 결과 줄이 나오고, 누르면 노트 상세에
   // 그래서 locator("h1") 대신 숨은 요소를 빼는 역할 기준으로 찾는다.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("React 정리");
   await expect(page.getByText("고른 부분: # React 정리 > ## useState")).toBeVisible();
-  // 앞 조각에 이모지가 있어도 강조 구간이 정확히 두 번째 조각이다(코드 포인트 단위로 자름).
-  await expect(page.locator("#chunk-12")).toHaveText("## useState\n상태를 바꾸면 다시 그려져요.\n");
+  // 원문은 조각 단위 마크다운으로 그려지고(## 기호 없이 제목), 고른 조각 하나만 상자로 강조된다.
+  // 앞 조각 끝에 이모지가 있어도 강조가 앞 조각으로 번지지 않는다(코드 포인트 → UTF-16 위치 변환).
+  const highlighted = page.locator("[data-chunk-highlight]");
+  await expect(highlighted).toHaveCount(1);
+  await expect(page.locator("#chunk-12")).toContainText("useState");
+  await expect(page.locator("#chunk-12")).toContainText("상태를 바꾸면 다시 그려져요.");
+  await expect(page.locator("#chunk-12")).not.toContainText("마지막 문장");
+  await expect(page.getByRole("heading", { name: "useEffect" })).toBeVisible();
+  await expect(page.getByText("## useEffect")).toHaveCount(0);
+});
+
+test("원문 속 HTML은 실행되지 않고, 위험한 링크는 비워지고, 이미지는 불러오지 않고 링크로만 보인다", async ({
+  context,
+  page,
+}) => {
+  await logIn(context);
+  await page.goto("/records/1");
+  const original = page.locator('[data-render-mode="markdown"]');
+
+  await expect(original).toBeVisible();
+  await expect(original.locator("script")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { __didimXss?: number }).__didimXss)).toBeUndefined();
+  const badLink = original.getByRole("link", { name: "나쁜 링크" });
+  expect(await badLink.getAttribute("href")).not.toContain("javascript");
+  await expect(original.locator("img")).toHaveCount(0);
+  await expect(original.getByRole("link", { name: "이미지: 다이어그램" })).toHaveAttribute("href", "https://example.com/a.png");
+});
+
+test("200KB가 넘는 원문은 마크다운 대신 글자 그대로 보이고 강조는 그대로 된다", async ({ context, page }) => {
+  await logIn(context);
+  await page.goto("/records/2?chunk=21");
+
+  // 서버 응답은 0.1초 안이지만, 22만 자를 브라우저가 그리기까지 약 5초 걸린다(알려진 한계, feature.md)
+  await expect(page.locator('[data-render-mode="plain"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("#chunk-21")).toContainText("# 큰 노트"); // 기호가 글자 그대로
+  await expect(page.locator("[data-chunk-highlight]")).toHaveCount(1);
+});
+
+test("안전장치: 길거나 깊은 부분은 글자 그대로 보이고, 나머지는 마크다운으로 바로 열린다", async ({ context, page }) => {
+  await logIn(context);
+  const started = Date.now();
+  await page.goto("/records/3");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("이상한 노트");
+  await expect(page.getByRole("heading", { name: "본문" })).toBeVisible(); // 보통 조각은 마크다운
+  await expect(page.locator('[data-segment="plain"]')).toHaveCount(2); // `*a` 5만 자 제목 줄 · `>` 3천 단
+  expect(Date.now() - started).toBeLessThan(5_000);
+});
+
+test("그리는 시간이 예산(300ms)을 넘으면 남은 부분은 글자 그대로 보인다", async ({ context, page }) => {
+  await logIn(context);
+  await page.goto("/records/5");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("느린 노트");
+  await expect(page.getByRole("heading", { name: "느린 절 0" })).toBeVisible(); // 처음은 마크다운
+  const plainCount = await page.locator('[data-segment="plain"]').count();
+  expect(plainCount).toBeGreaterThan(0); // 예산을 넘긴 뒤는 글자 그대로
+  expect(plainCount).toBeLessThan(60);
+});
+
+test("코드 울타리가 조각 경계에 걸리면 합쳐 그리고, 위치가 틀린 조각은 강조하지 않는다", async ({ context, page }) => {
+  await logIn(context);
+
+  await page.goto("/records/4?chunk=42");
+  const box = page.locator("#chunk-42");
+  await expect(box.locator("pre")).toHaveCount(1); // 두 조각에 걸친 코드 블록이 하나로
+  await expect(box.locator("pre")).toContainText("const a = 1;");
+  await expect(box.locator("pre")).toContainText("const b = 2;");
+
+  await page.goto("/records/4?chunk=49");
+  await expect(page.getByText("고른 부분: # 코드")).toBeVisible();
+  await expect(page.locator("[data-chunk-highlight]")).toHaveCount(0);
 });
 
 test("주소의 검색어로 바로 열면 입력칸에 검색어가 채워져 있다", async ({ context, page }) => {
@@ -83,7 +153,7 @@ test("이상한 주소는 찾을 수 없다고 나오고, 없는 조각 번호�
   for (const query of ["chunk=999", "chunk=abc"]) {
     await page.goto(`/records/1?${query}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("React 정리");
-    await expect(page.locator("mark")).toHaveCount(0);
+    await expect(page.locator("[data-chunk-highlight]")).toHaveCount(0);
     await expect(page.getByText(/고른 부분/)).toHaveCount(0);
   }
 });
@@ -97,7 +167,7 @@ test("조각을 고르지 않고 노트를 열면 강조 없이 원문만 보이
   await page.goto("/records/1");
   await expect(page.locator("h1")).toHaveText("React 정리");
   await expect(page.getByText("학습 노트 · 조각 2개")).toBeVisible();
-  await expect(page.locator("mark")).toHaveCount(0);
+  await expect(page.locator("[data-chunk-highlight]")).toHaveCount(0);
 
   await page.goto("/records/999");
   await expect(page.getByText("This page could not be found.")).toBeVisible();

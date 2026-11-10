@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NOTE_KIND_LABELS, type NoteKind } from "@/lib/import-records";
+import { NoteMarkdown } from "@/components/note-markdown";
 import { getNote } from "@/lib/records";
-import { sliceByCodePoints } from "@/lib/text-range";
 
 export const metadata: Metadata = {
   title: "노트 상세",
@@ -56,7 +56,6 @@ export default async function Rev01002Page(props: PageProps<"/records/[noteId]">
   const { note } = outcome;
   const chunkId = parseDbId(chunk);
   const selected = chunkId === null ? undefined : note.chunks.find((item) => item.id === chunkId);
-  const parts = selected ? sliceByCodePoints(note.content, selected.startOffset, selected.endOffset) : null;
 
   return (
     <article data-screen-id="REV_01_002" aria-labelledby="note-title" className="flex flex-col gap-6 p-8">
@@ -72,7 +71,7 @@ export default async function Rev01002Page(props: PageProps<"/records/[noteId]">
         </h1>
       </header>
 
-      {selected && parts ? (
+      {selected ? (
         <p className="text-body-2 text-primary-text">
           고른 부분: {selected.headingPath || "첫 제목 앞"}
         </p>
@@ -83,18 +82,8 @@ export default async function Rev01002Page(props: PageProps<"/records/[noteId]">
           원문
         </h2>
         {/* 내 기록 원문. 명조 글꼴은 Q-018(글꼴 넣기)을 정한 뒤 적용한다. */}
-        <div className="whitespace-pre-wrap wrap-break-word rounded-card border border-line-regular bg-bg-default p-6 text-body-1 text-text-main">
-          {selected && parts ? (
-            <>
-              {parts[0]}
-              <mark id={`chunk-${selected.id}`} className="scroll-mt-8 bg-primary-soft text-text-main">
-                {parts[1]}
-              </mark>
-              {parts[2]}
-            </>
-          ) : (
-            note.content
-          )}
+        <div className="wrap-break-word rounded-card border border-line-regular bg-bg-default p-6 text-text-main">
+          <NoteMarkdown content={note.content} chunks={note.chunks} highlightChunkId={selected?.id ?? null} />
         </div>
       </section>
 

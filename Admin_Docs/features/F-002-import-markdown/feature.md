@@ -59,6 +59,7 @@
   - 쿠키에 ASCII가 아닌 글자 → 500이던 것을 401로(F-001 `auth_service._verify_payload`).
   - 테스트: 메모리 상한(tracemalloc), 일찍 멈춤은 시간 대신 읽은 줄 수로, 가드 500 갈래, ASCII 아닌 쿠키, Playwright 강제 닫기 후 다시 열림(다시 여는 줄을 지우면 실패하는 것까지 확인).
   - 확인: pytest 152개 SQLite 통과, Playwright 10개 · tsc · eslint · build 통과. PostgreSQL은 Docker Desktop 문제로 그때 못 돌림 → 복구 뒤 같은 코드(`4d38528`)로 152개 PostgreSQL 17 `didim_test` 통과(2026-11-10).
+- 변경(2026-11-10, 사용자 요청 "기록 추가에 드래그 앤 드롭"): 올리기 단계(IMP_01_001) 전체를 드롭 영역으로 둠(HTML5 Drag and Drop, 라이브러리 없음). 놓은 파일은 "파일 고르기"와 같은 길(onFiles → checkSelection)로 가고 입력칸에도 들어감. 끄는 동안 파일 칸 강조(`data-dragging`), 안쪽 요소를 지날 때의 enter/leave는 깊이로 셈. 칸 밖에 놓아도 브라우저가 파일을 열지 않게 막음. 확장자는 서버가 다시 확인(입력칸의 accept는 드롭에 안 걸림). 확인: Playwright 드롭 시험(2개 → 가져오기 (2개) → 결과 노트 2). 리뷰는 F-003 3차와 같이(review는 F-003 폴더).
 - 설계 의도와 다른 점:
   - 결과 요약의 주 버튼 [복습 시작] · "카드 후보 보기"(디자인 IMP_01_003)는 퀴즈 · 카드가 3 · 4주차라 아직 없음 → [확인] + "기록 · 복습 보기" 링크와 안내 한 줄로 대신함.
   - 합계 20MB를 넘는 요청은 서버가 413을 돌려주지만, Next.js 프록시를 거치면 브라우저에는 연결 끊김으로 보임(직접 확인) → 화면이 보내기 전에 개수 · 합계를 먼저 확인해 막음([T-004](../../troubleshooting/T-004-proxy-413-and-stale-servers.md)).

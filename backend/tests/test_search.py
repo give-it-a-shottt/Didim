@@ -12,6 +12,7 @@ SQLite에서는 "검색을 못 쓴다는 응답(503)"과 DB가 필요 없는 부
 """
 
 import os
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -90,6 +91,33 @@ def test_excerpt_starts_near_the_first_term_and_reports_the_form_found_in_text()
     assert "useEffect는 부수 효과를 실행해요." in excerpt
     assert excerpt.startswith("…") and excerpt.endswith("…")
     assert "\n" not in excerpt
+
+
+def test_excerpt_drops_markdown_symbols_but_keeps_the_words() -> None:
+    content = (
+        "## 근거\n\n"
+        "- [2e92915 Redis 연결](https://github.com/x/y/commit/2e92915)\n"
+        "- **sessionStorage**와 `polling` 제거\n"
+        "> 인용 문장\n"
+        "```python\nprint('code')\n```\n"
+        "1. snake_case_name 유지"
+    )
+    excerpt, matched = make_excerpt(content, ["Redis"])
+    assert excerpt == "근거 2e92915 Redis 연결 sessionStorage와 polling 제거 인용 문장 print('code') snake_case_name 유지"
+    assert matched == ["Redis"]
+
+
+def test_excerpt_edge_cases_fence_only_and_word_only_in_link_address() -> None:
+    assert make_excerpt("```python\n```", ["python"]) == ("", [])  # 울타리 줄만 있는 조각 → 빈 발췌
+    # 낱말이 링크 주소에만 있으면 발췌에는 링크 글만 남아 표시할 낱말이 없다(3차 리뷰 T — 사용자 판정으로 그대로 둠)
+    assert make_excerpt("[커밋 보기](https://github.com/redis/redis)", ["redis"]) == ("커밋 보기", [])
+
+
+def test_link_pattern_stays_fast_on_many_unclosed_brackets() -> None:
+    start = time.perf_counter()
+    make_excerpt("[" * 1500 + "(" * 1500, ["가나"])
+    # 길이를 묶어 제곱 시간이 아님(3차 리뷰 S). 정상은 수 ms — 느린 환경의 흔들림을 피하려 2초로 여유를 둠(4차 R3)
+    assert time.perf_counter() - start < 2.0
 
 
 def test_excerpt_without_exact_match_shows_the_beginning() -> None:

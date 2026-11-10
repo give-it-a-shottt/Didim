@@ -29,13 +29,12 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   playwright.config.ts    Playwright 스모크 · 인증 리다이렉트 테스트 설정 (D-013)
   src/app/                화면(라우트) — 19개, 표는 screens.md
     (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
-  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog, highlighted-text)
+  src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog, highlighted-text, note-markdown — 노트 원문을 조각 단위로 react-markdown으로 그리고 고른 조각 강조, 200KB 넘으면 글자 그대로, D-017)
   src/lib/site.ts         사이트 이름 · 설명 · 주소 · 공개/회원 경로 (SEO)
   src/lib/auth.ts         서버에서 httpOnly 쿠키로 /api/auth/me 확인 · 비로그인 시 /login 이동
   src/lib/import-records.ts   기록 가져오기 요청 · 응답 모양, 보내기 전 개수 · 용량 확인 (F-002)
   src/lib/backend.ts      서버 컴포넌트 → FastAPI 호출 한 곳(BACKEND_URL · 세션 쿠키 붙이기, `fetchBackendAsUser`). auth.ts · records.ts가 같이 씀 (F-003 1차 리뷰 B)
   src/lib/records.ts      검색 · 노트 상세 API를 부르고 응답 모양 확인 (F-003)
-  src/lib/text-range.ts   서버의 글자 위치(코드 포인트)로 원문 자르기 — 이모지 등 UTF-16 차이 보정 (F-003)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, record-search.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
@@ -64,6 +63,7 @@ backend/                  FastAPI (uv)
 | 현재 로그인한 사용자 정보(`/settings`, 회원 레이아웃 보호) | 서버 컴포넌트(`requireCurrentUser`) | 첫 화면을 그릴 때 쿠키로 서버에서 바로 확인하고 비로그인이면 `/login`으로 보내기 위해 | F-001 |
 | 로그아웃 버튼 진행 중(`isPending`) · 오류 문구(`errorMessage`) | 컴포넌트 안(`useState`, `logout-button.tsx`) | 설정 화면의 로그아웃 버튼 하나에서만 쓰는 일시적인 상태라서 | F-001 |
 | 기록 추가 모달 열림 · 단계(올리기 · 처리 중 · 결과 · 오류) · 고른 파일 · 기록 종류 · 가져오기 결과 | 컴포넌트 안(`useState`, `import-records-dialog.tsx`) | 모달 하나에서만 쓰고, 결과는 한 번 보여 주고 버리는 응답이라 캐시할 서버 데이터가 아니라서. 저장 뒤에는 `router.refresh()`로 서버 컴포넌트 화면을 새로 받는다. 노트 목록 화면(서버 데이터)을 만들 때 TanStack Query를 검토 | F-002 |
+| 기록 추가에서 파일을 끌어오는 중인지(`isDragging`, 깊이 `dragDepth`) | 컴포넌트 안(`useState` · `useRef`, `import-records-dialog.tsx` SelectStep) | 올리기 단계 하나에서만 쓰는 화면 표시 상태라서 | F-002 |
 | 기록 검색어 · 검색 결과(`/records?q=`) | 주소(`?q=`) + 서버 컴포넌트(`records/page.tsx`, `lib/records.ts`) | 서버 데이터라서. 검색어를 주소에 두면 새로 고침 · 뒤로 가기 · 링크 공유에도 같은 결과가 나오고, 화면 쪽 상태가 필요 없다(입력칸은 `next/form`, 사용자 확인: GET) | F-003 |
 | 노트 원문 · 강조할 조각(`/records/[noteId]?chunk=`) | 주소(`?chunk=`) + 서버 컴포넌트(`records/[noteId]/page.tsx`) | 서버 데이터라서. 강조할 조각도 주소에 두어 검색 결과 · 나중의 근거 칩이 같은 링크 모양을 쓴다 | F-003 |
 

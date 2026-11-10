@@ -9,7 +9,7 @@
 // - ImportFlow: 단계(올리기 → 처리 중 → 결과 · 오류)와 업로드. 열 때마다 새로 그려 상태가 처음으로 돌아간다.
 // - SelectStep · ResultSummary · FailedList: 각 화면.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -199,9 +199,46 @@ function SelectStep({
   onSubmit: () => void;
 }) {
   const selectError = checkSelection(files);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // 파일을 끌어오는 중인지(파일 칸 강조용). 안쪽 요소를 지날 때마다 enter/leave가 오므로 깊이로 센다.
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepth = useRef(0);
+
+  // 드래그 앤 드롭(F-002 변경, 사용자 요청 2026-11-10): 브라우저 기본 기능(HTML5 Drag and Drop)만 쓴다.
+  // 올리기 단계 전체를 드롭 영역으로 둔다 — 칸을 빗나가게 놓아도 브라우저가 파일을 열어 화면을 잃지 않게.
+  // 놓은 파일은 "파일 고르기"와 같은 길(onFiles → checkSelection)로 가고, 서버가 확장자 · 크기를 다시 확인한다.
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer.types).includes("Files");
+  const dropHandlers = {
+    onDragEnter: (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setIsDragging(true);
+    },
+    onDragOver: (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault(); // 이걸 막아야 drop이 온다
+      event.dataTransfer.dropEffect = "copy";
+    },
+    onDragLeave: (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setIsDragging(false);
+    },
+    onDrop: (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault(); // 브라우저가 파일을 새 화면으로 여는 것을 막는다
+      dragDepth.current = 0;
+      setIsDragging(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.files = event.dataTransfer.files; // 입력칸에도 "파일 N개"가 보이게
+      }
+      onFiles(Array.from(event.dataTransfer.files));
+    },
+  };
 
   return (
-    <div data-screen-id="IMP_01_001" className="mt-4 flex flex-col gap-4">
+    <div data-screen-id="IMP_01_001" className="mt-4 flex flex-col gap-4" {...dropHandlers}>
       <div role="tablist" aria-label="가져올 곳" className="flex gap-2">
         <button
           type="button"
@@ -238,12 +275,17 @@ function SelectStep({
       <label className="flex flex-col gap-2 text-body-2 font-medium">
         마크다운 파일
         <input
+          ref={fileInputRef}
           type="file"
           multiple
           accept={ACCEPTED_EXTENSIONS}
           onChange={(event) => onFiles(event.target.files ? Array.from(event.target.files) : [])}
-          className="rounded-input border border-line-input p-2 text-body-3 font-normal"
+          data-dragging={isDragging ? "" : undefined}
+          className={`rounded-input border p-2 text-body-3 font-normal ${
+            isDragging ? "border-dashed border-primary-default bg-primary-soft" : "border-line-input"
+          }`}
         />
+        <span className="text-body-3 font-normal text-text-sub">여기로 파일을 끌어다 놓아도 돼요.</span>
       </label>
       <ul className="flex flex-col gap-1 text-body-3 text-text-sub">
         <li>

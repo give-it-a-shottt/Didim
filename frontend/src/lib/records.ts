@@ -26,7 +26,7 @@ const DEFAULT_UNAVAILABLE_MESSAGE = "지금은 기록 검색을 쓸 수 없어�
 export type NoteChunk = {
   id: number;
   headingPath: string;
-  // 노트 원문의 코드 포인트 위치(파이썬 글자 단위). 자를 때는 lib/text-range.ts를 쓴다.
+  // 노트 원문의 코드 포인트 위치(파이썬 글자 단위). 자바스크립트 위치로 바꾸는 것은 components/note-markdown.tsx가 한다.
   startOffset: number;
   endOffset: number;
 };

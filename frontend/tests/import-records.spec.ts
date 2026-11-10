@@ -41,6 +41,73 @@ test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인�
   await expect(dialog).toBeHidden();
 });
 
+test("파일을 끌어다 놓아도 고른 것과 같이 올라가고, 끄는 동안 파일 칸이 강조된다", async ({ context, page }) => {
+  await signIn(context);
+  await page.goto("/home");
+  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  const dialog = page.getByRole("dialog", { name: "기록 추가" });
+  const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
+  const fileInput = dialog.getByLabel("마크다운 파일");
+
+  // 브라우저 안에서 파일 2개를 담은 DataTransfer를 만들어 드래그 이벤트로 넘긴다
+  const dataTransfer = await page.evaluateHandle(() => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(["# React\n본문"], "react.md", { type: "text/markdown" }));
+    transfer.items.add(new File(["# 운영체제\n본문"], "os.md", { type: "text/markdown" }));
+    return transfer;
+  });
+
+  await selectStep.dispatchEvent("dragenter", { dataTransfer });
+  await expect(fileInput).toHaveAttribute("data-dragging", "");
+  await selectStep.dispatchEvent("drop", { dataTransfer });
+  await expect(fileInput).not.toHaveAttribute("data-dragging", "");
+  expect(await fileInput.evaluate((input: HTMLInputElement) => input.files?.length)).toBe(2);
+
+  await dialog.getByRole("button", { name: "가져오기 (2개)" }).click();
+  const result = dialog.locator('[data-screen-id="IMP_01_003"]');
+  await expect(result.getByText("노트", { exact: true }).locator("xpath=..")).toContainText("2");
+});
+
+test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나도 강조 유지, 21개를 놓으면 보내기 전에 막는다", async ({
+  context,
+  page,
+}) => {
+  await signIn(context);
+  await page.goto("/home");
+  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  const dialog = page.getByRole("dialog", { name: "기록 추가" });
+  const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
+  const fileInput = dialog.getByLabel("마크다운 파일");
+
+  // 글자를 끌어오면(파일 아님) 강조도 드롭도 없다
+  const textOnly = await page.evaluateHandle(() => {
+    const transfer = new DataTransfer();
+    transfer.setData("text/plain", "그냥 글자");
+    return transfer;
+  });
+  await selectStep.dispatchEvent("dragenter", { dataTransfer: textOnly });
+  await expect(fileInput).not.toHaveAttribute("data-dragging", "");
+
+  // 파일 21개: 안쪽 요소를 지날 때 enter가 두 번, leave가 한 번 와도 강조가 유지된다
+  const many = await page.evaluateHandle(() => {
+    const transfer = new DataTransfer();
+    for (let index = 0; index < 21; index += 1) {
+      transfer.items.add(new File([`# 노트 ${index}`], `n${index}.md`, { type: "text/markdown" }));
+    }
+    return transfer;
+  });
+  await selectStep.dispatchEvent("dragenter", { dataTransfer: many });
+  await fileInput.dispatchEvent("dragenter", { dataTransfer: many });
+  await selectStep.dispatchEvent("dragleave", { dataTransfer: many });
+  await expect(fileInput).toHaveAttribute("data-dragging", "");
+  await selectStep.dispatchEvent("dragleave", { dataTransfer: many });
+  await expect(fileInput).not.toHaveAttribute("data-dragging", "");
+
+  await selectStep.dispatchEvent("drop", { dataTransfer: many });
+  await expect(dialog.getByText("한 번에 20개까지 올릴 수 있어요.")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled();
+});
+
 test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 이유를 보여 준다", async ({ context, page }) => {
   await signIn(context);
   await page.goto("/home");
