@@ -13,7 +13,7 @@
 - 세팅된 버전(2026-11-08): Next.js 16.4.5 · React 19.3 · Tailwind 4 · TypeScript 5 / Python 3.13 · FastAPI 0.162 (uv로 관리)
 - RAG: 기록을 나누기(청크) → 임베딩 → 검색. 키워드 검색(BM25)과 벡터 검색을 섞는 방향은 2주차에 비교해서 정한다.
 
-### LLM 결정 → [D-014](D-014-llm-exaone-swappable.md) (Q-001 닫힘), 구현은 [F-014](../features/F-014-llm-client/feature.md), 임베딩은 Q-002
+### LLM 결정 → [D-014](D-014-llm-exaone-swappable.md) (Q-001 닫힘), 구현은 [F-014](../features/F-014-llm-client/feature.md), 임베딩은 Q-002 → [D-016](D-016-keyword-search-first.md)(키워드로 시작, 평가로 비교한 뒤 임베딩)
 
 ### 이전 메모 (AI 제안)
 - LLM 클라이언트를 인터페이스 하나로 묶고 환경변수로 mock ↔ real을 바꾸는 구조. 마에스트로에서 헤이유미 API에 썼던 방식과 같아서, 키 없이 1주차부터 개발 · 테스트하고 발표 중 API가 멈춰도 버틸 수 있어요.
