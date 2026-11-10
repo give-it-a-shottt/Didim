@@ -9,13 +9,12 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 4 · 일부 1 · 다음 10 · 열린 질문 12개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 5 · 일부 0 · 다음 10 · 열린 질문 12개
 
-- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-015, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인), 마크다운 가져오기 1주차(F-002, 4차 리뷰 [통과], [일부] — PostgreSQL 확인 남음)
+- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-015, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인), 마크다운 가져오기 1주차(F-002, 4차 리뷰 [통과], SQLite · PostgreSQL 테스트 통과)
 - 다음(이 순서로):
-  1. Docker Desktop 복구 → PostgreSQL 테스트(`TEST_DATABASE_URL` didim_test) → 통과하면 F-002 [됨]
-  2. F-001 · F-002 면접 예상 질문 답(사용자)
-  3. 임베딩 모델(Q-002) → F-003(기록 검색 + 근거) 설계 의도. F-002 리뷰 제안 4건도 이때
+  1. F-001 · F-002 면접 예상 질문 답(사용자)
+  2. 임베딩 모델(Q-002) → F-003(기록 검색 + 근거) 설계 의도. F-002 리뷰 제안 4건도 이때
 - 확인 필요: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)에 모아 뒀어요.
 
 **읽는 순서**
@@ -112,7 +111,7 @@ Admin_Docs/
 | [F-000](features/F-000-dev-setup/feature.md) | 개발 환경 세팅 | 1 | [됨] R2 1차 [통과] |
 | [F-013](features/F-013-screen-skeleton/feature.md) | 화면 뼈대(레이아웃 + URL 19개) | 1 | [됨] 4차 [통과] |
 | [F-001](features/F-001-account-isolation/feature.md) | 계정 · 데이터 분리 · 사용량 제한 | 1 · 2 · 7 | [됨] 1주차 기준 · 5차 [통과] (2·7주차 남음) |
-| [F-002](features/F-002-import-markdown/feature.md) | 마크다운 가져오기 | 1 | 설계 의도 전 |
+| [F-002](features/F-002-import-markdown/feature.md) | 마크다운 가져오기 | 1 | [됨] 1주차 기준 · 4차 [통과] ('만들기'는 3 · 4주차) |
 | [F-003](features/F-003-record-search-rag/feature.md) | 기록 검색 + 근거 (RAG) | 2 | 설계 의도 전 |
 | [F-004](features/F-004-quiz-review/feature.md) | 퀴즈 · 복습 주기 · 오답노트 | 3 | 설계 의도 전 |
 | [F-005](features/F-005-notion-import/feature.md) | 노션 연결 | 4 | 설계 의도 전 |
