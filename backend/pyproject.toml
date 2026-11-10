@@ -5,6 +5,7 @@ description = "디딤 API 서버 (FastAPI)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.20.1",
     "fastapi[standard]>=0.162.2",
     "httpx>=0.28.1",
     "psycopg[binary]>=3.3.8",
@@ -20,3 +21,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "real_startup_check: 서버 시작 때의 DB 버전 확인을 건너뛰지 않는다(tests/conftest.py)",
+]

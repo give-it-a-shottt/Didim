@@ -4,12 +4,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api import auth, health
-from app.db.session import init_db
+from app.db.session import ensure_db_ready
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    init_db()
+    ensure_db_ready()
     yield
 
 

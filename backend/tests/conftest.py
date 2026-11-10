@@ -11,6 +11,7 @@ from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pytest
+from sqlalchemy import Engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -33,8 +34,21 @@ def _read_postgres_test_url() -> str:
 POSTGRES_TEST_URL = _read_postgres_test_url()
 
 # 앱은 DATABASE_URL이 없으면 시작하지 않는다. 셸에 개발용 DATABASE_URL이 있어도 테스트가 그 DB를
-# 건드리지 않도록 항상 덮어쓴다. (서버 시작 단계의 init_db만 이 값을 쓰고, 요청은 아래 db_session을 쓴다.)
+# 건드리지 않도록 항상 덮어쓴다. (서버 시작 단계만 이 값을 쓰고, 요청은 아래 db_session을 쓴다.)
 os.environ["DATABASE_URL"] = POSTGRES_TEST_URL or "sqlite://"
+
+
+@pytest.fixture(autouse=True)
+def skip_startup_migration_check(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """서버 시작 때의 "DB가 최신 버전인지" 확인(D-015)을 테스트에서는 건너뛴다.
+
+    테스트 DB는 속도를 위해 버전 파일이 아니라 create_all로 만들어서 버전 기록(alembic_version)이 없다.
+    그 확인 자체는 tests/test_migrations.py가 따로 검사한다 — 거기서는 `@pytest.mark.real_startup_check`로
+    이 건너뛰기를 끈다.
+    """
+    if request.node.get_closest_marker("real_startup_check"):
+        return
+    monkeypatch.setattr("app.main.ensure_db_ready", lambda: None)
 
 
 @pytest.fixture()
@@ -64,4 +78,30 @@ def db_session(tmp_path: Path) -> Generator[Session, None, None]:
         session.close()
         if POSTGRES_TEST_URL:
             Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+
+
+@pytest.fixture()
+def empty_db_engine(tmp_path: Path) -> Generator[Engine, None, None]:
+    """테이블이 하나도 없는 DB 엔진(마이그레이션 테스트용). PostgreSQL이면 테스트 전용 DB, 아니면 임시 SQLite 파일.
+
+    버전 기록 테이블(alembic_version)은 모델에 없어서 drop_all로 지워지지 않으므로 따로 지운다.
+    """
+    from app.db.base import Base
+    from app.db.session import create_db_engine
+
+    import app.db.models  # noqa: F401 — 모델 등록 보장
+
+    engine = create_db_engine(POSTGRES_TEST_URL or f"sqlite:///{tmp_path / 'migration_test.db'}")
+
+    def _wipe() -> None:
+        Base.metadata.drop_all(bind=engine)
+        with engine.begin() as connection:
+            connection.execute(text("DROP TABLE IF EXISTS alembic_version"))
+
+    _wipe()
+    try:
+        yield engine
+    finally:
+        _wipe()
         engine.dispose()

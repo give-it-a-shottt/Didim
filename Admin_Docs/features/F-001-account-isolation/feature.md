@@ -73,11 +73,15 @@
   - `tests/test_auth_and_isolation.py`: `.env.example`의 예시 SESSION_SECRET을 파일에서 읽어, 그 값으로는 로그인이 시작되지 않고(`oauth_not_configured`, state 쿠키 없음) `/api/auth/me`가 500인지 확인하는 테스트 2개.
 - 5차 확인: pytest 14개(SQLite) 통과, 같은 14개 PostgreSQL `didim_test` 통과(2026-11-09)
 
+- fix-01 Alembic(2026-11-10, D-015 · Q-016 답): 서버 시작 때 `create_all` 대신 DB 버전 확인(`app/db/schema_version.py` — 연결 안 됨 · 뒤처짐 · 코드보다 앞섬을 다른 오류로 안내, 주소 비노출). 버전 파일 `migrations/versions/0001`(users · notes · chunks 그대로), `alembic.ini`(주소 없음) · `migrations/env.py`(DATABASE_URL · 넘겨받은 연결 재사용). 테스트는 `create_all` 유지, `tests/test_migrations.py` 13개가 "버전 파일 적용 결과 = 모델"(compare_metadata) · downgrade · 상황별 안내 · lifespan 시작 멈춤을 확인. 개발 DB는 `alembic stamp 0001` 적용.
+- fix-01 확인: pytest 110개 SQLite · PostgreSQL `didim_test` 통과, 개발 DB stamp 뒤 lifespan 시작 · `/api/health` 200(2026-11-10)
+
 ## 리뷰
 - [review/SUMMARY.md](review/SUMMARY.md) — 1차 `[통과]`(다른 에이전트) → 2차 `[주의]`(신규 주의 4 · 제안 4, 전부 반영) → 3차 `[통과]`(신규 제안 3, 전부 반영) → 4차 `[통과]`(신규 제안 2, 전부 반영) → 5차 `[통과]`(R1 · R3, 지적 없음). 1주차 기준 [됨](사용자 확인, 2026-11-09)
+- [review/fix-01-alembic/SUMMARY.md](review/fix-01-alembic/SUMMARY.md) — Alembic 도입(D-015): 1차 `[주의]`(주의 4 · 제안 8, 전부 반영) → 2차 `[통과]`(R1 · R3 · R4, 제안 2 — 한 줄짜리, 사용자 판정 대기)
 
 ## 열린 질문
-- Q-016, Q-017, Q-018
+- Q-017, Q-018 (Q-016은 D-015로 닫힘)
 
 ## 면접 예상 질문
 > 💡 아래 답은 사용자 요청으로 AI가 쓴 초안(2026-11-09)이다. 사용자가 외운 뒤 자기 말로 설명해 보고 OK하면 (사용자 확인)으로 바꾼다.

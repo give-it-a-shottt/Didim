@@ -9,13 +9,12 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 4 · 일부 0 · 다음 11 · 열린 질문 13개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 4 · 일부 0 · 다음 11 · 열린 질문 12개
 
-- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-014, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인)
+- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-015, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인)
 - 다음(1주차, 이 순서로):
   1. F-001 면접 예상 질문 답(사용자)
-  2. 마이그레이션 도구(Q-016) — 2주차 chunks.embedding 전에 꼭, 임베딩(Q-002)은 F-003 전
-  3. F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰
+  2. F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰. 임베딩 모델(Q-002)은 F-003 전
 - 확인 필요: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)에 모아 뒀어요.
 
 **읽는 순서**
@@ -57,8 +56,9 @@ docker compose exec db createdb -U <DB 계정> didim_test   # 테스트 DB가 �
 # 서버 (터미널 1)
 cd backend
 uv sync
+uv run --env-file .env alembic upgrade head   # DB를 최신 구조로(D-015). 코드를 받은 뒤 · DB를 새로 만든 뒤 실행. 안 하면 서버가 이유를 알려 주며 멈춰요
 uv run uvicorn app.main:app --reload --port 8000 --env-file .env   # DATABASE_URL이 없으면 시작하지 않아요
-uv run pytest                    # 테스트(기본은 메모리 SQLite)
+uv run pytest                    # 테스트(기본은 테스트마다 임시 SQLite 파일)
 TEST_DATABASE_URL=<…@127.0.0.1:5432/didim_test> uv run pytest   # 같은 테스트를 PostgreSQL에서. DB 이름이 _test로 끝나야 해요(테이블을 지웠다 만듦)
 
 # 화면 (터미널 2)
@@ -103,6 +103,7 @@ Admin_Docs/
 | [D-012](decisions/D-012-state-management.md) | 상태 관리: 서버 데이터는 TanStack Query, 공용 UI 상태만 Zustand (App Router 유지) | [통과] |
 | [D-013](decisions/D-013-frontend-test-playwright.md) | 프론트엔드 테스트 도구는 Playwright로 한다 | [통과] |
 | [D-014](decisions/D-014-llm-exaone-swappable.md) | LLM은 K-EXAONE 2.5 메인, mock · exaone · local 교체 구조 | [통과] |
+| [D-015](decisions/D-015-alembic-migrations.md) | DB 구조 변경은 Alembic 버전 파일로, 서버는 시작 때 버전만 확인 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
@@ -124,4 +125,4 @@ Admin_Docs/
 
 일정이 밀리면 줄이는 순서: ① 랜딩을 "히어로 + 고정 섹션 1개"로(D-007) ② 근거 검사는 규칙 기반 단순 버전 유지(D-003) ③ 노션 연결을 7주 이후로(D-001)
 
-최종 수정: 2026-11-08
+최종 수정: 2026-11-10

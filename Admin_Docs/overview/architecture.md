@@ -35,14 +35,15 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
-  app/main.py             앱 생성, lifespan DB 초기화, 라우터를 /api 아래에 붙임
+  app/main.py             앱 생성, lifespan에서 DB 버전 확인, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수
   app/api/                라우터 (health.py, auth.py, deps.py)
   app/services/           비즈니스 로직 (auth_service.py, note_service.py)
-  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 (base.py, models.py, session.py)
+  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
+  alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
   scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py)
-  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py)
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py)
 ```
 - 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/`은 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다.
 
@@ -58,7 +59,7 @@ backend/                  FastAPI (uv)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.
 - 서버는 `DATABASE_URL`이 없으면 이유를 적은 오류로 시작하지 않는다(조용히 다른 DB로 넘어가지 않음).
 - 테스트 DB는 `backend/tests/conftest.py` 한 곳에서 정한다: 기본은 테스트마다 임시 SQLite, `TEST_DATABASE_URL`을 주면 PostgreSQL **테스트 전용 DB**(`didim_test`, 컨테이너를 처음 만들 때 `docker/postgres-init`이 생성). 테스트가 테이블을 지웠다 만들기 때문에 DB 이름이 `_test`로 끝나지 않으면 멈춘다. 셸의 `DATABASE_URL`은 테스트에서 항상 덮어쓴다.
-- 테이블은 서버 시작 때 `create_all`로 만든다. 컬럼 변경은 반영되지 않아 마이그레이션 도구를 정해야 한다(Q-016).
+- 테이블 구조는 Alembic 버전 파일(`backend/migrations/versions/`)로만 바꾼다(D-015). 적용은 `alembic upgrade head`. 서버는 테이블을 만들지 않고, 시작할 때 DB 버전이 최신인지 확인해 아니면 실행할 명령을 적은 오류로 멈춘다(`app/db/schema_version.py` — DB 연결 안 됨 · 뒤처짐 · 코드보다 앞섬을 다른 오류로 안내). 테스트만 `create_all`을 쓰고, 버전 파일과 모델이 같은지는 `tests/test_migrations.py`가 확인한다.
 
 ### 디자인 토큰 (설계 원칙 7)
 - `frontend/src/app/globals.css`의 `@theme`: 색(text · line · bg · primary · sub1 · status), 글자 크기(Pretendard 스케일), 라운드(Radius Default). 값은 디자인 원본에서 옮긴 것이고, 바꿀 때는 디자인 원본을 먼저 고친다.

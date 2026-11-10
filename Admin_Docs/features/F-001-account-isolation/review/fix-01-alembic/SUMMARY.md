@@ -1,33 +1,40 @@
 # F-001 fix-01-alembic 리뷰 요약
 
 ## 한눈에 보기
-상태: [주의]
-회차: 1차 (2026-11-10)
-한 줄 요약: [위험]은 없고 보안 · 성능은 지적이 없어요. 다만 PostgreSQL에서 아직 돌려 보지 못했고, DB 버전이 코드보다 앞설 때와 DB 연결이 실패할 때의 안내가 빠져 있어요. D-015의 "왜"도 사용자 확인이 남았어요.
+상태: [통과]
+회차: 2차 (2026-11-10)
+한 줄 요약: 1차 [주의] 지적(A~G)을 모두 반영했고, PostgreSQL에서도 테스트가 통과하고 개발 DB에 stamp 뒤 서버가 실제로 떴어요. 남은 건 R1의 [제안] 2건(한 줄짜리 정리)뿐이에요.
 
 ## 리뷰어별 결과
 | 리뷰어 | 모델 | 판정 | 위험 | 주의 | 제안 | 신규 | 추정 | 근거 검토 |
 |---|---|---|---|---|---|---|---|---|
-| R1 구조·가독성 | Sonnet 5.5 | 지적 3 | 0 | 0 | 3 | - | 0 | 타당 |
-| R2 보안·성능 | Opus 5.5 | 지적 없음 | 0 | 0 | 0 | - | 0 | 타당 |
-| R3 예외 처리·테스트 | Sonnet 5.5 | 지적 6 | 0 | 3 | 3 | - | 0 | 타당 |
-| R4 설계 의도·API 계약 | Sonnet 5.5 | 지적 3 | 0 | 1 | 2 | - | 0 | 타당 |
+| R1 구조·가독성 | Sonnet 5.5 | 지적 2 | 0 | 0 | 2 | 1 | 0 | 타당 |
+| R3 예외 처리·테스트 | Sonnet 5.5 | 지적 없음 | 0 | 0 | 0 | 0 | 0 | 타당 |
+| R4 설계 의도·API 계약 | Sonnet 5.5 | 지적 없음 | 0 | 0 | 0 | 0 | 0 | 타당 |
 
-범위: 패키지 추가(alembic · mako) + 설정 · 동작 변경(create_all → 버전 확인) + 테스트 → R1~R4. 네 리뷰어 모두 사용 한도로 한 번 멈췄다가 같은 세션에서 이어서 끝냄.
+범위: 버그 수정(안내 오류 분리) · 리팩터링(파일 이름 · 엔진 함수) · 테스트 보강 · 문서 정정 → R1 · R3 · R4. 패키지 변경 없음 → R2 제외(1차 R2.md는 1차 결과 그대로).
 
-## 지적 묶음 (메인)
-- A. [주의] PostgreSQL에서 아직 안 돌림 — R3. SQLite는 문자열 길이 · timezone 차이를 거의 못 잡아 "모델과 같다" 검증이 약함. didim_test에서 통과 확인 + 개발 DB `stamp 0001` 뒤에 [됨].
-- B. [주의] DB 버전이 코드보다 앞설 때 안내가 틀림("upgrade head"는 실패함) — R3. migrations.py:47-52
-- C. [주의] DB 연결 실패(서버 꺼짐 · 주소 오류) 처리와 테스트 없음, OperationalError가 그대로 올라옴 — R3. 주소 비노출 테스트(지금은 거의 항상 통과)를 이쪽으로 옮기라는 제안 포함.
-- D. [주의] D-015 "왜" 칸 사용자 확인 대기, 시작 차단 방식 · offline 미지원 보고 — R4.
-- E. [제안] 테스트 보강 — `stamp 0001` 뒤 통과 경로, DATABASE_URL 없이 서버 시작이 멈추는지(lifespan 수준) — R3.
-- F. [제안] 구조 — session.py의 불필요한 지연 import, `app/db/migrations.py`와 `backend/migrations/` 이름 겹침, startup_uses fixture가 비공개 변수를 직접 바꿈 — R1.
-- G. [제안] 문서 — data-model.md가 chunks.embedding을 "1주차 생성"으로 적음(모델 · 0001에는 없음, 어느 쪽이 의도인지 사용자 확인), START_HERE의 "메모리 SQLite"는 실제로 임시 SQLite 파일 — R4.
-- 나중에: 뒤처진 버전 테스트는 0002를 만들 때 추가(R3).
+## 신규 지적
+- [신규] [제안] [확실] `ensure_db_migrated`의 리스트 컴프리헨션 조건에서 `known_revisions()`를 revision마다 다시 부름(버전 파일을 반복해 읽음) — R1. `backend/app/db/schema_version.py:90`. 시작 때 한 번이고 버전이 몇 개뿐이라 성능 문제는 없음. 고치는 방법: `known = known_revisions()`를 앞에 두고 `revision not in known`.
+
+## 기존 지적(1차에서 이어짐)
+- [제안] [확실] `test_server_refuses_to_start_without_database_url`이 session.py의 비공개 변수 `_engine` · `_session_factory`를 직접 비움 — R1. `backend/tests/test_migrations.py:194-195`. 1차 지적 3(테스트 도우미 결합)의 남은 부분. 변수 이름이 바뀌면 바로 실패해 발견은 쉽고 주석이 의도를 설명함. 고치는 방법: session.py에 테스트용 초기화 함수를 두거나 주석 한 줄 추가.
+
+## 1차 지적 해소 확인 (메인 + 리뷰어)
+| 1차 | 내용 | 해소 | 확인한 곳 |
+|---|---|---|---|
+| A [주의] | PostgreSQL 미실행 | 됨 | PostgreSQL didim_test 전체 110 통과, 개발 DB stamp 0001 → current 0001 (head) → lifespan 시작 · /api/health 200 (R3) |
+| B [주의] | DB가 코드보다 앞설 때 안내 틀림 | 됨 | `DatabaseAheadOfCodeError` 분리, 테스트 `test_db_newer_than_code_is_reported_separately` (R3) |
+| C [주의] | DB 연결 실패 처리 · 테스트 없음 | 됨 | `DatabaseUnavailableError`(OperationalError 변환, 주소 비노출, `__cause__` 보존), 테스트 `test_unreachable_db_is_reported_without_its_address` (R3) |
+| D [주의] | D-015 "왜" 미확인 | 됨 | D-015:6 "(사용자 확인)" (R4) |
+| E [제안] | stamp 뒤 통과 경로 · DATABASE_URL 없이 lifespan 테스트 | 됨 | `test_create_all_db_passes_after_stamping_first_version`, `test_server_refuses_to_start_without_database_url` (R3) |
+| F [제안] | 지연 import · 파일 이름 겹침 · fixture가 비공개 변수 사용 | 대부분 됨 | 맨 위 import, `schema_version.py`, `startup_uses`가 공개 `get_engine` 교체. 남은 부분은 위 기존 지적 1건 (R1) |
+| G [제안] | data-model.md embedding · START_HERE "메모리 SQLite" | 됨 | data-model.md:14(사용자 확인), START_HERE.md:62 (R4) |
 
 ## 근거 검토 결과 (AI 1차)
-- 네 리뷰어 모두 체크 항목마다 위치 · 결과가 있고 위치는 실제 파일 줄 번호. 지정 모델 그대로, 테스트 재실행 없음.
-- 메인이 코드와 대조: B(버전이 다르면 한 가지 문구만 냄), C(연결 오류 처리 없음), F, G(START_HERE 문구)는 코드 · 문서와 일치.
+- 세 리뷰어 모두 체크 항목마다 위치 · 결과가 있고 위치는 실제 파일 줄 번호. 지정 모델(Sonnet) 그대로, 테스트 재실행 없음. 멈춤 · 재실행 없음.
+- 메인이 R1 지적 2건의 위치를 실제 파일과 대조: schema_version.py:90의 `known_revisions()` 호출, test_migrations.py:194-195의 `_engine` · `_session_factory` 패치 — 일치. [확실] 표시 적절.
+- 회차 비교: R1 지적 1은 1차 지적 3과 같은 항목(테스트 도우미 결합) → 기존. R1 지적 2는 1차에 없음 → [신규]. R3 · R4는 지적 없음.
 
 ## 최종 판정 (사용자 확인 — 문장 정리사 사용, AI가 내용 지어내기 금지)
-- (사용자 판정 대기)
+- (사용자 판정 대기) — 정할 것: R1 [제안] 2건을 지금 고칠지(한 줄씩, 고치면 R1 · R3 3차), 다음 코드 변경 때 함께 고칠지.

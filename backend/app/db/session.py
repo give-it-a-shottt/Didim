@@ -5,6 +5,7 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import DB_CONNECT_TIMEOUT_SECONDS, load_settings
+from app.db.schema_version import ensure_db_migrated
 
 
 class DatabaseConfigError(RuntimeError):
@@ -44,27 +45,28 @@ _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
 
 
+def get_engine() -> Engine:
+    """앱이 쓰는 엔진 하나. 처음 부를 때 환경변수 DATABASE_URL로 만들고, 이후는 같은 것을 돌려준다."""
+    global _engine
+    if _engine is None:
+        _engine = create_db_engine(load_settings().database_url)
+    return _engine
+
+
 def get_session_factory() -> sessionmaker[Session]:
-    global _engine, _session_factory
+    global _session_factory
     if _session_factory is None:
-        settings = load_settings()
-        _engine = create_db_engine(settings.database_url)
-        _session_factory = sessionmaker(bind=_engine, autoflush=False, autocommit=False, expire_on_commit=False)
+        _session_factory = sessionmaker(bind=get_engine(), autoflush=False, autocommit=False, expire_on_commit=False)
     return _session_factory
 
 
-def init_db() -> None:
-    """앱 시작 시 1주차 테이블(users, notes, chunks)이 없으면 생성한다.
+def ensure_db_ready() -> None:
+    """앱 시작 시 DB에 연결하고, 구조가 최신 버전인지 확인한다(D-015).
 
-    create_all은 "없는 테이블만" 만들고 기존 테이블의 컬럼 변경은 반영하지 않는다.
-    컬럼이 바뀌는 2주차(chunks.embedding) 전에 마이그레이션 도구를 정한다(Q-016).
+    서버는 테이블을 만들지 않는다. 구조는 Alembic 버전 파일로만 바꾸고(`alembic upgrade head`),
+    최신이 아니면 실행할 명령을 적은 오류로 시작을 멈춘다(오류 종류는 app/db/schema_version.py).
     """
-    from app.db.base import Base
-    import app.db.models  # noqa: F401 — 모델 등록 보장
-
-    get_session_factory()
-    if _engine is not None:
-        Base.metadata.create_all(bind=_engine)
+    ensure_db_migrated(get_engine())
 
 
 def get_db() -> Generator[Session, None, None]:
