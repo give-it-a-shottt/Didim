@@ -1,7 +1,7 @@
 # F-014 LLM 연결 구조
 
 ## 한눈에 보기 (코드 몰라도 OK)
-상태: [주의] 구현 · 테스트 끝, 3차 리뷰 [통과]. 완료 기준 중 실제 EXAONE 연결 확인만 남았어요(키를 넣은 뒤).
+상태: [통과] 구현 · 테스트 끝, 3차 리뷰 [통과], 실제 EXAONE 연결 확인(2026-11-10). 완료 기준을 모두 채웠어요.
 무엇을: 퀴즈 · 카드 · 자소서 기능이 AI를 부를 때 쓰는 공통 콘센트예요. 기능은 "이 모양(JSON)으로 답해 줘"라고만 부르고, 뒤에 꽂힌 AI가 가짜(mock)인지 EXAONE인지 내 컴퓨터 모델(local)인지는 설정 하나로 바꿔요. 답이 모양에 안 맞으면 한 번 더 요청하고, 사용량 초과(429)는 다시 부르지 않고 바로 알려요. 한 번 부르는 데 최대 180초까지만 기다리고, 몇 번 불렀는지 · 토큰을 얼마나 썼는지 세어 둬요(나중에 하루 상한에 씀).
 왜: [D-014](../../decisions/D-014-llm-exaone-swappable.md) 결정을 코드로 옮긴 것이에요.
 
@@ -15,6 +15,7 @@
 - [backend/app/llm/](../../../backend/app/llm/) — `base.py`(인터페이스 · 오류 5종 · 사용량 `LLMUsage`), `settings.py`(환경변수 읽기 · 검사), `openai_compat.py`(exaone · local 공통, httpx), `structured.py`(`complete_json`: `{` 위치마다 JSON 읽기 → pydantic 검사 → 재시도, 전체 180초 상한), `mock.py`, `__init__.py`(`get_llm_client`)
 - [backend/scripts/llm_ping.py](../../../backend/scripts/llm_ping.py) — "안녕" 한 문장 연결 확인(손으로만 실행)
 - [backend/tests/test_llm.py](../../../backend/tests/test_llm.py) — 가짜 서버(httpx.MockTransport)로 성공 · 429 · 401/403/404/3xx · 400/413/422 · 5xx/408/타임아웃/연결 실패/깨진 본문 · 형식 오류 재시도 확인
+- 실제 연결 확인(2026-11-10): `llm_ping exaone` → 성공(모델 k-exaone_v2.5, 2.9초, 호출 1번, 입력 18 · 출력 54 토큰). 그 전 시도는 401 `invalid api key format`이었고, `.env`의 키를 다시 저장한 뒤 통과했어요(코드 변경 없음, 401은 의도대로 설정 오류로 안내됨).
 - 사용자 선택(2026-11-10): openai SDK 대신 httpx로 직접 구현(새 패키지 없음), 사용자별 하루 상한은 첫 AI 기능 때. 1차 리뷰 후: 요청 거절 오류 분리 유지, 기본값(재시도 대기 1초 · 연결 5초 · 408과 깨진 본문 재시도 · 키는 https만 · local 기본 Ollama) 유지, 전체 상한 180초, 스트리밍은 Q-008
 - 기본값(코드 상수): 데이터 간격 60초 · 연결 5초 · 전체 180초 · 연결 재시도 1번(1초 뒤) · 형식 재시도 1번 · 답 20만 자 · JSON 시작점 20개 · EXAONE reasoning_effort low
 - ⚠️ mock 기본 답은 JSON이 아니라서, 첫 AI 기능부터 기능별 가짜 답을 등록해야 키 없이 화면이 돌아요.
