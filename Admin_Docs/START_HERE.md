@@ -9,12 +9,12 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 3 · 일부 0 · 다음 11 · 열린 질문 13개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 3 · 일부 1 · 다음 11 · 열린 질문 13개
 
-- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-014, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과])
+- 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-014, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과] — 실제 EXAONE 연결 확인만 남음)
 - 다음(1주차, 이 순서로):
   1. F-001 면접 예상 질문 답(사용자)
-  2. D-014 LLM 연결 구조 구현(mock · exaone · local 교체, 응답 검사 · 재시도)
+  2. F-014 실제 EXAONE 연결 확인 — `backend/.env`에 키를 넣고 `uv run --env-file .env python -m scripts.llm_ping exaone`(backend 폴더)
   3. 마이그레이션 도구(Q-016) — 2주차 chunks.embedding 전에 꼭, 임베딩(Q-002)은 F-003 전
   4. F-002(마크다운 가져오기) 설계 의도 → 구현 → 리뷰
 - 확인 필요: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)에 모아 뒀어요.
@@ -97,7 +97,7 @@ Admin_Docs/
 | [D-005](decisions/D-005-seeded-synthetic-eval.md) | 평가는 정답을 심어 둔 가상 데이터 | [통과] |
 | [D-006](decisions/D-006-mvp-scope.md) | MVP 범위와 2차, 퀴즈는 객관식 + OX | [통과] |
 | [D-007](decisions/D-007-landing-story-motion.md) | 랜딩 스토리 모션, 밀리면 축소 | [통과] |
-| [D-008](decisions/D-008-stack-and-llm-client.md) | 스택과 LLM 호출 구조 | [주의] mock ↔ real 확인 필요 |
+| [D-008](decisions/D-008-stack-and-llm-client.md) | 스택과 LLM 호출 구조 | [통과] LLM 구조는 D-014 · F-014 |
 | [D-009](decisions/D-009-design-direction.md) | 디자인 4안 "작업대 위의 각주" | [통과] |
 | [D-010](decisions/D-010-auth-in-fastapi.md) | 구글 로그인은 FastAPI가 처리(httpOnly 쿠키) | [통과] |
 | [D-011](decisions/D-011-skeleton-first-screens-by-week.md) | 화면은 뼈대(레이아웃 + 라우트) 먼저, 각 화면은 주차별 완성 | [통과] |

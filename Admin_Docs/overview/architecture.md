@@ -14,7 +14,7 @@ FastAPI (서버, 모든 경로가 /api 아래)
    ├─ RAG: 나누기 → 임베딩 → 검색 (BM25 + 벡터, 사용자 조건 필수)
    ├─ 생성: 퀴즈 · 카드 후보 · 공고 역량 · 자소서 · 면접 질문
    │    └─ 근거 검사 루프: 쓰기 → 검사 → 고치기
-   ├─ LLM 클라이언트: mock | real (Q-001)
+   ├─ LLM 클라이언트: mock | exaone | local (D-014, F-014)
    └─ 사용량 제한 · 평가 로그
    ▼
 PostgreSQL + pgvector (기록 · 조각 · 임베딩 · 카드 · 공고 · 문장 · 근거)
@@ -40,9 +40,11 @@ backend/                  FastAPI (uv)
   app/api/                라우터 (health.py, auth.py, deps.py)
   app/services/           비즈니스 로직 (auth_service.py, note_service.py)
   app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk) · 세션 (base.py, models.py, session.py)
-  tests/                  pytest (test_health.py, test_auth_and_isolation.py)
+  app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
+  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py)
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py)
 ```
-- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다.
+- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/`은 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다.
 
 ### 상태 관리 지도 (D-012)
 기준: 서버 데이터 → 서버 컴포넌트 또는 TanStack Query / 여러 화면이 같이 쓰는 UI 상태 → Zustand / 화면 하나 → useState. 쓸 때마다 한 줄 추가해요.
