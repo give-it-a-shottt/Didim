@@ -11,5 +11,6 @@
 | [T-001](T-001-stale-dev-server.md) | 끈 줄 알았던 서버가 남아서 예전 빌드로 확인할 뻔함 | [통과] | 2026-11-09 |
 | [T-002](T-002-postgres-connect-hang-localhost.md) | PostgreSQL 테스트가 연결 단계에서 끝없이 멈춤 (Windows · localhost · IPv6) | [통과] | 2026-11-09 |
 | [T-003](T-003-windows-cp949-console-output.md) | 스크립트 출력이 Windows 기본 인코딩(cp949)에서 깨지거나 멈춤 | [통과] | 2026-11-10 |
+| [T-004](T-004-proxy-413-and-stale-servers.md) | 큰 업로드의 413이 Next 프록시를 거치면 연결 끊김으로 보임 (+ 확인 서버 함정 2가지) | [통과] | 2026-11-10 |
 
 최종 수정: 2026-11-10

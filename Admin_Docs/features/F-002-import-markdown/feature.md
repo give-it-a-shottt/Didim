@@ -61,7 +61,7 @@
   - 확인: pytest 152개 SQLite 통과, Playwright 10개 · tsc · eslint · build 통과. PostgreSQL은 Docker Desktop 문제로 그때 못 돌림 → 복구 뒤 같은 코드(`4d38528`)로 152개 PostgreSQL 17 `didim_test` 통과(2026-11-10).
 - 설계 의도와 다른 점:
   - 결과 요약의 주 버튼 [복습 시작] · "카드 후보 보기"(디자인 IMP_01_003)는 퀴즈 · 카드가 3 · 4주차라 아직 없음 → [확인] + "기록 · 복습 보기" 링크와 안내 한 줄로 대신함.
-  - 합계 20MB를 넘는 요청은 서버가 413을 돌려주지만, Next.js 프록시를 거치면 브라우저에는 연결 끊김으로 보임(직접 확인) → 화면이 보내기 전에 개수 · 합계를 먼저 확인해 막음.
+  - 합계 20MB를 넘는 요청은 서버가 413을 돌려주지만, Next.js 프록시를 거치면 브라우저에는 연결 끊김으로 보임(직접 확인) → 화면이 보내기 전에 개수 · 합계를 먼저 확인해 막음([T-004](../../troubleshooting/T-004-proxy-413-and-stale-servers.md)).
 - 확인(2026-11-10): pytest 133개 SQLite · PostgreSQL `didim_test` 통과(F-002 22개 포함), Playwright 7개 통과(F-002 3개), tsc · eslint · next build 통과. 개발 DB `alembic upgrade head`(0001 → 0002) 뒤 실제 서버로 Next 주소(프록시)를 거쳐 업로드 직접 실행: 200 · 노트 1 · 조각 2(제목 경로 · 위치 일치) · 중복 1(CRLF 사본) · 실패 2(1MB 초과 · .txt), 비로그인 401. 확인용 계정은 끝나고 삭제.
 
 ## 리뷰
