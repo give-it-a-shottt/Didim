@@ -1,7 +1,20 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import DDL, JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, event
+from sqlalchemy import (
+    DDL,
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    event,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config import DEFAULT_DAILY_LIMIT, NOTE_TITLE_MAX_CHARS
@@ -137,6 +150,146 @@ class SearchLog(Base):
     method: Mapped[str] = mapped_column(String(32), nullable=False)
     # [{"chunk_id": 1, "score": 0.82}, ...] — 순위 순서. 조각이 나중에 지워져도 로그는 남는다.
     results: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class AIUsageLog(Base):
+    """AI 사용량 기록 (D-018, 버전 0004). 모든 AI 기능이 같이 쓴다.
+
+    AI를 부른 요청 하나마다 한 줄. 하루 상한(users.daily_limit)은 오늘(한국 시간 0시부터) calls 합계로 센다.
+    보낸 내용 · 받은 내용 · API 키는 넣지 않는다(F-014 오류 문구 규칙과 같음).
+    """
+
+    __tablename__ = "ai_usage_logs"
+    __table_args__ = (Index("ix_ai_usage_logs_user_created", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    # 어느 기능이 불렀는지(예: "quiz_generate"). 사용량 화면(7주차)에서 기능별로 나눠 보여 준다.
+    feature: Mapped[str] = mapped_column(String(32), nullable=False)
+    # 실제 HTTP 호출 수(연결 재시도 · 형식 재요청 · 실패한 호출 포함 — F-014 usage.calls)
+    calls: Mapped[int] = mapped_column(Integer, nullable=False)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 결과 종류만(ok · invalid_output · rate_limited · unavailable · config_error · request_error · error · save_failed)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class Quiz(Base):
+    """복습 문제 (F-004, 버전 0004).
+
+    객관식 · OX 모두 "보기 목록 + 정답 번호"로 저장한다(OX는 보기 ["O", "X"]). 채점 규칙이 하나로 같다.
+    근거(설계 원칙 1, D-003): 근거 조각(chunk_id)과, 정답의 근거가 되는 원문 문장(quote)과 그 위치를 같이 둔다.
+    quote == note.content[quote_start:quote_end] (파이썬 문자 단위, chunks의 위치와 같은 단위).
+    노트 · 조각이 지워지면 문제도 같이 지워진다(노트는 편집할 수 없어서 근거가 바뀌는 경우가 없다).
+    조각마다 문제는 하나(chunk_id 유니크) — 동시에 두 번 만들어도 DB가 막는 안전망(동시 클릭 1차 방어는 note_quiz_claims).
+    """
+
+    __tablename__ = "quizzes"
+    __table_args__ = (UniqueConstraint("chunk_id", name="uq_quizzes_chunk_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    note_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chunk_id: Mapped[int] = mapped_column(Integer, ForeignKey("chunks.id", ondelete="CASCADE"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(8), nullable=False)  # "mcq"(4지 객관식) · "ox"
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    choices: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    answer_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    quote: Mapped[str] = mapped_column(Text, nullable=False)
+    quote_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    quote_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class NoteQuizClaim(Base):
+    """노트별 [문제 만들기] 선점 (F-004, 버전 0004 — 동시 클릭 막기, 사용자 확인 2026-11-11).
+
+    AI를 부르기 전에 노트당 한 줄을 넣고 커밋한다(note_id 유니크). 동시에 들어온 두 번째 요청은 유니크 제약에 걸려
+    AI를 부르지 않고 409로 끝난다 — AI 호출(최대 180초) 동안 DB를 잠그지 않으면서 한 번만 부르게 하는 방법.
+    - AI 실패 · 문제가 모두 버려짐 · 저장 실패 → 선점을 지워 다시 누를 수 있게 한다.
+    - 성공 → 선점을 남긴다("이 노트는 문제가 있음" 표시).
+    - 서버가 도중에 죽어 남은 선점은 QUIZ_CLAIM_STALE_SECONDS(5분)가 지나면 새 요청이 가져간다.
+    """
+
+    __tablename__ = "note_quiz_claims"
+    __table_args__ = (UniqueConstraint("note_id", name="uq_note_quiz_claims_note_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    note_id: Mapped[int] = mapped_column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class QuizReview(Base):
+    """문제마다 하나인 복습 상태 (F-004, 버전 0004).
+
+    문제 내용(AI가 만든 것 + 근거)과 학습 상태(사용자 활동)를 나눠 둔다(사용자 확인, 2026-11-11).
+    next_review_on은 한국 날짜다(D-018과 같은 하루 기준). '오늘 복습' = next_review_on <= 오늘.
+    interval_step: 0 → 당일, 1 → 1일, 2 → 3일, 3 → 7일, 4 → 14일 뒤.
+    """
+
+    __tablename__ = "quiz_reviews"
+    __table_args__ = (
+        UniqueConstraint("quiz_id", name="uq_quiz_reviews_quiz_id"),  # 문제마다 복습 상태는 하나
+        Index("ix_quiz_reviews_user_next", "user_id", "next_review_on"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    quiz_id: Mapped[int] = mapped_column(Integer, ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False)
+    next_review_on: Mapped[date] = mapped_column(Date, nullable=False)
+    interval_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    correct_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    in_wrong_notes: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class QuizAttempt(Base):
+    """문제를 푼 기록 (F-004, 버전 0004). 답할 때마다 한 줄 — 복습 상태의 근거이자 이후 통계용."""
+
+    __tablename__ = "quiz_attempts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    quiz_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chosen_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class QuizGenerationLog(Base):
+    """문제 만들기 평가 로그 (F-004 완료 기준 2 · 7, 설계 원칙 5, 버전 0004).
+
+    [문제 만들기] 한 번마다 보낸 조각 수 · 남긴 수 · 버린 수와 이유를 남긴다. 호출 · 토큰은 ai_usage_logs(D-018).
+    note_id는 외래키가 아니다: 노트가 지워져도 평가 로그는 남긴다(search_logs의 조각 ID와 같은 방식).
+    """
+
+    __tablename__ = "quiz_generation_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    note_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunks_sent: Mapped[int] = mapped_column(Integer, nullable=False)
+    kept: Mapped[int] = mapped_column(Integer, nullable=False)
+    dropped: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 버린 이유별 개수. 예) {"quote_not_found": 2, "bad_answer_index": 1}
+    drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
 

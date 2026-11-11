@@ -5,8 +5,16 @@ import type { NextConfig } from "next";
 // BACKEND_URL은 서버에서만 읽는 환경변수라 브라우저 번들에 들어가지 않는다.
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 
+// rewrites 프록시는 기본 30초가 지나면 요청을 끊는다(node_modules/next/dist/server/lib/router-utils/proxy-request.js).
+// [문제 만들기]는 AI를 기다리느라 최대 180초(backend/app/llm/settings.py DEFAULT_LLM_TOTAL_TIMEOUT_SECONDS)까지 걸려서,
+// 30초에 끊기면 화면은 실패로 보이는데 서버는 문제를 저장하는 일이 생긴다. AI 상한 + 저장 여유 20초로 둔다(F-004).
+const PROXY_TIMEOUT_MS = 200_000;
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    proxyTimeout: PROXY_TIMEOUT_MS,
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

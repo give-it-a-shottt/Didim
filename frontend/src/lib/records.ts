@@ -1,6 +1,7 @@
 import "server-only";
 
 import { fetchBackendAsUser } from "@/lib/backend";
+import { isObject, isStringArray, readJson } from "@/lib/json";
 
 // 기록 검색 · 노트 상세를 서버 컴포넌트에서 FastAPI로 부른다(F-003, D-012 서버 데이터는 서버 컴포넌트).
 
@@ -41,23 +42,16 @@ export type NoteDetail = {
 
 export type NoteOutcome = { status: "ok"; note: NoteDetail } | { status: "not-found" } | { status: "error" };
 
-type Json = Record<string, unknown>;
+export type NoteSummary = {
+  id: number;
+  title: string;
+  kind: string;
+  chunkCount: number;
+  quizCount: number;
+};
 
-function isObject(value: unknown): value is Json {
-  return typeof value === "object" && value !== null;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
-
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
+// 노트 목록(기록 · 복습 홈, F-004). 목록은 최근 올린 것부터 서버 상한(MAX_NOTE_LIST)까지, total은 전체 개수.
+export type NoteListOutcome = { status: "ok"; total: number; notes: NoteSummary[] } | { status: "error" };
 
 function toSearchResult(value: unknown): SearchResult | null {
   if (
@@ -148,4 +142,40 @@ export async function getNote(noteId: number): Promise<NoteOutcome> {
     status: "ok",
     note: { id: body.id, title: body.title, kind: body.kind, content: body.content, chunks: chunks as NoteChunk[] },
   };
+}
+
+function toNoteSummary(value: unknown): NoteSummary | null {
+  if (
+    !isObject(value) ||
+    typeof value.id !== "number" ||
+    typeof value.title !== "string" ||
+    typeof value.kind !== "string" ||
+    typeof value.chunk_count !== "number" ||
+    typeof value.quiz_count !== "number"
+  ) {
+    return null;
+  }
+  return {
+    id: value.id,
+    title: value.title,
+    kind: value.kind,
+    chunkCount: value.chunk_count,
+    quizCount: value.quiz_count,
+  };
+}
+
+export async function listNotes(): Promise<NoteListOutcome> {
+  const response = await fetchBackendAsUser("/api/notes");
+  if (response === null) {
+    return { status: "error" };
+  }
+  const body = response.ok ? await readJson(response) : null;
+  if (!isObject(body) || typeof body.total !== "number" || !Array.isArray(body.notes)) {
+    return { status: "error" };
+  }
+  const notes = body.notes.map(toNoteSummary);
+  if (notes.some((note) => note === null)) {
+    return { status: "error" };
+  }
+  return { status: "ok", total: body.total, notes: notes as NoteSummary[] };
 }

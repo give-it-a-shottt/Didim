@@ -1,8 +1,13 @@
-import { type BrowserContext, expect, test } from "@playwright/test";
+import { type BrowserContext, expect, type Page, test } from "@playwright/test";
 
 // 기록 검색(F-003) 화면: 기록 · 복습 홈(REV_01_001) 검색창 → 결과 줄 → 노트 상세(REV_01_002) 위치 강조.
 // 가짜 백엔드(tests/mock-backend.mjs)의 노트 1을 쓴다.
 const VALID_SESSION_TOKEN = "playwright-valid-session-token";
+
+// 검색 결과 영역("‘…’ 검색 결과 N개" 제목의 section). 홈의 노트 목록 링크와 섞이지 않게 범위를 좁힌다.
+function searchResults(page: Page) {
+  return page.getByRole("region", { name: /검색 결과/ });
+}
 
 async function logIn(context: BrowserContext) {
   await context.addCookies([
@@ -19,7 +24,8 @@ test("검색어를 넣으면 결과 줄이 나오고, 누르면 노트 상세에
 
   await expect(page).toHaveURL(/\/records\?q=useState$/);
   await expect(page.getByRole("heading", { name: "‘useState’ 검색 결과 1개" })).toBeVisible();
-  const result = page.getByRole("link", { name: /React 정리/ });
+  // 홈에 노트 목록(F-004)도 있어서 검색 결과 영역 안에서만 찾는다
+  const result = searchResults(page).getByRole("link", { name: /React 정리/ });
   await expect(result).toContainText("# React 정리 > ## useState");
   await expect(result.locator("mark")).toHaveText("useState");
 
@@ -109,7 +115,7 @@ test("주소의 검색어로 바로 열면 입력칸에 검색어가 채워져 �
   await page.goto("/records?q=useState");
 
   await expect(page.getByRole("searchbox", { name: "기록 검색어" })).toHaveValue("useState");
-  await expect(page.getByRole("link", { name: /React 정리/ })).toBeVisible();
+  await expect(searchResults(page).getByRole("link", { name: /React 정리/ })).toBeVisible();
 });
 
 test("맞는 기록이 없거나 검색을 쓸 수 없으면 이유가 보인다", async ({ context, page }) => {
@@ -133,7 +139,7 @@ test("서버 오류나 모양이 틀린 응답이면 검색 · 노트 상세 모
   for (const q of ["검색오류", "모양틀림"]) {
     await page.goto(`/records?q=${q}`);
     await expect(page.getByText("검색하지 못했어요. 잠시 뒤 다시 해 주세요.")).toBeVisible();
-    await expect(page.getByRole("link", { name: /React 정리/ })).toHaveCount(0);
+    await expect(searchResults(page).getByRole("link", { name: /React 정리/ })).toHaveCount(0);
   }
 
   await page.goto("/records/500");

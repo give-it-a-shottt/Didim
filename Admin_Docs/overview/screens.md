@@ -29,11 +29,11 @@
 | HOM_01_001 대시보드 · HOM_01_900 첫 방문 | `/home` | 사이드바 | (app)/home/page.tsx | F-012 |
 | DEM_01_001 샘플 체험 | `/demo` | 사이드바 | (app)/demo/page.tsx | F-010 |
 | REV_01_001 기록 · 복습 홈 (+900) | `/records` (`?q=` 검색어) | 사이드바 | (app)/records/page.tsx | F-003 검색창 · 결과(됨), 노트 목록 · 오늘 복습은 F-004 |
-| REV_01_002 노트 상세 | `/records/[noteId]` (`?chunk=` 강조할 조각) | 사이드바 | (app)/records/[noteId]/page.tsx | F-003 원문 · 위치 강조(됨), 개념 · 문제 탭은 F-004 |
+| REV_01_002 노트 상세 | `/records/[noteId]` (`?chunk=` 강조할 조각) | 사이드바 | (app)/records/[noteId]/page.tsx | F-003 원문 · 위치 강조(됨), 문제 칸([문제 만들기] · [이 노트 풀기])은 F-004, 개념 탭은 아직 없음(F-004 완료 기준 밖) |
 | REV_01_003 노트 관리 | `/records/manage` | 사이드바 | (app)/records/manage/page.tsx | F-002 |
 | REV_03_001 오답노트 | `/records/wrong-answers` | 사이드바 | (app)/records/wrong-answers/page.tsx | F-004 |
-| REV_02_001 퀴즈 | `/quiz/[sessionId]` | 집중 모드 | (focus)/quiz/[sessionId]/page.tsx | F-004 |
-| REV_02_002 퀴즈 결과 | `/quiz/[sessionId]/result` | 사이드바 | (app)/quiz/[sessionId]/result/page.tsx | F-004 |
+| REV_02_001 퀴즈 | `/quiz/[sessionId]` — `today` · `wrong` · `note-번호` | 집중 모드 | (focus)/quiz/[sessionId]/page.tsx | F-004 |
+| REV_02_002 퀴즈 결과 | `/quiz/[sessionId]/result?correct=&total=` | 사이드바 | (app)/quiz/[sessionId]/result/page.tsx | F-004 |
 | CRD_01_001 카드 목록 (+900) | `/cards` | 사이드바 | (app)/cards/page.tsx | F-006 |
 | CRD_01_002 카드 상세 · 편집 | `/cards/[cardId]` | 사이드바 | (app)/cards/[cardId]/page.tsx | F-006 |
 | APL_01_001 지원 목록 | `/applications` | 사이드바 | (app)/applications/page.tsx | F-007 |

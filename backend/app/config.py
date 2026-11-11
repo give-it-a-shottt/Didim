@@ -17,6 +17,9 @@ BYTES_PER_MB = 1024 * 1024
 
 # 노트 제목 길이. DB 컬럼(app/db/models.py Note.title)과 가져오기 어댑터가 같이 쓴다.
 NOTE_TITLE_MAX_CHARS = 255
+# DB 번호(id) 상한 — PostgreSQL integer(32비트). 이보다 큰 번호로 조회하면 DB가 "범위 초과"(500)를 내므로
+# DB에 묻기 전에 "없음"(404)으로 답한다(F-003 1차 리뷰 E, 노트 · 문제 공용 — F-004 1차 리뷰 R1)
+MAX_DB_ID = 2_147_483_647
 
 # 기록 가져오기 상한 (F-002 설계 의도, 사용자 확인). 화면(frontend/src/lib/import-records.ts)에도 같은 값이 있다.
 MAX_IMPORT_FILES = 20
@@ -47,6 +50,26 @@ SEARCH_TIMEOUT_MS = 3000
 SEARCH_WORD_SIMILARITY_THRESHOLD = 0.6
 # 검색 로그 · 평가 결과에 남기는 점수 자릿수
 SEARCH_SCORE_DIGITS = 4
+
+# 퀴즈 · 복습 (F-004 설계 의도, 사용자 확인 2026-11-10 · 11)
+MAX_QUIZZES_PER_NOTE = 10  # 노트당 최대 10개(조각마다 1개)
+QUIZ_MIN_CHUNK_CHARS = 80  # 공백을 뺀 글자 수가 이보다 적은 조각은 건너뜀. 평가 뒤 조정
+# 근거 인용 문장의 최소 길이(공백 뺀 글자 수). "React" 같은 낱말 하나로 근거 검사를 통과하지 않게
+QUIZ_MIN_QUOTE_CHARS = 10
+QUIZ_MAX_QUESTION_CHARS = 500
+QUIZ_MAX_CHOICE_CHARS = 200
+QUIZ_MAX_EXPLANATION_CHARS = 1000
+QUIZ_MCQ_CHOICES = 4  # 객관식은 4지(D-006)
+QUIZ_OX_CHOICES = ("O", "X")
+# 복습 간격(일): 단계 0 → 당일, 1 → 1일, 2 → 3일, 3 → 7일, 4 → 14일 뒤
+QUIZ_REVIEW_INTERVAL_DAYS = (0, 1, 3, 7, 14)
+# [문제 만들기] 선점이 이보다 오래되면 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초).
+# AI 전체 시간 상한 180초(app/llm/settings.py) + 저장 여유. 사용자 확인 2026-11-11
+QUIZ_CLAIM_STALE_SECONDS = 300
+# '오늘 복습' 한 번에 보내는 문제 수 상한(오래 밀린 것부터). 전체 개수는 따로 알려 준다. 임시값 — 리뷰 때 확인
+MAX_REVIEW_SESSION_QUIZZES = 100
+# 기록 · 복습 홈 노트 목록에 한 번에 보내는 노트 수 상한(최근 올린 것부터). 전체 개수는 따로 알려 준다. 임시값 — 리뷰 때 확인
+MAX_NOTE_LIST = 200
 
 
 @dataclass(frozen=True)

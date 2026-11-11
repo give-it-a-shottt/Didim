@@ -1,5 +1,7 @@
 // 기록 가져오기(F-002) 요청과 응답 모양. 서버: POST /api/notes/import (backend/app/api/notes.py)
 
+import { detailOf, readJson } from "@/lib/json";
+
 // 서버(backend/app/config.py · app/importers/markdown.py)와 같은 값. 화면에서 먼저 알려 주려고 두고, 최종 확인은 서버가 한다.
 export const MAX_IMPORT_FILES = 20;
 export const MAX_IMPORT_FILE_MB = 1;
@@ -13,6 +15,11 @@ export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
   study: "학습 노트",
   project: "프로젝트 · 경험",
 };
+
+/** 노트 종류 값 → 화면 이름. 모르는 값이면 그대로 보여 준다(서버에 새 종류가 생겨도 깨지지 않게). */
+export function noteKindLabel(kind: string): string {
+  return kind in NOTE_KIND_LABELS ? NOTE_KIND_LABELS[kind as NoteKind] : kind;
+}
 
 export type ImportResponse = {
   summary: { notes: number; chunks: number; duplicates: number; failed: number };
@@ -39,14 +46,6 @@ export function checkSelection(files: File[]): string | null {
   return null;
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null; // 본문이 JSON이 아니면(프록시 오류 화면 등) 없는 것으로 본다
-  }
-}
-
 function isImportResponse(body: unknown): body is ImportResponse {
   return (
     typeof body === "object" &&
@@ -58,12 +57,6 @@ function isImportResponse(body: unknown): body is ImportResponse {
   );
 }
 
-function detailOf(body: unknown): string | null {
-  if (typeof body === "object" && body !== null && "detail" in body && typeof body.detail === "string") {
-    return body.detail;
-  }
-  return null;
-}
 
 // 어떤 경우에도 예외를 던지지 않고 결과(성공 · 실패 문구)를 돌려준다. 화면이 '처리 중'에 멈추지 않게.
 export async function importMarkdownFiles(files: File[], kind: NoteKind): Promise<ImportOutcome> {

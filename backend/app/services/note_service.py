@@ -1,11 +1,14 @@
 import hashlib
 from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models import Chunk, Note, User
+from app.config import MAX_NOTE_LIST
+from app.db.models import Chunk, Note, Quiz, User
 from app.services.chunking import ChunkDraft
 
 
@@ -86,6 +89,54 @@ def list_notes_for_user(db: Session, *, user_id: int) -> list[Note]:
         .order_by(Note.created_at.desc(), Note.id.desc())
     )
     return list(db.execute(stmt).scalars().all())
+
+
+@dataclass(frozen=True)
+class NoteSummary:
+    id: int
+    title: str
+    kind: str
+    created_at: datetime
+    chunk_count: int
+    quiz_count: int
+
+
+@dataclass(frozen=True)
+class NoteSummaryPage:
+    total: int  # 내 노트 전체 개수
+    notes: list[NoteSummary]  # 최근 올린 것부터 최대 limit개
+
+
+def list_note_summaries_for_user(db: Session, *, user_id: int, limit: int = MAX_NOTE_LIST) -> NoteSummaryPage:
+    """기록 · 복습 홈 노트 목록(F-004). 원문은 빼고 제목 · 종류 · 조각 수 · 문제 수만.
+
+    조각 · 문제 수는 노트마다 서브쿼리로 센다. 서브쿼리에도 user_id 조건을 건다(D-004 — 조각 · 문제는 노트 주인과
+    user_id가 같게 저장되지만, 조건을 빼면 그 약속이 깨졌을 때 남의 수가 섞인다).
+    """
+    chunk_count = (
+        select(func.count(Chunk.id))
+        .where(Chunk.note_id == Note.id, Chunk.user_id == user_id)
+        .correlate(Note)
+        .scalar_subquery()
+    )
+    quiz_count = (
+        select(func.count(Quiz.id))
+        .where(Quiz.note_id == Note.id, Quiz.user_id == user_id)
+        .correlate(Note)
+        .scalar_subquery()
+    )
+    stmt = (
+        select(Note.id, Note.title, Note.kind, Note.created_at, chunk_count, quiz_count)
+        .where(Note.user_id == user_id)
+        .order_by(Note.created_at.desc(), Note.id.desc())
+        .limit(limit)
+    )
+    notes = [
+        NoteSummary(id=row[0], title=row[1], kind=row[2], created_at=row[3], chunk_count=row[4], quiz_count=row[5])
+        for row in db.execute(stmt).all()
+    ]
+    total = db.execute(select(func.count(Note.id)).where(Note.user_id == user_id)).scalar_one()
+    return NoteSummaryPage(total=total, notes=notes)
 
 
 def find_note_by_content_hash_for_user(db: Session, *, user_id: int, content_hash: str) -> Note | None:

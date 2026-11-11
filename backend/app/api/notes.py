@@ -2,6 +2,7 @@
 
 POST /api/notes/import — 마크다운 파일 여러 개를 노트 · 조각으로 저장한다(요청 한 번에 처리, Q-008).
 로그인 쿠키 유무 · 요청 크기는 이 함수보다 앞에서 app/api/upload_limit.py가 먼저 거른다.
+GET /api/notes — 내 노트 목록(제목 · 종류 · 조각 수 · 문제 수, 기록 · 복습 홈, F-004).
 GET /api/notes/{note_id} — 노트 원문과 조각 위치(노트 상세 화면에서 검색 · 근거 위치를 강조할 때 씀, F-003).
 """
 
@@ -14,18 +15,20 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.upload_limit import TOO_LARGE_DETAIL
-from app.config import MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILES, MAX_IMPORT_TOTAL_BYTES
+from app.config import MAX_DB_ID, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILES, MAX_IMPORT_TOTAL_BYTES
 from app.db.models import User
 from app.db.session import get_db
 from app.services.import_service import IncomingFile, NoteKind, import_markdown_files
-from app.services.note_service import get_note_for_user, list_chunks_for_note_for_user
+from app.services.note_service import (
+    get_note_for_user,
+    list_chunks_for_note_for_user,
+    list_note_summaries_for_user,
+)
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 NOTE_NOT_FOUND_DETAIL = "노트를 찾을 수 없어요."
-# notes.id는 PostgreSQL integer(32비트)다. 이보다 큰 번호로 조회하면 DB가 "범위 초과" 오류(500)를 내므로
-# DB에 묻기 전에 "없는 노트"(404)로 답한다(F-003 1차 리뷰 E).
-MAX_NOTE_ID = 2_147_483_647
+MAX_NOTE_ID = MAX_DB_ID  # 이보다 큰 번호는 DB에 묻기 전에 404(app/config.py MAX_DB_ID 주석)
 
 
 class ImportSummary(BaseModel):
@@ -79,6 +82,20 @@ class NoteDetailOut(BaseModel):
     chunks: list[NoteChunkOut]
 
 
+class NoteSummaryOut(BaseModel):
+    id: int
+    title: str
+    kind: str
+    created_at: datetime
+    chunk_count: int
+    quiz_count: int
+
+
+class NoteListResponse(BaseModel):
+    total: int  # 내 노트 전체 개수(목록은 최근 것부터 최대 MAX_NOTE_LIST개)
+    notes: list[NoteSummaryOut]
+
+
 def _read_head(upload: UploadFile) -> bytes:
     """파일 앞부분을 (상한 + 1)바이트까지만 읽는다. 큰 파일을 통째로 메모리에 올리지 않기 위해서다."""
     return upload.file.read(MAX_IMPORT_FILE_BYTES + 1)
@@ -121,6 +138,16 @@ def import_notes(
         duplicates=[DuplicateFileOut(**asdict(dup)) for dup in result.duplicates],
         failed=[FailedFileOut(**asdict(fail)) for fail in result.failed],
     )
+
+
+@router.get("", response_model=NoteListResponse)
+def list_notes(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> NoteListResponse:
+    """401: 로그인 안 함. 내 노트만(D-004), 최근 올린 것부터. 원문은 넣지 않는다."""
+    page = list_note_summaries_for_user(db, user_id=current_user.id)
+    return NoteListResponse(total=page.total, notes=[NoteSummaryOut(**asdict(note)) for note in page.notes])
 
 
 @router.get("/{note_id}", response_model=NoteDetailOut)

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import auth, health, notes, search
+from app.api import auth, health, notes, quizzes, search
 from app.api.upload_limit import ImportUploadGuard
 from app.db.session import dispose_engine, ensure_db_ready
 
@@ -25,3 +25,4 @@ app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(notes.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
+app.include_router(quizzes.router, prefix="/api")

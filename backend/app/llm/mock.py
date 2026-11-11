@@ -10,7 +10,7 @@ AI를 쓰는 첫 기능부터 기능별 가짜 답(그 스키마에 맞는 JSON)
 """
 
 from collections import deque
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 from app.llm.base import LLMConfigError, LLMError, LLMReply, LLMUsage, Message
 
@@ -18,12 +18,22 @@ MOCK_MODEL_NAME = "mock"
 MOCK_DEFAULT_REPLY = "(mock) 안녕하세요. 가짜 AI의 응답이에요."
 
 MockItem = str | Exception
+# 받은 메시지를 보고 답을 만드는 함수. 기능별 가짜 답(예: 퀴즈 — app/services/quiz_generation.py)을 등록할 때 쓴다.
+MockResponder = Callable[[Sequence[Message]], str]
 
 
 class MockLLMClient:
-    def __init__(self, replies: Iterable[MockItem] = (), *, default_reply: str | None = MOCK_DEFAULT_REPLY) -> None:
+    def __init__(
+        self,
+        replies: Iterable[MockItem] = (),
+        *,
+        default_reply: str | None = MOCK_DEFAULT_REPLY,
+        responder: MockResponder | None = None,
+    ) -> None:
+        """준비한 답(replies)이 먼저, 다 떨어지면 responder, 그것도 없으면 default_reply."""
         self._queue: deque[MockItem] = deque(replies)
         self._default_reply = default_reply
+        self._responder = responder
         self.calls: list[list[Message]] = []  # 받은 메시지 기록(테스트에서 무엇을 보냈는지 확인)
 
     def queue(self, *replies: MockItem) -> None:
@@ -36,6 +46,8 @@ class MockLLMClient:
 
         if self._queue:
             item = self._queue.popleft()
+        elif self._responder is not None:
+            item = self._responder(messages)
         elif self._default_reply is not None:
             item = self._default_reply
         else:

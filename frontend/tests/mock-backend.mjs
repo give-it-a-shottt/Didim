@@ -81,7 +81,50 @@ const SLOW_NOTE = {
     return { id: 500 + index, position: index, heading_path: `## 느린 절 ${index}`, start_offset: start, end_offset: slowCursor };
   }),
 };
-const EXTRA_NOTES = new Map([[3, ODD_NOTE], [4, FENCE_NOTE], [5, SLOW_NOTE]]);
+// 퀴즈(F-004) 전용 노트: 6은 [문제 만들기] 성공(만든 뒤에는 문제가 생김), 7은 오늘 AI 사용량을 다 씀(429).
+// 상태가 바뀌는 응답은 이 노트들에만 둔다(테스트가 같은 가짜 서버를 동시에 쓰므로).
+const smallNote = (id, title) => {
+  const content = `# ${title}
+
+## 본문
+${title} 본문이에요.
+`;
+  return {
+    id, title, kind: "study", source: "markdown", created_at: "2026-11-10T00:00:00Z", content,
+    chunks: [{ id: id * 10 + 1, position: 0, heading_path: `# ${title} > ## 본문`, start_offset: cp(content, "## 본문"), end_offset: Array.from(content).length }],
+  };
+};
+const GENERATE_NOTE = smallNote(6, "만들기 노트");
+const LIMIT_NOTE = smallNote(7, "한도 노트");
+const EXTRA_NOTES = new Map([[3, ODD_NOTE], [4, FENCE_NOTE], [5, SLOW_NOTE], [6, GENERATE_NOTE], [7, LIMIT_NOTE]]);
+
+// 퀴즈 · 복습(F-004) 가짜 데이터. 목록에는 정답 · 해설 · 인용이 없고, 답을 내면 받는다(서버와 같은 모양).
+// 101: 노트 1 객관식(정답 1번), 102: 노트 1 OX(정답 O, 오답노트에 있음 — 맞히면 빠짐).
+const QUIZ_CARDS = [
+  {
+    id: 101, note_id: 1, note_title: "React 정리", kind: "mcq", question: "useEffect는 언제 실행되나요?",
+    choices: ["그리기 전", "그려진 뒤", "서버에서만", "실행되지 않음"], next_review_on: "2026-11-11", in_wrong_notes: false,
+  },
+  {
+    id: 102, note_id: 1, note_title: "React 정리", kind: "ox", question: "상태를 바꾸면 다시 그려진다.",
+    choices: ["O", "X"], next_review_on: "2026-11-11", in_wrong_notes: true,
+  },
+];
+const QUIZ_ANSWERS = new Map([
+  [101, { answer_index: 1, explanation: "useEffect는 화면을 그린 뒤 실행돼요.", chunk_id: 11, quote: "useEffect는 그려진 뒤 부수 효과를 실행해요." }],
+  [102, { answer_index: 0, explanation: "상태가 바뀌면 컴포넌트를 다시 그려요.", chunk_id: 12, quote: "상태를 바꾸면 다시 그려져요." }],
+]);
+const generatedNotes = new Set(); // [문제 만들기]에 성공한 노트(6)
+const GENERATED_CARD = {
+  id: 601, note_id: 6, note_title: "만들기 노트", kind: "ox", question: "만들기 노트 본문이 있다.",
+  choices: ["O", "X"], next_review_on: "2026-11-11", in_wrong_notes: false,
+};
+const noteQuizzes = (noteId) => {
+  if (noteId === 1) return QUIZ_CARDS;
+  if (noteId === 6 && generatedNotes.has(6)) return [GENERATED_CARD];
+  return [];
+};
+const noteExists = (noteId) => noteId === MOCK_NOTE.id || noteId === BIG_NOTE.id || EXTRA_NOTES.has(noteId);
 
 const isLoggedIn = (req) => (req.headers.cookie ?? "").includes(`didim_session=${VALID_TOKEN}`);
 
@@ -136,6 +179,75 @@ const server = http.createServer((req, res) => {
             },
           ];
     sendJson(res, 200, { query: q, terms: [q], method: "keyword", results });
+    return;
+  }
+
+  // --- 퀴즈 · 복습(F-004) ---
+  if (url.pathname === "/api/notes" || url.pathname === "/api/reviews/today" || url.pathname === "/api/wrong-answers" ||
+      /^\/api\/(notes\/\d+\/quizzes|quizzes\/\d+\/answer)$/.test(url.pathname)) {
+    if (!isLoggedIn(req)) {
+      sendJson(res, 401, { detail: "로그인이 필요해요." });
+      return;
+    }
+  }
+  if (req.method === "GET" && url.pathname === "/api/notes") {
+    const summary = (note, quizCount) => ({
+      id: note.id, title: note.title, kind: note.kind, created_at: note.created_at,
+      chunk_count: note.chunks.length, quiz_count: quizCount,
+    });
+    sendJson(res, 200, { total: 2, notes: [summary(MOCK_NOTE, QUIZ_CARDS.length), summary(FENCE_NOTE, 0)] });
+    return;
+  }
+  if (req.method === "GET" && url.pathname === "/api/reviews/today") {
+    sendJson(res, 200, { total: QUIZ_CARDS.length, quizzes: QUIZ_CARDS });
+    return;
+  }
+  if (req.method === "GET" && url.pathname === "/api/wrong-answers") {
+    const wrong = QUIZ_CARDS.filter((card) => card.in_wrong_notes);
+    sendJson(res, 200, { total: wrong.length, quizzes: wrong });
+    return;
+  }
+  const quizListMatch = url.pathname.match(/^\/api\/notes\/(\d+)\/quizzes$/);
+  if (quizListMatch) {
+    const noteId = Number(quizListMatch[1]);
+    if (!noteExists(noteId)) {
+      sendJson(res, 404, { detail: "노트를 찾을 수 없어요." });
+    } else if (req.method === "GET") {
+      sendJson(res, 200, { quizzes: noteQuizzes(noteId) });
+    } else if (req.method === "POST" && noteId === 7) {
+      sendJson(res, 429, { detail: "오늘 AI 사용량(30회)을 다 썼어요. 한국 시간 0시에 다시 쓸 수 있어요." });
+    } else if (req.method === "POST" && noteId === 6 && !generatedNotes.has(6)) {
+      generatedNotes.add(6);
+      sendJson(res, 201, { note_id: 6, created: 1, dropped: 1, drop_reasons: { quote_not_found: 1 }, remaining_today: 29 });
+    } else if (req.method === "POST") {
+      sendJson(res, 409, { detail: "이 노트에는 이미 문제가 있어요." });
+    } else {
+      sendJson(res, 405, { detail: "Method Not Allowed" });
+    }
+    return;
+  }
+  const answerMatch = req.method === "POST" ? url.pathname.match(/^\/api\/quizzes\/(\d+)\/answer$/) : null;
+  if (answerMatch) {
+    const quizId = Number(answerMatch[1]);
+    const card = QUIZ_CARDS.find((item) => item.id === quizId);
+    const answer = QUIZ_ANSWERS.get(quizId);
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      if (!card || !answer) {
+        sendJson(res, 404, { detail: "문제를 찾을 수 없어요." });
+        return;
+      }
+      const chosen = JSON.parse(Buffer.concat(chunks).toString("utf8")).chosen_index;
+      const correct = chosen === answer.answer_index;
+      sendJson(res, 200, {
+        correct, answer_index: answer.answer_index, explanation: answer.explanation,
+        note_id: card.note_id, note_title: card.note_title, chunk_id: answer.chunk_id, quote: answer.quote,
+        quote_start: 0, quote_end: answer.quote.length,
+        next_review_on: correct ? "2026-11-12" : "2026-11-11",
+        in_wrong_notes: !correct, // 틀리면 오답노트, 맞히면(102는 연속 2번째라고 가정) 빠짐
+      });
+    });
     return;
   }
 

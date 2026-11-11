@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MemberAuthGuard } from "@/components/member-auth-guard";
+import { QueryProvider } from "@/components/query-provider";
 import { MEMBER_ROBOTS } from "@/lib/site";
 
 // 회원 화면은 개인 기록이라 검색 결과에 올리지 않는다(이유는 site.ts MEMBER_ROBOTS 주석).
@@ -23,7 +24,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             </div>
           }
         >
-          <MemberAuthGuard>{children}</MemberAuthGuard>
+          <MemberAuthGuard>
+            {/* 답 제출 · 문제 만들기(TanStack Query, D-012)를 쓰는 화면이 이 아래에 있다 */}
+            <QueryProvider>{children}</QueryProvider>
+          </MemberAuthGuard>
         </Suspense>
       </main>
     </div>

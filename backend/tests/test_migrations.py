@@ -38,7 +38,18 @@ from app.db.schema_version import (
 from app.db.session import DatabaseConfigError, create_db_engine, dispose_engine
 from app.main import app
 
-APP_TABLES = {"users", "notes", "chunks", "search_logs"}
+APP_TABLES = {
+    "users",
+    "notes",
+    "chunks",
+    "search_logs",
+    "ai_usage_logs",
+    "quizzes",
+    "note_quiz_claims",
+    "quiz_reviews",
+    "quiz_attempts",
+    "quiz_generation_logs",
+}
 FIRST_VERSION = "0001"
 
 

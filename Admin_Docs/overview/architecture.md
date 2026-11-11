@@ -66,6 +66,12 @@ backend/                  FastAPI (uv)
 | 기록 추가에서 파일을 끌어오는 중인지(`isDragging`, 깊이 `dragDepth`) | 컴포넌트 안(`useState` · `useRef`, `import-records-dialog.tsx` SelectStep) | 올리기 단계 하나에서만 쓰는 화면 표시 상태라서 | F-002 |
 | 기록 검색어 · 검색 결과(`/records?q=`) | 주소(`?q=`) + 서버 컴포넌트(`records/page.tsx`, `lib/records.ts`) | 서버 데이터라서. 검색어를 주소에 두면 새로 고침 · 뒤로 가기 · 링크 공유에도 같은 결과가 나오고, 화면 쪽 상태가 필요 없다(입력칸은 `next/form`, 사용자 확인: GET) | F-003 |
 | 노트 원문 · 강조할 조각(`/records/[noteId]?chunk=`) | 주소(`?chunk=`) + 서버 컴포넌트(`records/[noteId]/page.tsx`) | 서버 데이터라서. 강조할 조각도 주소에 두어 검색 결과 · 나중의 근거 칩이 같은 링크 모양을 쓴다 | F-003 |
+| 오늘 복습 N · 노트 목록(`/records`) · 오답노트 목록 · 노트의 문제 수 | 서버 컴포넌트(`records/page.tsx` · `records/wrong-answers/page.tsx` · `records/[noteId]/page.tsx`, `lib/quiz-data.ts` · `lib/records.ts`) | 처음 화면을 그릴 때 필요한 서버 데이터라서. 홈의 두 목록은 서로 기다리지 않게 각자 Suspense | F-004 |
+| 퀴즈 세션 종류 · 문제 목록(`/quiz/today` · `/quiz/wrong` · `/quiz/note-N`) | 주소 + 서버 컴포넌트(`(focus)/quiz/[sessionId]/page.tsx`) | 백엔드에 세션 표가 없어 주소가 세션 종류(사용자 확인 2026-11-11). 시작할 때 한 번 받아 고정해서 풀면서 '오늘 복습' 목록이 바뀌어도 세션 문제는 그대로 | F-004 |
+| 퀴즈 진행(몇 번째 문제 · 고른 보기 · 점수 · 끝남) | 컴포넌트 안(`useState`, `quiz-runner.tsx`) | 퀴즈 화면 하나에서만 쓰는 값이라서. Next 16이 숨겨 두는 화면(Activity) 덕에 근거 칩 → 노트 → 뒤로 가기에서 풀던 자리가 남고, 다 풀면 숨겨질 때 처음으로 되돌린다. 문제 ID 목록을 key로 줘서 목록이 바뀌면 새로 그린다 | F-004 |
+| 퀴즈 답 제출(진행 중 · 채점 결과 · 오류) | TanStack Query `useMutation`(`quiz-runner.tsx`) | 서버 수정이라서(D-012 예시). 진행 · 오류 상태를 직접 짜지 않고, 자동 재시도는 꺼 둔다(다시 보내면 풀이 기록이 두 번 남음 — `query-provider.tsx`) | F-004 |
+| [문제 만들기](진행 중 · 만든 결과 · 오류) | TanStack Query `useMutation`(`note-quiz-panel.tsx`) + 성공 뒤 `router.refresh()` | 서버 수정이라서. 새로 받은 서버 컴포넌트가 문제 수를 바꾸고, 만든 결과 문구는 mutation이 갖고 있어 새로 고친 뒤에도 남는다. 자동 재시도 끔(AI를 두 번 부를 수 있음) | F-004 |
+| 퀴즈 결과 점수(`/quiz/[sessionId]/result?correct=&total=`) | 주소 | 세션 표가 없어서. 새로 고침해도 같은 점수가 나오고, 답 하나하나는 이미 서버(quiz_attempts)에 있다. 이전 세션과의 점수 변화는 세션 기록이 생긴 뒤 | F-004 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.
@@ -90,6 +96,7 @@ backend/                  FastAPI (uv)
 - AI 출력: 정해진 스키마로 받고, 형식이 틀리면 재시도 · 실패 처리.
 - LLM에 보내는 범위 최소화: 필요한 조각만, 무엇을 보내는지 안내.
 - 평가 가능하게: 매칭 · 근거 검사 결과를 로그로 남겨 평가 세트로 채점(D-005).
+- 브라우저 → `/api/*` → Next rewrites → FastAPI 프록시는 기본 30초에 끊긴다. [문제 만들기]가 AI를 최대 180초 기다리므로 `next.config.ts`의 `experimental.proxyTimeout`을 200초로 둔다(F-004, 리뷰 때 확인).
 - 오래 걸리는 처리(가져오기 · 초안 생성)는 진행 상태를 저장해서 나갔다 와도 이어 보기(IMP_01_002). 1주차 가져오기는 AI 호출이 없어 요청 한 번에 처리하고, 이어 보기 방식(백그라운드 작업 · 폴링 · 스트리밍)은 AI 단계를 붙일 때 정해요(F-002 설계 의도, Q-008).
 
-최종 수정: 2026-11-10 · 관련: D-001, D-003, D-004, D-008, D-010
+최종 수정: 2026-11-11 · 관련: D-001, D-003, D-004, D-008, D-010
