@@ -107,6 +107,7 @@ Admin_Docs/
 | [D-016](decisions/D-016-keyword-search-first.md) | 기록 검색은 키워드로 시작, 임베딩은 평가로 비교한 뒤 붙임 | [통과] |
 | [D-017](decisions/D-017-markdown-rendering.md) | 노트 원문은 react-markdown으로, 조각 단위로 그림(200KB 넘으면 글자 그대로) | [통과] |
 | [D-018](decisions/D-018-ai-usage-ledger.md) | AI 사용량은 공용 표(`ai_usage_logs`)로 세고, 하루 상한은 실제 호출 수 · 한국 시간 0시 기준 | [통과] |
+| [D-019](decisions/D-019-figma-is-design-source.md) | 화면 디자인은 Figma 디딤 파일이 원본(md와 다르면 Figma), 글꼴 next/font, 모바일은 PC 기준 + 안 깨지게 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |

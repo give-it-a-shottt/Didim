@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { MemberAuthGuard } from "@/components/member-auth-guard";
 import { QueryProvider } from "@/components/query-provider";
 import { MEMBER_ROBOTS } from "@/lib/site";
@@ -10,14 +9,11 @@ export const metadata: Metadata = {
   robots: MEMBER_ROBOTS,
 };
 
-// 집중 모드(퀴즈): 왼쪽 메뉴를 숨기고 나가기 링크만 둔다.
+// 집중 모드(퀴즈): 왼쪽 메뉴를 숨긴다. 위쪽 띠([나가기] · 제목 · 진행)는 문제를 아는 화면이 FocusTopBar로 그린다.
 // Next.js 16 cacheComponents 규칙에 따라 세션 쿠키 확인(MemberAuthGuard)은 Suspense 안에서 수행한다.
 export default function FocusLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen flex-col bg-bg-light text-text-main">
-      <header className="p-4">
-        <Link href="/records">나가기</Link>
-      </header>
       <main className="flex-1">
         <Suspense
           fallback={

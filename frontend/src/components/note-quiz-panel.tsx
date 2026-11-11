@@ -1,6 +1,7 @@
 "use client";
 
-// 노트 상세(REV_01_002)의 문제 칸(F-004). 문제가 없으면 [문제 만들기], 있으면 [이 노트 풀기].
+// 노트 상세(REV_01_002)의 오른쪽 문제 칸(F-004, Figma 26:575 자리). 문제가 없으면 [문제 만들기], 있으면 개수와 안내.
+// [이 노트 풀기]는 페이지 머리(서버 컴포넌트)에 있다 — 만든 뒤 router.refresh()로 머리에 나타난다.
 // 문제 수는 서버 컴포넌트가 넘기고(quizCount), 만들기는 서버 수정이라 TanStack Query useMutation(D-012).
 // 만든 뒤 router.refresh()로 서버 컴포넌트를 새로 받으면 quizCount가 바뀐다. 만든 결과 문구는 mutation이 갖고 있어서
 // 새로 고친 뒤에도 남는다(같은 컴포넌트가 계속 그려지므로).
@@ -12,10 +13,9 @@ import {
   type GenerateResult,
   generateQuizzes,
   MAX_QUIZZES_PER_NOTE,
-  noteSessionHref,
   QuizRequestError,
 } from "@/lib/quiz";
-import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/lib/ui-classes";
+import { CARD, CARD_LABEL, PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/lib/ui-classes";
 
 const CONFLICT = 409;
 
@@ -33,9 +33,9 @@ export function NoteQuizPanel({ noteId, quizCount }: { noteId: number; quizCount
   return (
     <section
       aria-labelledby="note-quiz-title"
-      className="flex flex-col gap-3 rounded-card border border-line-regular bg-bg-default p-6"
+      className={`${CARD} flex flex-col gap-3`}
     >
-      <h2 id="note-quiz-title" className="text-title-3 font-semibold">
+      <h2 id="note-quiz-title" className={CARD_LABEL}>
         문제{quizCount !== null && quizCount > 0 ? ` ${quizCount}개` : ""}
       </h2>
 
@@ -44,12 +44,9 @@ export function NoteQuizPanel({ noteId, quizCount }: { noteId: number; quizCount
           문제를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.
         </p>
       ) : quizCount > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={noteSessionHref(noteId)} className={PRIMARY_BUTTON}>
-            이 노트 풀기
-          </Link>
-          <p className="text-body-3 text-text-sub">복습일 전에 풀어도 돼요. 틀린 문제는 오답노트로 가요.</p>
-        </div>
+        <p className="text-body-2 text-text-sub">
+          위 [이 노트 풀기]로 풀어요. 복습일 전에 풀어도 돼요. 틀린 문제는 오답노트로 가요.
+        </p>
       ) : (
         <div className="flex flex-col gap-3">
           {/* 설계 원칙 6: AI에 무엇을 보내는지 누르기 전에 알린다 */}

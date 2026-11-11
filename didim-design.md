@@ -4,7 +4,8 @@
 
 **베이스:** MyDesign.md (My Design System, 피그마 fileKey `8OvxUj1Q2zd0POgFBwWjuY`) — 아래에 적지 않은 규칙은 모두 MyDesign.md를 따른다.
 **원칙:** 값은 고치지 않고 **모드와 컴포넌트 속성만 고른다.** MyDesign에 없는 것이 필요하면 7장 "시스템 밖 결정"에 이유와 함께 적는다.
-**피그마:** 기획 파일 `QmJiFtWEruu2JEpNixaOop` — 01 무드보드 · 02 IA · 유저플로우
+**피그마:** 기획 파일 `QmJiFtWEruu2JEpNixaOop` — 01 무드보드 · 02 IA · 유저플로우 · 03 컴포넌트 · 04 전체 화면
+**원본 순서 (D-019, 2026-11-11):** 이 문서와 Figma가 다르면 **Figma가 원본**이다. 다른 곳을 찾으면 이 문서를 Figma에 맞게 고친다.
 
 ## 0. 브리프
 
@@ -206,7 +207,7 @@
 | Badge | 근거 칩 = Black · Line Strong · S 20 (누를 수 있음 — 7장), D-day = Brand(sub1) · Soft, 상태 = Black · Soft | 12장 |
 | Toast | 3초, 실행 취소 있으면 5초 | 7장 |
 | Popup | 확인창 = Alert, 카드 만들기 = Bottom Sheet(MO) · Drawer 400(PC), 근거 미리보기 = 팝오버(radius/dropdown 12) | 15장 |
-| 사이드바 | bg/light 바탕, 아이콘 24 + 라벨 15, 활성 = SemiBold + 왼쪽 line/black 2px, 접힘 56 | 7장 시스템 밖 결정 (20장 GNB 규칙 준용) |
+| 사이드바 | bg/light 바탕, 아이콘 24 + 라벨 15, 활성 = SemiBold + 왼쪽 line/black 2px, 접힘 56. 오른쪽 모서리 radius/sheet 20 + 그림자 2px 2px 5px rgba(0,0,0,0.1)(Figma, D-019 — 카드는 그대로 그림자 없음). 좁은 화면(1024 미만)은 접힘 | 7장 시스템 밖 결정 (20장 GNB 규칙 준용) |
 | GNB (랜딩) | PC Type A · Sticky 56 / MO Style Default · Logo Left | 메뉴가 적은 서비스 |
 | Footer (랜딩) | PC Simple · MO Simple · Theme Light | |
 | Dock Bar | 사용 안 함 (MO 앱은 읽기 · 퀴즈 중심, 하단 고정 버튼 화면이 많음) | S3 |

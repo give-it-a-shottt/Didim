@@ -3,6 +3,7 @@
 /*
  * 디딤 디자인 토큰 (원칙 7: 색 · 크기는 토큰 이름으로만 쓴다)
  * 출처: MyDesign.md(Light 테마 · Pretendard 스케일 · Radius Default) + didim-design.md(Brand 02 Cyan + Coral, line/input)
+ *       + Figma 디딤 파일 변수(icon · badge · bg/dim · bg/elevated · line/input-hover · 사이드바 그림자). Figma와 다르면 Figma가 원본(사용자, 2026-11-11)
  * 이름은 디자인 토큰 이름을 그대로 옮긴다: text/sub → text-text-sub, bg/light → bg-bg-light, radius/card → rounded-card
  * 테마는 Light 하나다(didim-design.md 1장). 다크 모드는 두지 않는다.
  */
@@ -21,6 +22,16 @@
   --color-line-strong: #bdbdbd;
   --color-line-black: #111111;
   --color-line-input: #8e8e8e; /* didim-design.md 7장 시스템 밖 결정 */
+  --color-line-input-hover: #757575; /* Figma didim/line/input-hover */
+
+  /* icon — Figma icon/* (아이콘은 components/icon.tsx가 이 색으로 칠한다) */
+  --color-icon-main: #212121;
+  --color-icon-sub: #616161;
+
+  /* badge — Figma badge/black/* (상태 배지) */
+  --color-badge-black-soft: #f2f2f2;
+  --color-badge-black-text: #212121;
+  --color-badge-black-line: #bdbdbd;
 
   /* bg */
   --color-bg-default: #ffffff;
@@ -29,6 +40,8 @@
   --color-bg-hover: #eeeeee;
   --color-bg-pressed: #e0e0e0;
   --color-bg-inverse: #111111;
+  --color-bg-elevated: #ffffff; /* 모달 바탕 */
+  --color-bg-dim: rgba(17, 17, 17, 0.6); /* 모달 뒤 어둡게 */
 
   /* primary — Brand 02 Cyan */
   --color-primary-default: #01808b;
@@ -110,6 +123,9 @@
   --text-caption-3: 11px;
   --text-caption-3--line-height: 1.45;
   --text-caption-3--letter-spacing: -0.025em;
+  /* 원문 인용(명조) — didim-design.md 4장 "명조 원문 Noto Serif KR Body 14 / 155%", Figma Didim/원문 인용 */
+  --text-quote: 14px;
+  --text-quote--line-height: 1.55;
 
   /* 라운드 — Radius Default */
   --radius-tag: 6px;
@@ -120,12 +136,26 @@
   --radius-thumbnail: 12px;
   --radius-modal: 16px;
   --radius-sheet: 20px;
+
+  /* 그림자 — Figma 사이드바 효과(변수 이름이 없어 shadow/sidebar로 정함, 사용자 확인 2026-11-11) */
+  --shadow-sidebar: 2px 2px 5px rgba(0, 0, 0, 0.1);
+
+  /* 진행 막대 '모를 때'(Figma Progress Bar Indeterminate) — 막대가 좌우로 흐름 */
+  --animate-indeterminate: indeterminate 1.4s ease-in-out infinite;
+  @keyframes indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(250%);
+    }
+  }
 }
 
 @theme inline {
-  /* 글꼴은 Pretendard + Noto Serif KR로 바꿀 예정(Q-018). 지금은 기본 글꼴 */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* 글꼴(Q-018): 고딕 = AI와 화면(Pretendard), 명조 = 내 기록 원문(Noto Serif KR). app/layout.tsx의 next/font가 변수를 채운다 */
+  --font-sans: var(--font-pretendard);
+  --font-serif: var(--font-noto-serif-kr);
 }
 
 body {

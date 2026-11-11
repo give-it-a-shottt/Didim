@@ -14,8 +14,9 @@ test("기록 · 복습 홈에 오늘 복습 N과 노트 목록이 나오고, 노
   await logIn(context);
   await page.goto("/records");
 
-  await expect(page.getByRole("heading", { name: "오늘 복습 2" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "복습 시작" })).toHaveAttribute("href", "/quiz/today");
+  const todayCard = page.getByRole("region", { name: "오늘 복습" });
+  await expect(todayCard).toContainText("2문제");
+  await expect(todayCard.getByRole("link", { name: "복습 시작" })).toHaveAttribute("href", "/quiz/today");
   await expect(page.getByRole("heading", { name: "노트 2" })).toBeVisible();
   const note = page.getByRole("link", { name: /React 정리/ });
   await expect(note).toContainText("문제 2개");
@@ -49,7 +50,7 @@ test("오늘 복습: 답을 내면 채점 · 해설 · 근거 · 다음 복습�
   await page.getByRole("radio", { name: "그리기 전" }).check();
   await submit.click();
 
-  await expect(page.getByRole("heading", { name: "✗ 틀렸어요" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: /틀렸어요/ })).toBeFocused();
   await expect(page.getByText("useEffect는 화면을 그린 뒤 실행돼요.")).toBeVisible();
   await expect(page.locator("blockquote")).toHaveText("useEffect는 그려진 뒤 부수 효과를 실행해요.");
   await expect(page.getByRole("link", { name: "근거 원문 보기: React 정리" })).toHaveAttribute(
@@ -58,8 +59,8 @@ test("오늘 복습: 답을 내면 채점 · 해설 · 근거 · 다음 복습�
   );
   await expect(page.getByText("다음 복습: 11월 11일")).toBeVisible();
   await expect(page.getByText("오답노트에 넣었어요. 2번 연속 맞히면 빠져요.")).toBeVisible();
-  await expect(page.getByText("✓ 정답")).toBeVisible();
-  await expect(page.getByText("✗ 내 답")).toBeVisible();
+  await expect(page.getByText("정답", { exact: true })).toBeVisible();
+  await expect(page.getByText("내 답 · 틀림")).toBeVisible();
   await expect(page.getByRole("radio", { name: "그려진 뒤" })).toBeDisabled(); // 답을 낸 뒤에는 바꿀 수 없다
 
   // 2번 문제(OX, 오답노트에 있던 문제): 맞힌다
@@ -69,15 +70,16 @@ test("오늘 복습: 답을 내면 채점 · 해설 · 근거 · 다음 복습�
   await page.getByRole("radio", { name: "O", exact: true }).check();
   await page.getByRole("button", { name: "답 내기" }).click();
 
-  await expect(page.getByRole("heading", { name: "✓ 맞았어요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /맞았어요/ })).toBeVisible();
   await expect(page.getByText("2번 연속 맞혀서 오답노트에서 빠졌어요.")).toBeVisible();
   await expect(page.getByText("다음 복습: 11월 12일")).toBeVisible();
 
   await page.getByRole("button", { name: "결과 보기" }).click();
 
   await expect(page).toHaveURL(/\/quiz\/today\/result\?correct=1&total=2$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("퀴즈 결과");
-  await expect(page.getByText("2문제 중 1개 맞혔어요")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("복습을 마쳤어요");
+  await expect(page.getByRole("region", { name: "이번 점수" })).toContainText("1 / 2");
+  await expect(page.getByText("50%")).toBeVisible();
   await expect(page.getByRole("link", { name: "틀린 문제 다시 풀기" })).toHaveAttribute("href", "/quiz/wrong");
 });
 
@@ -109,7 +111,7 @@ test("[답 내기]가 실패하면 이유가 보이고, 같은 문제에서 다�
 
   // 3) 다시 내면 정상 채점 — 같은 문제(1/2)에 그대로 있다
   await submit.click();
-  await expect(page.getByRole("heading", { name: "✓ 맞았어요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /맞았어요/ })).toBeVisible();
   await expect(page.getByRole("progressbar", { name: "퀴즈 진행" })).toHaveAttribute("aria-valuenow", "1");
   await expect(page.getByText("답을 보내지 못했어요")).toHaveCount(0); // 이전 오류 문구는 사라진다
 });
@@ -135,7 +137,7 @@ test("근거 칩을 누르면 노트 상세에서 그 조각이 강조되고, �
   await page.goto("/quiz/today");
   await page.getByRole("radio", { name: "그려진 뒤" }).check();
   await page.getByRole("button", { name: "답 내기" }).click();
-  await expect(page.getByRole("heading", { name: "✓ 맞았어요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /맞았어요/ })).toBeVisible();
 
   await page.getByRole("link", { name: "근거 원문 보기: React 정리" }).click();
 
@@ -146,7 +148,7 @@ test("근거 칩을 누르면 노트 상세에서 그 조각이 강조되고, �
   await page.goBack();
 
   await expect(page).toHaveURL(/\/quiz\/today$/);
-  await expect(page.getByRole("heading", { name: "✓ 맞았어요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /맞았어요/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "다음 문제" })).toBeVisible();
 });
 

@@ -16,7 +16,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen bg-bg-light text-text-main">
       <AppSidebar />
-      <main className="flex-1">
+      {/* min-w-0: 본문의 긴 글이 사이드바를 밀어내지 않게 */}
+      <main className="min-w-0 flex-1">
         <Suspense
           fallback={
             <div className="p-12 text-body-2 text-text-sub" role="status">

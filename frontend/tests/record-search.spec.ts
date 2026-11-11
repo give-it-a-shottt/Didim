@@ -19,8 +19,9 @@ test("검색어를 넣으면 결과 줄이 나오고, 누르면 노트 상세에
   await logIn(context);
   await page.goto("/records");
 
+  // Figma 검색 입력칸에는 버튼이 없어 Enter로 보낸다
   await page.getByRole("searchbox", { name: "기록 검색어" }).fill("useState");
-  await page.getByRole("button", { name: "검색" }).click();
+  await page.getByRole("searchbox", { name: "기록 검색어" }).press("Enter");
 
   await expect(page).toHaveURL(/\/records\?q=useState$/);
   await expect(page.getByRole("heading", { name: "‘useState’ 검색 결과 1개" })).toBeVisible();

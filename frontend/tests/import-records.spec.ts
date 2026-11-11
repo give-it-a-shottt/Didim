@@ -19,18 +19,20 @@ test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인�
   await signIn(context);
   await page.goto("/home");
 
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   await expect(dialog.locator('[data-screen-id="IMP_01_001"]')).toBeVisible();
-  await expect(dialog.getByRole("tab", { name: "노션 (4주차)" })).toBeDisabled();
-  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled();
+  await expect(dialog.getByRole("tab", { name: "노션 연결" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 
-  await dialog.getByLabel("프로젝트 · 경험").check();
+  // 기록 종류는 칩(라디오를 숨기고 글자 칸을 누름) — 사람이 누르는 칩 글자를 눌러 고른다
+  await dialog.getByText("프로젝트 · 경험", { exact: true }).click();
+  await expect(dialog.getByRole("radio", { name: "프로젝트 · 경험" })).toBeChecked();
   await dialog.getByLabel("마크다운 파일").setInputFiles([
     markdownFile("react.md", "# React\n본문"),
     markdownFile("os.md", "# 운영체제\n본문"),
   ]);
-  await dialog.getByRole("button", { name: "가져오기 (2개)" }).click();
+  await dialog.getByRole("button", { name: "2개 가져오기" }).click();
 
   const result = dialog.locator('[data-screen-id="IMP_01_003"]');
   await expect(result).toBeVisible();
@@ -44,7 +46,7 @@ test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인�
 test("파일을 끌어다 놓아도 고른 것과 같이 올라가고, 끄는 동안 파일 칸이 강조된다", async ({ context, page }) => {
   await signIn(context);
   await page.goto("/home");
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
   const fileInput = dialog.getByLabel("마크다운 파일");
@@ -63,7 +65,7 @@ test("파일을 끌어다 놓아도 고른 것과 같이 올라가고, 끄는 �
   await expect(fileInput).not.toHaveAttribute("data-dragging", "");
   expect(await fileInput.evaluate((input: HTMLInputElement) => input.files?.length)).toBe(2);
 
-  await dialog.getByRole("button", { name: "가져오기 (2개)" }).click();
+  await dialog.getByRole("button", { name: "2개 가져오기" }).click();
   const result = dialog.locator('[data-screen-id="IMP_01_003"]');
   await expect(result.getByText("노트", { exact: true }).locator("xpath=..")).toContainText("2");
 });
@@ -74,7 +76,7 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
 }) => {
   await signIn(context);
   await page.goto("/home");
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
   const fileInput = dialog.getByLabel("마크다운 파일");
@@ -105,19 +107,19 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
 
   await selectStep.dispatchEvent("drop", { dataTransfer: many });
   await expect(dialog.getByText("한 번에 20개까지 올릴 수 있어요.")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 });
 
 test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 이유를 보여 준다", async ({ context, page }) => {
   await signIn(context);
   await page.goto("/home");
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   const input = dialog.getByLabel("마크다운 파일");
 
   await input.setInputFiles(Array.from({ length: 21 }, (_, index) => markdownFile(`${index}.md`, "본문")));
   await expect(dialog.getByRole("alert")).toHaveText("한 번에 20개까지 올릴 수 있어요.");
-  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 
   const big = Buffer.alloc(11 * 1024 * 1024, "a");
   await input.setInputFiles([
@@ -125,16 +127,16 @@ test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 
     { name: "b.md", mimeType: "text/markdown", buffer: big },
   ]);
   await expect(dialog.getByRole("alert")).toHaveText("한 번에 올릴 수 있는 용량(20MB)을 넘었어요.");
-  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 });
 
 // 서버 응답 갈래별 화면(F-002 1차 R3-7): 가짜 백엔드 대신 page.route로 응답을 바꿔 끼운다.
 async function openAndSubmit(page: Page) {
   await page.goto("/home");
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   await dialog.getByLabel("마크다운 파일").setInputFiles([markdownFile("a.md", "# A\n본문")]);
-  await dialog.getByRole("button", { name: "가져오기 (1개)" }).click();
+  await dialog.getByRole("button", { name: "1개 가져오기" }).click();
   return dialog;
 }
 
@@ -208,9 +210,9 @@ test("처리 중에는 Esc를 눌러도 모달이 닫히지 않고, 다시 열�
   await dialog.getByRole("button", { name: "확인" }).click();
   await expect(dialog).toBeHidden();
 
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   await expect(dialog.locator('[data-screen-id="IMP_01_001"]')).toBeVisible();
-  await expect(dialog.getByRole("button", { name: /^가져오기/ })).toBeDisabled(); // 이전 파일 선택이 지워짐
+  await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled(); // 이전 파일 선택이 지워짐
 });
 
 test("중복 · 실패가 섞인 결과는 요약과 함께 목록으로 보인다", async ({ context, page }) => {
@@ -241,12 +243,12 @@ test("하나도 읽지 못하면 오류(IMP_01_900)와 이유가 보이고, 다�
   await signIn(context);
   await page.goto("/home");
 
-  await page.getByRole("button", { name: "+ 기록 추가" }).click();
+  await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   await dialog.getByLabel("마크다운 파일").setInputFiles([
     { name: "memo.txt", mimeType: "text/plain", buffer: Buffer.from("메모", "utf8") },
   ]);
-  await dialog.getByRole("button", { name: "가져오기 (1개)" }).click();
+  await dialog.getByRole("button", { name: "1개 가져오기" }).click();
 
   const error = dialog.locator('[data-screen-id="IMP_01_900"]');
   await expect(error).toBeVisible();
