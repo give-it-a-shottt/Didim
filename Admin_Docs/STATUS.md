@@ -1,7 +1,7 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 7 · 일부 1 · 다음 8 · 열린 질문 12개
+됨 7 · 일부 2 · 다음 7 · 열린 질문 12개
 최종 수정: 2026-11-11
 
 ## 기능별 상태
@@ -15,7 +15,7 @@
 | [F-003](features/F-003-record-search-rag/feature.md) 기록 검색 + 근거 | [됨] | 2주차 기준 [됨]: 키워드 검색(pg_trgm) · 검색창 · 결과 줄 · 노트 상세 위치 강조 · 검색 로그 · 평가 기준선(낱말 겹침 1.00 · 다른낱말 0.60, 상위 5개). 남은 것: 결과를 노트별로 묶을지(Q-021), 검색 횟수 상한(Q-020), 명조 글꼴(Q-018 → D-019로 닫힘, 원문 인용에 쓰는 건 기록 · 복습 묶음), 임베딩 비교(D-016) | 평가: 경험 카드 10장 · 질문 20개로 scripts/search_eval 직접 실행 0.80(16/20, 2026-11-10). 테스트 backend/tests SQLite 178 · PostgreSQL 185개 통과(test_search.py · test_search_eval.py 포함), Playwright 16개(record-search.spec.ts 6개) · tsc · eslint · next build 통과(2026-11-10). 1차 구현 때 실제 uvicorn + next dev(개발 DB)로 프록시 거쳐 검색 · 노트 상세 강조 직접 실행. 성능: 사용자당 조각 1만에서 맞는 것 없음 6ms(didim_test 실측) | 5차 [통과] (3~5차: 노트 상세 마크다운 · 드래그 앤 드롭) | 2026-11-10 |
 | [F-004](features/F-004-quiz-review/feature.md) 퀴즈 · 복습 | [됨] | 3주차. 문제 만들기(근거 인용 검사) · 오늘 복습 · 오답노트 · 화면. 평가: 버려진 비율 2%(1/50), 정답 · 해설 일치 100%(49/49, 채점 AI — 사람 검수 전) | pytest SQLite 295 · PostgreSQL 304, Playwright 32 통과(2026-11-11), 직접 실행 mock(사용자 확인), EXAONE 평가 실행(2026-11-11) | 3차 [통과] | 2026-11-11 |
 | [F-005](features/F-005-notion-import/feature.md) 노션 연결 | [다음] | 4주차 | - | - | - |
-| [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [다음] | 4주차 | - | - | - |
+| [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [일부] | 4주차. 설계 의도 받음(해결하는 문제 · 정한 것 · 완료 기준 7개 · 화면 · API 6개 · 데이터 0005) — 구현 전 | feature.md 사용자 확인(2026-11-11) | - | 2026-11-11 |
 | [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [다음] | 5주차 | - | - | - |
 | [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [다음] | 3~4주차(단순) · 6주차 | - | - | - |
 | [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [다음] | 주차 미정(Q-005) | - | - | - |

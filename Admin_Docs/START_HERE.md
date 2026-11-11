@@ -119,7 +119,7 @@ Admin_Docs/
 | [F-003](features/F-003-record-search-rag/feature.md) | 기록 검색 + 근거 (RAG) | 2 | [됨] 2주차 기준 · 2차 [통과] · 평가 기준선 0.80 |
 | [F-004](features/F-004-quiz-review/feature.md) | 퀴즈 · 복습 주기 · 오답노트 | 3 | 설계 의도 전 |
 | [F-005](features/F-005-notion-import/feature.md) | 노션 연결 | 4 | 설계 의도 전 |
-| [F-006](features/F-006-experience-cards/feature.md) | 경험 카드 | 4 | 설계 의도 전 |
+| [F-006](features/F-006-experience-cards/feature.md) | 경험 카드 | 4 | 설계 의도 받음 · 구현 전 |
 | [F-007](features/F-007-posting-analysis/feature.md) | 공고 분석 · 매칭 | 5 | 설계 의도 전 |
 | [F-008](features/F-008-evidence-draft/feature.md) | 근거 달린 자소서 + 근거 검사 | 3~4(단순) · 6 | 설계 의도 전 |
 | [F-009](features/F-009-interview-practice/feature.md) | 면접 연습 | 미정(Q-005) | 설계 의도 전 |

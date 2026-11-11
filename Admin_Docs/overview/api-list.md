@@ -23,10 +23,16 @@
 | GET | /api/reviews/today | 오늘 복습(한국 날짜 기준 복습일이 된 문제, 오래 밀린 것부터 최대 100개). 응답 200: `{ total, quizzes: [위와 같은 모양] }`. 오류: 401 | F-004 | 테스트 통과(2026-11-11) |
 | POST | /api/quizzes/{quiz_id}/answer | 답 제출. 요청 `{ chosen_index }`. 응답 200: `{ correct, answer_index, explanation, note_id, note_title, chunk_id, quote, quote_start, quote_end, next_review_on, in_wrong_notes }`. 오류: 401, 404 내 문제 아님, 422 보기 범위 밖 | F-004 | 테스트 통과 · 직접 실행 mock(사용자 확인, 2026-11-11) |
 | GET | /api/wrong-answers | 오답노트(최근에 틀린 것부터 최대 100개). 응답 200: `{ total, quizzes: [위와 같은 모양] }`. 오류: 401 | F-004 | 테스트 통과(2026-11-11) |
+| POST | /api/notes/{note_id}/cards/candidates | 카드 후보 찾기(AI 1번). 후보 최대 3개, 칸마다 원문 인용(글자 그대로 검사, 없으면 빈칸) + 빈칸 질문. 오류: 401, 404, 409 이미 찾음 · 찾는 중, 429 하루 상한, 502 · 503 AI 실패 | F-006 | 설계(구현 전) |
+| GET | /api/cards?status=candidate\|saved | 카드 목록 — 빈칸 수 · 근거 수 · 수정일 | F-006 | 설계(구현 전) |
+| GET | /api/cards/{card_id} | 카드 상세 — 칸마다 인용 · 근거 위치 · 빈칸 질문 · 내 답 | F-006 | 설계(구현 전) |
+| POST | /api/cards/{card_id}/save | 후보 → 저장(제목 확인 포함) | F-006 | 설계(구현 전) |
+| DELETE | /api/cards/{card_id} | 후보 버리기 · 카드 삭제 | F-006 | 설계(구현 전) |
+| PUT | /api/cards/{card_id}/fields/{slot} | 내 답 저장 · 인용 빼기 | F-006 | 설계(구현 전) |
 
 규칙
 - 모든 서버 경로는 `/api`로 시작한다. 브라우저는 Next.js 주소의 `/api/*`로 부르고, Next.js가 FastAPI로 넘긴다(D-010, Q-012).
 - 모든 회원 API는 로그인 사용자 기준으로만 데이터를 돌려준다(D-004).
 - AI를 부르는 API는 사용량 한도를 먼저 확인하고, 한도에 걸리면 부분 결과를 보존한다.
 
-최종 수정: 2026-11-11 · 관련: F-000, F-001, F-002, F-003, F-004, D-004, D-010, D-016
+최종 수정: 2026-11-11 · 관련: F-000, F-001, F-002, F-003, F-004, F-006, D-004, D-010, D-016
