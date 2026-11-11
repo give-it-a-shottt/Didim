@@ -28,7 +28,6 @@ from app.services.note_service import (
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 NOTE_NOT_FOUND_DETAIL = "노트를 찾을 수 없어요."
-MAX_NOTE_ID = MAX_DB_ID  # 이보다 큰 번호는 DB에 묻기 전에 404(app/config.py MAX_DB_ID 주석)
 
 
 class ImportSummary(BaseModel):
@@ -157,7 +156,7 @@ def get_note(
     db: Session = Depends(get_db),
 ) -> NoteDetailOut:
     """401: 로그인 안 함 / 404: 없거나 다른 사용자의 노트(있는지조차 알려 주지 않음, D-004) · 번호가 범위 밖"""
-    if not 1 <= note_id <= MAX_NOTE_ID:
+    if not 1 <= note_id <= MAX_DB_ID:  # 범위 밖 번호는 DB에 묻기 전에 404(app/config.py)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOTE_NOT_FOUND_DETAIL)
     note = get_note_for_user(db, user_id=current_user.id, note_id=note_id)
     if note is None:

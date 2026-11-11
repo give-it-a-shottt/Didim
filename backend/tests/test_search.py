@@ -20,9 +20,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.api.notes import MAX_NOTE_ID
 from app.api.search import TIMEOUT_DETAIL
-from app.config import MAX_SEARCH_QUERY_CHARS, MAX_SEARCH_RESULTS, MAX_SEARCH_TERMS, SESSION_COOKIE_NAME, Settings
+from app.config import MAX_DB_ID, MAX_SEARCH_QUERY_CHARS, MAX_SEARCH_RESULTS, MAX_SEARCH_TERMS, SESSION_COOKIE_NAME, Settings
 from app.db.models import SearchLog
 from app.main import app
 from app.search import SearchHit, SearchQuery, SearchTimeoutError, extract_terms, get_searcher, make_excerpt
@@ -177,7 +176,7 @@ def test_note_detail_hides_other_users_notes(client: TestClient, db_session: Ses
     assert client.get("/api/notes/999999").status_code == 404
 
 
-@pytest.mark.parametrize("note_id", [0, -1, MAX_NOTE_ID + 1, 10**20])
+@pytest.mark.parametrize("note_id", [0, -1, MAX_DB_ID + 1, 10**20])
 def test_note_ids_outside_the_db_range_are_simply_not_found(
     client: TestClient, db_session: Session, test_settings: Settings, note_id: int
 ) -> None:

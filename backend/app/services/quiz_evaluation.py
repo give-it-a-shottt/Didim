@@ -30,6 +30,7 @@ from app.llm.base import LLMClient, LLMError, LLMRateLimited, LLMReply, LLMUnava
 from app.llm.structured import complete_json
 from app.services.quiz_generation import (
     NoEligibleChunks,
+    abandon_generation,
     prepare_generation,
     request_quiz_drafts,
     save_failed_generation,
@@ -236,6 +237,7 @@ async def evaluate_note(
     전체 시간 상한(180초) 밖이다 — 실패한 시도도 서비스와 똑같이 로그 · 사용량을 남기고 선점을 푼 뒤 처음부터 다시 한다.
     """
     result = NoteEvalResult(note_title=note.title)
+    retries = max(0, retries)
     for attempt in range(retries + 1):
         try:
             plan = prepare_generation(db, user_id=user_id, note_id=note.id)
@@ -257,6 +259,9 @@ async def evaluate_note(
                 continue
             result.generation_error = type(exc).__name__
             return result
+        except BaseException:  # 예상 못 한 오류 · 중단 — 서비스와 같이 정리하고 올린다
+            abandon_generation(db, plan)
+            raise
         result.generation_seconds = time.perf_counter() - started
         result.generation_usage = result.generation_usage + reply.usage
         break

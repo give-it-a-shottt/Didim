@@ -269,3 +269,40 @@ def test_patient_client_keeps_a_minimum_interval_between_calls() -> None:
     asyncio.run(client.chat([Message("user", "2")]))
 
     assert slept == [15]  # 첫 호출은 바로, 두 번째는 남은 15초를 쉬고
+
+
+def test_negative_retries_means_no_retry(db_session: Session) -> None:
+    user_id, note = _note(db_session, sub="eval-neg")
+
+    result = asyncio.run(
+        evaluate_note(
+            db_session,
+            user_id=user_id,
+            note=note,
+            generator=MockLLMClient([LLMUnavailable("500")]),
+            judge=MockLLMClient(responder=mock_judge_responder),
+            retries=-1,
+        )
+    )
+
+    assert (result.generation_error, result.retries) == ("LLMUnavailable", 0)
+
+
+def test_unexpected_error_in_evaluation_cleans_up_like_the_service(db_session: Session) -> None:
+    from app.db.models import AIUsageLog, NoteQuizClaim
+
+    user_id, note = _note(db_session, sub="eval-boom")
+
+    class Exploding:
+        async def chat(self, messages: object) -> object:
+            raise RuntimeError("버그")
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(
+            evaluate_note(
+                db_session, user_id=user_id, note=note, generator=Exploding(), judge=MockLLMClient()
+            )
+        )
+
+    assert db_session.scalars(select(NoteQuizClaim)).all() == []
+    assert db_session.scalars(select(AIUsageLog.outcome)).one() == "error"

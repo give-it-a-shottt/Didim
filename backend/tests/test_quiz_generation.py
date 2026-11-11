@@ -53,6 +53,7 @@ from app.services.quiz_generation import (
     GenerationInProgress,
     OtherNoteInProgress,
     QuizBatchIn,
+    abandon_generation,
     QuizDraftIn,
     build_messages,
     check_drafts,
@@ -746,3 +747,78 @@ def test_two_notes_at_the_same_time_only_one_claims(db_session: Session) -> None
 
     assert sorted(results) == ["busy", "claimed"]
     assert len(_claims(db_session)) == 1
+
+
+class _Cancelled(BaseException):
+    """Exception이 아닌 BaseException(요청 취소 · 중단 흉내) — `except Exception`에 안 잡히는 경로를 확인한다."""
+
+
+def test_cancel_like_base_exception_also_cleans_up(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AI를 기다리다 BaseException(취소 흉내)으로 끝나도 사용량 1회 · 선점 해제. 테스트 서버의 이벤트 루프를 멈추지
+    않으려고 엔드포인트 함수를 직접 부르고, AI 호출 자리(anyio.from_thread.run)만 바꿔 끼운다."""
+    from app.api import quizzes as quizzes_api
+    from app.db.models import User
+
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-cancel", email="cc@example.com", name="c")).id
+    note = _add_note(db_session, user_id)
+
+    def cancelled(*args: object, **kwargs: object) -> None:
+        raise _Cancelled
+
+    monkeypatch.setattr(quizzes_api.anyio.from_thread, "run", cancelled)
+    user = db_session.get(User, user_id)
+
+    with pytest.raises(_Cancelled):
+        quizzes_api.generate_quizzes(note.id, current_user=user, db=db_session, client=MockLLMClient())
+
+    assert _claims(db_session) == []
+    assert db_session.scalars(select(AIUsageLog.outcome)).one() == "error"
+
+
+def test_abandon_still_releases_the_claim_when_logging_fails(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """정리(로그 · 사용량 기록)가 실패해도 선점은 풀고, 예외를 올리지 않는다."""
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-abandon", email="ab@example.com", name="a")).id
+    note = _add_note(db_session, user_id)
+    plan = prepare_generation(db_session, user_id=user_id, note_id=note.id)
+
+    def failing_save(*args: object, **kwargs: object) -> int:
+        raise OperationalError("INSERT", {}, Exception("db down"))
+
+    monkeypatch.setattr("app.services.quiz_generation.save_failed_generation", failing_save)
+
+    abandon_generation(db_session, plan)  # 예외가 올라오지 않는다
+
+    assert _claims(db_session) == []
+
+
+@pytest.mark.skipif(not ON_POSTGRES, reason="사용자 줄 잠금(FOR NO KEY UPDATE)은 PostgreSQL에서만 시험한다")
+def test_stale_claim_and_another_note_at_the_same_time_only_one_claims(db_session: Session) -> None:
+    """오래된 선점이 남은 노트와 다른 노트를 동시에 보내도 하나만 통과한다(오래된 선점 가져가기도 잠금 안, 2차 리뷰 R2)."""
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-race3", email="r3@example.com", name="r")).id
+    stale_note = _add_note(db_session, user_id).id
+    other_note = _add_note(db_session, user_id, content=NETWORK_NOTE + "\n셋째", title="셋째").id
+    old = datetime.now(timezone.utc) - timedelta(seconds=QUIZ_CLAIM_STALE_SECONDS + 1)
+    db_session.add(NoteQuizClaim(user_id=user_id, note_id=stale_note, claimed_at=old))
+    db_session.commit()
+    make_session = sessionmaker(bind=db_session.get_bind(), expire_on_commit=False)
+    barrier = threading.Barrier(2)
+    results: list[str] = []
+
+    def attempt(note_id: int) -> None:
+        with make_session() as session:
+            barrier.wait()
+            try:
+                prepare_generation(session, user_id=user_id, note_id=note_id)
+                results.append("claimed")
+            except (OtherNoteInProgress, GenerationInProgress):
+                results.append("busy")
+
+    threads = [threading.Thread(target=attempt, args=(note_id,)) for note_id in (stale_note, other_note)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    assert sorted(results) == ["busy", "claimed"]

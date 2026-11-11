@@ -45,6 +45,7 @@ from app.llm.structured import StructuredReply, complete_json
 from app.services.note_service import get_note_for_user, list_chunks_for_note_for_user
 from app.services.usage_service import (
     FEATURE_QUIZ_GENERATE,
+    OUTCOME_OK,
     OUTCOME_SAVE_FAILED,
     DailyUsage,
     ensure_within_daily_limit,
@@ -275,40 +276,44 @@ def _has_active_claim_on_other_note(db: Session, *, user_id: int, note_id: int, 
 
 
 def _claim_note(db: Session, *, user_id: int, note_id: int, at: datetime) -> None:
-    """노트를 선점한다. 유니크 제약(note_id)으로 동시에 들어온 요청 중 하나만 통과한다.
+    """노트를 선점한다. 사용자당 진행 중인 선점은 하나만, 노트마다 선점은 하나만.
 
-    사용자당 진행 중인 선점은 하나만: 사용자 줄을 잠가(PostgreSQL FOR UPDATE — 같은 사용자의 선점을 차례로 세움)
-    다른 노트에 진행 중인 선점이 있는지 본다. 있으면 OtherNoteInProgress(F-004 1차 리뷰 R2).
-    이미 선점이 있으면, 5분이 지난 선점(서버가 도중에 죽음)만 가져간다. UPDATE … WHERE claimed_at < 기준은
-    PostgreSQL에서 줄 잠금 뒤 조건을 다시 보므로, 오래된 선점을 둘이 동시에 가져가려 해도 하나만 바뀐다.
+    사용자 줄을 잠그고(PostgreSQL FOR NO KEY UPDATE — 같은 사용자의 선점을 차례로 세움) 그 잠금 안에서
+    "다른 노트에 진행 중인 선점이 있나 → 이 노트의 선점이 없으면 새로, 5분 지났으면 가져가고, 진행 중이면 409"를
+    모두 정한 뒤 한 번만 커밋한다. 커밋 · rollback 전까지 잠금이 남아 있어 두 요청이 사이에 끼어들 수 없다
+    (F-004 2차 리뷰 R2 — 전에는 유니크 충돌 rollback이 잠금을 먼저 풀어 오래된 선점 경로가 잠금 밖이었다).
+    FOR NO KEY UPDATE는 이 잠금끼리만 막고, 같은 사용자 줄을 가리키는 외래키 INSERT(사용량 · 풀이 기록)는 막지 않는다.
+    SQLite(테스트)는 줄 잠금이 없어서 note_id 유니크 제약이 같은 노트의 동시 선점을 막는 안전망이 된다.
     """
     stale_before = at - timedelta(seconds=QUIZ_CLAIM_STALE_SECONDS)
-    db.execute(select(User.id).where(User.id == user_id).with_for_update())
+    db.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True))
     if _has_active_claim_on_other_note(db, user_id=user_id, note_id=note_id, stale_before=stale_before):
         db.rollback()
         raise OtherNoteInProgress
-    db.add(NoteQuizClaim(user_id=user_id, note_id=note_id, claimed_at=at))
+
+    # 이 노트의 선점: 없으면 None, 있으면 5분이 지났는지(비교는 DB에서 — 시간대 표기가 DB마다 달라서)
+    is_stale = db.scalar(
+        select(NoteQuizClaim.claimed_at < stale_before).where(
+            NoteQuizClaim.note_id == note_id, NoteQuizClaim.user_id == user_id
+        )
+    )
+    if is_stale is None:
+        db.add(NoteQuizClaim(user_id=user_id, note_id=note_id, claimed_at=at))
+    elif is_stale:
+        db.execute(
+            update(NoteQuizClaim)
+            .where(NoteQuizClaim.note_id == note_id, NoteQuizClaim.user_id == user_id)
+            .values(claimed_at=at)
+        )
+        logger.warning("오래된 문제 만들기 선점을 가져감 user_id=%s note_id=%s", user_id, note_id)
+    else:
+        db.rollback()
+        raise GenerationInProgress
     try:
         db.commit()
-        return
-    except IntegrityError:
+    except IntegrityError:  # 줄 잠금이 없는 DB에서 같은 노트를 동시에 선점한 경우(유니크 제약이 막음)
         db.rollback()
-
-    taken = db.execute(
-        update(NoteQuizClaim)
-        .where(
-            NoteQuizClaim.note_id == note_id,
-            NoteQuizClaim.user_id == user_id,
-            NoteQuizClaim.claimed_at < stale_before,
-        )
-        .values(claimed_at=at)
-    ).rowcount
-    if taken:
-        db.commit()
-        logger.warning("오래된 문제 만들기 선점을 가져감 user_id=%s note_id=%s", user_id, note_id)
-        return
-    db.rollback()
-    raise GenerationInProgress
+        raise GenerationInProgress from None
 
 
 def _release_claim_statement(plan: "GenerationPlan"):  # noqa: ANN202
@@ -394,7 +399,7 @@ def save_generation(
     at = now if now is not None else now_utc()
     checked = check_drafts(reply.value.quizzes, plan.chunks)
     drop_reasons = dict(checked.drop_reasons)
-    outcome = "ok" if checked.kept else OUTCOME_ALL_DROPPED
+    outcome = OUTCOME_OK if checked.kept else OUTCOME_ALL_DROPPED
     today = korea_today(at)
 
     try:
@@ -420,8 +425,12 @@ def save_generation(
         if not checked.kept:  # 하나도 안 남았으면 선점을 풀어 다시 누를 수 있게(성공이면 선점을 남김)
             db.execute(_release_claim_statement(plan))
         db.commit()
-    except Exception:
+    except Exception as exc:
         db.rollback()
+        # 원인을 로그로 남긴다 — 종류 이름만(예외 문구 · 스택에는 DB 접속 정보 · 원문이 섞일 수 있어서, F-004 2차 리뷰 R1 · R3)
+        logger.warning(
+            "문제 저장 실패 user_id=%s note_id=%s error=%s", plan.user_id, plan.note.id, type(exc).__name__
+        )
         record_usage(
             db, user_id=plan.user_id, feature=FEATURE_QUIZ_GENERATE, usage=reply.usage, outcome=OUTCOME_SAVE_FAILED, now=at
         )

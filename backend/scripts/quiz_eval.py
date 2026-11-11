@@ -28,7 +28,14 @@ from app.llm import LLMClient, LLMConfigError, MockLLMClient, get_llm_client, lo
 from app.services.auth_service import GoogleProfile, get_or_create_google_user
 from app.services.chunking import split_markdown
 from app.services.note_service import create_note_for_user
-from app.services.quiz_evaluation import PatientClient, evaluate_note, mock_judge_responder, result_to_dict, summarize
+from app.services.quiz_evaluation import (
+    NoteEvalResult,
+    PatientClient,
+    evaluate_note,
+    mock_judge_responder,
+    result_to_dict,
+    summarize,
+)
 from app.services.quiz_generation import mock_quiz_responder
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -91,15 +98,19 @@ async def _run(
                     db, user_id=user.id, title=_title_of(content, path.stem), content=content, chunks=split_markdown(content)
                 )
                 print(f"[{index}/{len(paths)}] {note.title} …", flush=True)
-                result = await evaluate_note(
-                    db,
-                    user_id=user.id,
-                    note=note,
-                    generator=generator,
-                    judge=judge,
-                    retries=retries,
-                    retry_wait=retry_wait,
-                )
+                try:
+                    result = await evaluate_note(
+                        db,
+                        user_id=user.id,
+                        note=note,
+                        generator=generator,
+                        judge=judge,
+                        retries=retries,
+                        retry_wait=retry_wait,
+                    )
+                except Exception as exc:  # 한 노트의 예상 못 한 오류로 평가 전체를 멈추지 않는다(종류만 기록)
+                    db.rollback()
+                    result = NoteEvalResult(note_title=note.title, generation_error=type(exc).__name__)
                 status = result.generation_error or f"남김 {result.kept} · 버림 {result.dropped} · {result.generation_seconds:.1f}초"
                 if result.retries:
                     status += f" · 다시 시도 {result.retries}번"
@@ -146,9 +157,11 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None, help="앞에서부터 노트 몇 개만")
     parser.add_argument("--allow-mock", action="store_true", help="흐름 확인용으로 mock도 허용(수치는 뜻 없음)")
     parser.add_argument("--pause", type=float, default=20.0, help="AI 호출 사이 최소 간격(초)")
-    parser.add_argument("--retries", type=int, default=2, help="AI 서버 오류(500 · 429)면 노트마다 다시 해 볼 횟수")
+    parser.add_argument("--retries", type=int, default=2, help="AI 서버 오류(500 · 429)면 노트마다 다시 해 볼 횟수(0 이상)")
     parser.add_argument("--retry-wait", type=float, default=60.0, help="다시 해 보기 전에 쉬는 시간(초)")
     args = parser.parse_args()
+    if args.retries < 0 or args.pause < 0 or args.retry_wait < 0:
+        parser.error("--retries · --pause · --retry-wait는 0 이상이어야 해요.")
     raise SystemExit(
         asyncio.run(_run(args.provider, args.limit, args.allow_mock, args.pause, args.retries, args.retry_wait))
     )
