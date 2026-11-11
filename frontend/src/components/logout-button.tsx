@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GHOST_BUTTON_S } from "@/lib/ui-classes";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -36,7 +37,8 @@ export function LogoutButton() {
         type="button"
         onClick={handleLogout}
         disabled={isPending}
-        className="inline-flex h-8 items-center justify-center rounded-button border border-line-black bg-bg-default px-3 text-body-2 font-medium text-text-main transition-colors hover:bg-bg-regular focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-default disabled:cursor-not-allowed disabled:border-line-regular disabled:bg-bg-regular disabled:text-text-disabled"
+        // Figma SET_01_001 [로그아웃] = Ghost S(28:1265)
+        className={GHOST_BUTTON_S}
       >
         {isPending ? "로그아웃 중…" : "로그아웃"}
       </button>

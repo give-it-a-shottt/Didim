@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { Icon } from "@/components/icon";
+import { FOCUS_RING } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "로그인",
@@ -53,39 +55,30 @@ export default function Aut01001Page({
   return (
     <section
       data-screen-id="AUT_01_001"
-      className="grid min-h-screen grid-cols-1 bg-bg-default text-text-main md:grid-cols-2"
+      className="flex min-h-screen flex-col bg-bg-default text-text-main md:flex-row"
     >
-      {/* 왼쪽 소개 영역 (피그마 AUT_01_001 '소개' 프레임) */}
-      <div className="flex flex-col justify-center gap-6 bg-bg-light px-6 py-12 md:px-16">
+      {/* 왼쪽 소개 영역 (Figma AUT_01_001 '소개' 28:1538 — bg/light, 좌우 64, 사이 24) */}
+      <div className="flex flex-1 flex-col justify-center gap-6 bg-bg-light px-5 py-12 md:px-16">
         <div className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="inline-block h-6 w-6 rounded-tag bg-primary-accent"
-          />
-          <span className="text-title-2 font-semibold text-text-main">
-            디딤
-          </span>
+          <span aria-hidden="true" className="inline-block size-7 rounded-tag bg-primary-accent" />
+          <span className="text-title-2 font-semibold text-text-main">디딤</span>
         </div>
 
-        <p className="text-headline-3 font-semibold text-text-main">
-          내 기록이 근거가 되는 자소서
-        </p>
+        <p className="text-title-1 font-semibold text-text-main">내 기록이 근거가 되는 자소서</p>
 
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-6">
           {CHECK_ITEMS.map((item) => (
             <li key={item} className="flex items-center gap-2 text-title-4 font-normal text-text-main">
-              <span aria-hidden="true" className="font-semibold text-primary-text">
-                ✓
-              </span>
+              <Icon name="check" size={20} className="text-primary-text" />
               <span>{item}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* 오른쪽 로그인 영역 (피그마 AUT_01_001 '로그인' 프레임) */}
-      <div className="flex flex-col justify-center gap-5 bg-bg-default px-6 py-12 md:px-16">
-        <div className="mx-auto flex w-full max-w-[400px] flex-col gap-5">
+      {/* 오른쪽 로그인 영역 (Figma AUT_01_001 '로그인' 28:1555 — 너비 560, 좌우 64, 사이 20) */}
+      <div className="flex flex-col justify-center bg-bg-default px-5 py-12 md:w-140 md:shrink-0 md:px-16">
+        <div className="flex w-full flex-col gap-5">
           <h1 className="text-title-2 font-semibold text-text-main">
             디딤 시작하기
           </h1>
@@ -96,7 +89,7 @@ export default function Aut01001Page({
 
           <a
             href="/api/auth/google/login"
-            className="inline-flex h-12 w-full items-center justify-center rounded-button border border-line-black bg-bg-default px-5 text-title-4 font-semibold text-text-main transition-colors hover:bg-bg-regular focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-default"
+            className={`inline-flex h-12 w-full items-center justify-center rounded-button border border-line-black bg-bg-default px-5 text-title-4 font-semibold text-text-main hover:bg-bg-hover ${FOCUS_RING}`}
           >
             Google로 계속하기
           </a>
