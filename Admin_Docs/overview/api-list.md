@@ -1,7 +1,7 @@
 # API 목록
 
 ## 한눈에 보기 (코드 몰라도 OK)
-상태: [주의] 서버 확인 · 로그인(F-001) · 기록 가져오기(F-002) · 검색(F-003) · 퀴즈 · 복습(F-004)까지 있어요. 기능마다 설계 의도(feature.md)를 받은 뒤 여기에 한 줄씩 추가해요.
+상태: [주의] 서버 확인 · 로그인(F-001) · 기록 가져오기(F-002) · 검색(F-003) · 퀴즈 · 복습(F-004) · 경험 카드(F-006 서버)까지 있어요. 기능마다 설계 의도(feature.md)를 받은 뒤 여기에 한 줄씩 추가해요.
 무엇을: 화면이 서버에 보내는 요청 목록이에요.
 왜: 화면과 서버가 같은 약속을 보도록 한곳에 모아 둬요.
 
@@ -18,17 +18,17 @@
 | GET | /api/notes | 내 노트 목록(기록 · 복습 홈). 응답 200: `{ total, notes: [{ id, title, kind, created_at, chunk_count, quiz_count }] }` — 최근 올린 것부터 최대 200개(`total`은 전체 개수), 원문은 넣지 않음. 오류: 401 비로그인 | F-004 | 테스트 통과 · 직접 실행(사용자 확인, 2026-11-11) |
 | GET | /api/notes/{note_id} | 노트 상세. 응답 200: `{ id, title, kind, source, created_at, content, chunks: [{ id, position, heading_path, start_offset, end_offset }] }` — 위치는 원문의 파이썬 글자(코드 포인트) 단위. 오류: 401 비로그인, 404 없거나 다른 사용자의 노트 · 번호가 1~2,147,483,647 밖, 422 `note_id`가 숫자 아님 | F-003 | 테스트 통과 · 프록시 거쳐 직접 실행(2026-11-10) |
 | GET | /api/search?q=…&limit=5 | 내 기록 조각 검색(키워드, D-016). `q` 1~200자, `limit` 1~5(기본 5). 응답 200: `{ query, terms, method, results: [{ chunk_id, note_id, note_title, heading_path, start_offset, end_offset, excerpt, matched_terms, score }] }` — `excerpt`는 마크다운 기호를 뺀 160자 안팎 글자, 점수 높은 순, 맞는 게 없으면 `results: []`. 검색마다 `search_logs`에 기록. 오류: 400 공백뿐, 401 비로그인, 422 길이 · `limit` 범위 밖, 503 이 DB에서 검색 불가(SQLite) · 검색이 3초 시간 상한을 넘음(`detail`에 이유, 화면이 그대로 보여 줌, 로그 안 남김) | F-003 | 테스트 통과(PostgreSQL) · 프록시 거쳐 직접 실행(2026-11-10) |
-| POST | /api/notes/{note_id}/quizzes | 문제 만들기(AI 1번, 요청 한 번에 처리). 긴 조각(공백 뺀 80자 이상) 최대 10개를 보내 조각마다 객관식 · OX 1개, 근거 인용이 조각 안에 글자 그대로 없으면 버림. 응답 201: `{ note_id, created, dropped, drop_reasons, remaining_today }`. 오류: 401, 404 내 노트 아님, 409 이미 문제 있음 · 이 노트를 다른 요청이 만드는 중 · 같은 사용자가 다른 노트를 만드는 중(사용자당 동시에 1개), 422 긴 조각 없음, 429 오늘 AI 사용량(30회) 다 씀, 502 AI 답 형식 오류(재시도 후), 503 AI 연결 안 됨 · AI 서버 한도, 500 서버 AI 설정 오류 · 만든 문제 저장 실패 — 화면은 `detail`을 그대로 보여 줌 | F-004 | 테스트 통과 · 직접 실행 mock(사용자 확인, 2026-11-11) |
+| POST | /api/notes/{note_id}/quizzes | 문제 만들기(AI 1번, 요청 한 번에 처리). 긴 조각(공백 뺀 80자 이상) 최대 10개를 보내 조각마다 객관식 · OX 1개, 근거 인용이 조각 안에 글자 그대로 없으면 버림. 응답 201: `{ note_id, created, dropped, drop_reasons, remaining_today }`. 오류: 401, 404 내 노트 아님, 409 이미 문제 있음 · 이 노트를 다른 요청이 만드는 중 · 다른 AI 작업 진행 중(사용자당 기능 가리지 않고 1개, D-020), 422 긴 조각 없음, 429 오늘 AI 사용량(30회) 다 씀, 502 AI 답 형식 오류(재시도 후), 503 AI 연결 안 됨 · AI 서버 한도, 500 서버 AI 설정 오류 · 만든 문제 저장 실패(5분 넘게 걸려 선점을 다른 요청이 가져간 경우 포함 — 저장하지 않음) — 화면은 `detail`을 그대로 보여 줌 | F-004 | 테스트 통과 · 직접 실행 mock(사용자 확인, 2026-11-11) |
 | GET | /api/notes/{note_id}/quizzes | 그 노트의 문제([이 노트 풀기]). 응답 200: `{ quizzes: [{ id, note_id, note_title, kind, question, choices, next_review_on, in_wrong_notes }] }` — 정답 · 해설 · 인용은 넣지 않음. 오류: 401, 404 | F-004 | 테스트 통과(2026-11-11) |
 | GET | /api/reviews/today | 오늘 복습(한국 날짜 기준 복습일이 된 문제, 오래 밀린 것부터 최대 100개). 응답 200: `{ total, quizzes: [위와 같은 모양] }`. 오류: 401 | F-004 | 테스트 통과(2026-11-11) |
 | POST | /api/quizzes/{quiz_id}/answer | 답 제출. 요청 `{ chosen_index }`. 응답 200: `{ correct, answer_index, explanation, note_id, note_title, chunk_id, quote, quote_start, quote_end, next_review_on, in_wrong_notes }`. 오류: 401, 404 내 문제 아님, 422 보기 범위 밖 | F-004 | 테스트 통과 · 직접 실행 mock(사용자 확인, 2026-11-11) |
 | GET | /api/wrong-answers | 오답노트(최근에 틀린 것부터 최대 100개). 응답 200: `{ total, quizzes: [위와 같은 모양] }`. 오류: 401 | F-004 | 테스트 통과(2026-11-11) |
-| POST | /api/notes/{note_id}/cards/candidates | 카드 후보 찾기(AI 1번). 후보 최대 3개, 칸마다 원문 인용(글자 그대로 검사, 없으면 빈칸) + 빈칸 질문. 오류: 401, 404, 409 이미 찾음 · 찾는 중, 429 하루 상한, 502 · 503 AI 실패 | F-006 | 설계(구현 전) |
-| GET | /api/cards?status=candidate\|saved | 카드 목록 — 빈칸 수 · 근거 수 · 수정일 | F-006 | 설계(구현 전) |
-| GET | /api/cards/{card_id} | 카드 상세 — 칸마다 인용 · 근거 위치 · 빈칸 질문 · 내 답 | F-006 | 설계(구현 전) |
-| POST | /api/cards/{card_id}/save | 후보 → 저장(제목 확인 포함) | F-006 | 설계(구현 전) |
-| DELETE | /api/cards/{card_id} | 후보 버리기 · 카드 삭제 | F-006 | 설계(구현 전) |
-| PUT | /api/cards/{card_id}/fields/{slot} | 내 답 저장 · 인용 빼기 | F-006 | 설계(구현 전) |
+| POST | /api/notes/{note_id}/cards/candidates | 카드 후보 찾기(AI 1번, 요청 한 번에 처리). 노트 앞에서부터 조각 최대 40개 · 12,000자를 보내 후보 최대 3개, 칸마다 원문 인용이 조각 안에 글자 그대로 없으면 그 칸은 빈칸 + 질문, 인용이 하나도 없는 후보는 버림. 응답 201: `{ note_id, card_ids, quoted_fields, emptied_fields, drop_reasons, chunks_sent, chunks_total, remaining_today }` — `card_ids`가 비면 '경험을 찾지 못함'(다시 누를 수 있음). 오류: 401, 404 내 노트 아님, 409 이미 찾음(후보를 다 버려도) · 이 노트를 찾는 중 · 다른 AI 작업 진행 중(사용자당 기능 가리지 않고 1개, D-020), 422 보낼 내용 없음, 429 오늘 AI 사용량 다 씀, 502 AI 답 형식 오류, 503 AI 연결 안 됨 · AI 서버 한도, 500 AI 설정 오류 · 저장 실패 | F-006 | 테스트 통과(SQLite · PostgreSQL, 2026-11-11) |
+| GET | /api/cards?status=candidate\|saved&note_id= | 카드 목록(기본 `saved`, 최근 고친 것부터 최대 200개). 응답 200: `{ total, cards: [{ id, title, status, note_id, note_title, blank_count, evidence_count, updated_at, blank_slots }], note_searched }` — `blank_slots`는 빈칸인 칸 이름(situation · task · action · result 순서) — `note_title` null = 노트가 지워짐, `note_searched`는 `note_id`를 줬을 때만(이 노트에서 찾기를 끝냈는가). 남의 노트 번호면 빈 목록. 오류: 401, 422 status 값 틀림 | F-006 | 테스트 통과(2026-11-11) |
+| GET | /api/cards/{card_id} | 카드 상세. 응답 200: `{ id, title, status, note_id, note_title, created_at, updated_at, blank_count, evidence_count, fields: [{ slot, quote, quote_start, quote_end, chunk_id, question, answer }] }` — 칸은 situation · task · action · result 순서, 위치는 노트 원문 글자 단위. 오류: 401, 404 내 카드 아님 | F-006 | 테스트 통과(2026-11-11) |
+| POST | /api/cards/{card_id}/save | 후보 → 저장. 요청 `{ title }`(공백 정리, 1~100자). 이미 저장한 카드면 제목만 바꿈. 응답 200: 상세와 같은 모양. 오류: 401, 404, 422 제목이 비었거나 김 · 제어 문자(NUL 등) — 본문이 터무니없이 크면(1,000자 초과) FastAPI 기본 검증이라 `detail`이 목록, 화면은 기본 문구 | F-006 | 테스트 통과(2026-11-11) |
+| DELETE | /api/cards/{card_id} | 후보 버리기 · 카드 삭제(칸도 같이). 노트의 '이미 찾음'은 그대로. 응답 204. 오류: 401, 404 | F-006 | 테스트 통과(2026-11-11) |
+| PUT | /api/cards/{card_id}/fields/{slot} | 내 답 저장 · 인용 빼기. 요청 `{ answer, remove_quote }` — 답은 앞뒤 공백을 걷고 비면 지움(최대 2,000자), `remove_quote: true`면 인용 · 근거를 지우고 기본 질문을 붙임. 인용 글 자체는 고칠 수 없음. 응답 200: 상세와 같은 모양. 오류: 401, 404, 422 칸 이름 틀림 · 답이 김 · 제어 문자(NUL 등, 줄바꿈 · 탭은 됨). 검증 오류(칸 이름 · status 값 · 필드 누락)는 FastAPI 기본이라 `detail`이 목록 — 화면은 기본 문구를 씀 | F-006 | 테스트 통과(2026-11-11) |
 
 규칙
 - 모든 서버 경로는 `/api`로 시작한다. 브라우저는 Next.js 주소의 `/api/*`로 부르고, Next.js가 FastAPI로 넘긴다(D-010, Q-012).

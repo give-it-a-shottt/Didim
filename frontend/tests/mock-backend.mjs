@@ -96,7 +96,15 @@ ${title} 본문이에요.
 };
 const GENERATE_NOTE = smallNote(6, "만들기 노트");
 const LIMIT_NOTE = smallNote(7, "한도 노트");
-const EXTRA_NOTES = new Map([[3, ODD_NOTE], [4, FENCE_NOTE], [5, SLOW_NOTE], [6, GENERATE_NOTE], [7, LIMIT_NOTE]]);
+// 경험 카드(F-006) 예외 경로 전용 노트: 8은 찾아도 후보 0개, 9는 다른 탭이 먼저 찾음(409 → 새로 고침하면 후보),
+// 10은 후보 1001(불러오기 실패) · 1002가 있는 노트.
+const NONE_FOUND_NOTE = smallNote(8, "경험 없는 노트");
+const OTHER_TAB_NOTE = smallNote(9, "다른 탭 노트");
+const BROKEN_CANDIDATE_NOTE = smallNote(10, "깨진 후보 노트");
+const EXTRA_NOTES = new Map([
+  [3, ODD_NOTE], [4, FENCE_NOTE], [5, SLOW_NOTE], [6, GENERATE_NOTE], [7, LIMIT_NOTE],
+  [8, NONE_FOUND_NOTE], [9, OTHER_TAB_NOTE], [10, BROKEN_CANDIDATE_NOTE],
+]);
 
 // 퀴즈 · 복습(F-004) 가짜 데이터. 목록에는 정답 · 해설 · 인용이 없고, 답을 내면 받는다(서버와 같은 모양).
 // 101: 노트 1 객관식(정답 1번), 102: 노트 1 OX(정답 O, 오답노트에 있음 — 맞히면 빠짐).
@@ -123,6 +131,46 @@ const noteQuizzes = (noteId) => {
   if (noteId === 1) return QUIZ_CARDS;
   if (noteId === 6 && generatedNotes.has(6)) return [GENERATED_CARD];
   return [];
+};
+// 경험 카드(F-006) 가짜 데이터. 테스트가 동시에 돌아서 테스트마다 다른 카드를 쓴다.
+// 801: 저장한 카드(목록 · 상세 읽기 전용) · 802: 노트 1의 후보(목록 읽기 전용) · 803: 저장한 카드(상세 고치기 테스트)
+// 811 · 812: 노트 4의 후보(후보 검토 시트 테스트). 노트 4 · 1은 이미 찾음, 노트 6에서 찾으면 906이 생김, 노트 7은 429.
+// 804: 저장한 카드(결과 칸 저장만 500으로 실패 — 앞 칸은 저장됨) · 1001 · 1002: 노트 10의 후보(1001은 불러오기 500).
+// 노트 8에서 찾으면 후보 0개, 노트 9에서 찾으면 다른 탭이 먼저 찾은 것처럼 909를 만들고 409.
+const SLOTS = ["situation", "task", "action", "result"];
+const mockCard = (id, noteId, status, title, quotes) => ({
+  id, note_id: noteId, note_title: noteId === 1 ? "React 정리" : noteId === 4 ? "코드 노트" : "만들기 노트",
+  title, status, created_at: "2026-11-10T03:00:00Z", updated_at: "2026-11-10T03:00:00Z",
+  fields: SLOTS.map((slot) => ({
+    slot, quote: quotes[slot] ?? null, quote_start: quotes[slot] ? 0 : null,
+    quote_end: quotes[slot] ? Array.from(quotes[slot]).length : null, chunk_id: quotes[slot] ? 11 : null,
+    question: quotes[slot] ? null : `${slot} 칸에 무엇을 적을까요?`, answer: null,
+  })),
+});
+const MOCK_CARDS = new Map(
+  [
+    mockCard(801, 1, "saved", "useEffect로 구독 정리", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요.", action: "상태를 바꾸면 다시 그려져요." }),
+    mockCard(802, 1, "candidate", "상태 바꾸기 실험", { situation: "상태를 바꾸면 다시 그려져요." }),
+    mockCard(803, 1, "saved", "고칠 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요.", action: "상태를 바꾸면 다시 그려져요." }),
+    mockCard(811, 4, "candidate", "코드 블록 정리", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    mockCard(812, 4, "candidate", "버릴 후보", { action: "상태를 바꾸면 다시 그려져요." }),
+    mockCard(804, 1, "saved", "저장이 실패하는 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    mockCard(1001, 10, "candidate", "불러오지 못하는 후보", { situation: "깨진 후보 노트 본문이에요." }),
+    mockCard(1002, 10, "candidate", "멀쩡한 후보", { situation: "깨진 후보 노트 본문이에요." }),
+  ].map((card) => [card.id, card]),
+);
+const searchedNotes = new Set([1, 4, 10]);
+const isBlankField = (field) => field.quote === null && field.answer === null;
+const cardSummary = (card) => ({
+  id: card.id, title: card.title, status: card.status, note_id: card.note_id, note_title: card.note_title,
+  blank_count: card.fields.filter(isBlankField).length,
+  evidence_count: card.fields.filter((field) => field.quote !== null).length,
+  updated_at: card.updated_at, blank_slots: card.fields.filter(isBlankField).map((field) => field.slot),
+});
+const cardDetail = (card) => {
+  const summary = cardSummary(card);
+  delete summary.blank_slots; // 상세에는 없음(서버와 같은 모양)
+  return { ...summary, created_at: card.created_at, fields: card.fields };
 };
 const noteExists = (noteId) => noteId === MOCK_NOTE.id || noteId === BIG_NOTE.id || EXTRA_NOTES.has(noteId);
 
@@ -247,6 +295,115 @@ const server = http.createServer((req, res) => {
         next_review_on: correct ? "2026-11-12" : "2026-11-11",
         in_wrong_notes: !correct, // 틀리면 오답노트, 맞히면(102는 연속 2번째라고 가정) 빠짐
       });
+    });
+    return;
+  }
+
+  // --- 경험 카드(F-006) ---
+  if (url.pathname === "/api/cards" || /^\/api\/(cards\/\d+(\/save|\/fields\/\w+)?|notes\/\d+\/cards\/candidates)$/.test(url.pathname)) {
+    if (!isLoggedIn(req)) {
+      sendJson(res, 401, { detail: "로그인이 필요해요." });
+      return;
+    }
+  }
+  if (req.method === "GET" && url.pathname === "/api/cards") {
+    const status = url.searchParams.get("status") ?? "saved";
+    const noteParam = url.searchParams.get("note_id");
+    const noteId = noteParam === null ? null : Number(noteParam);
+    const list = [...MOCK_CARDS.values()].filter(
+      (card) => card.status === status && (noteId === null || card.note_id === noteId),
+    );
+    sendJson(res, 200, {
+      total: list.length,
+      cards: list.map(cardSummary),
+      note_searched: noteId === null ? null : searchedNotes.has(noteId),
+    });
+    return;
+  }
+  const findMatch = req.method === "POST" ? url.pathname.match(/^\/api\/notes\/(\d+)\/cards\/candidates$/) : null;
+  if (findMatch) {
+    const noteId = Number(findMatch[1]);
+    if (!noteExists(noteId)) {
+      sendJson(res, 404, { detail: "노트를 찾을 수 없어요." });
+    } else if (noteId === 7) {
+      sendJson(res, 429, { detail: "오늘 AI 사용량(30회)을 다 썼어요. 한국 시간 0시에 다시 쓸 수 있어요." });
+    } else if (searchedNotes.has(noteId)) {
+      sendJson(res, 409, { detail: "이 노트에서는 이미 카드 후보를 찾았어요." });
+    } else if (noteId === 8) {
+      sendJson(res, 201, {
+        note_id: noteId, card_ids: [], quoted_fields: 0, emptied_fields: 0,
+        drop_reasons: {}, chunks_sent: 1, chunks_total: 1, remaining_today: 27,
+      });
+    } else if (noteId === 9) {
+      // 다른 탭에서 먼저 찾아 끝난 상황: 후보는 이미 있고 이 요청은 409
+      searchedNotes.add(noteId);
+      MOCK_CARDS.set(909, mockCard(909, noteId, "candidate", "다른 탭에서 찾은 경험", { situation: "다른 탭 노트 본문이에요." }));
+      sendJson(res, 409, { detail: "이 노트에서는 이미 카드 후보를 찾았어요." });
+    } else {
+      searchedNotes.add(noteId);
+      const card = mockCard(900 + noteId, noteId, "candidate", "만들기 노트에서 찾은 경험", {
+        situation: "만들기 노트 본문이 있다.",
+      });
+      MOCK_CARDS.set(card.id, card);
+      sendJson(res, 201, {
+        note_id: noteId, card_ids: [card.id], quoted_fields: 1, emptied_fields: 1,
+        drop_reasons: { quote_not_found: 1 }, chunks_sent: 1, chunks_total: 1, remaining_today: 28,
+      });
+    }
+    return;
+  }
+  const cardMatch = url.pathname.match(/^\/api\/cards\/(\d+)(\/save|\/fields\/(\w+))?$/);
+  if (cardMatch) {
+    const card = MOCK_CARDS.get(Number(cardMatch[1]));
+    if (!card) {
+      sendJson(res, 404, { detail: "카드를 찾을 수 없어요." });
+      return;
+    }
+    if (req.method === "GET" && !cardMatch[2] && card.id === 1001) {
+      sendJson(res, 500, { detail: "카드를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요." });
+      return;
+    }
+    if (req.method === "GET" && !cardMatch[2]) {
+      sendJson(res, 200, cardDetail(card));
+      return;
+    }
+    if (req.method === "DELETE" && !cardMatch[2]) {
+      MOCK_CARDS.delete(card.id);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+      if (req.method === "POST" && cardMatch[2] === "/save") {
+        const title = String(body.title ?? "").trim();
+        if (!title) {
+          sendJson(res, 422, { detail: "카드 제목을 적어 주세요." });
+          return;
+        }
+        card.title = title;
+        card.status = "saved";
+      } else if (req.method === "PUT" && cardMatch[3] === "result" && card.id === 804) {
+        sendJson(res, 500, { detail: "칸을 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요." });
+        return;
+      } else if (req.method === "PUT" && cardMatch[3]) {
+        const field = card.fields.find((item) => item.slot === cardMatch[3]);
+        if (!field) {
+          sendJson(res, 422, { detail: "칸 이름이 틀렸어요." });
+          return;
+        }
+        field.answer = String(body.answer ?? "").trim() || null;
+        if (body.remove_quote && field.quote !== null) {
+          Object.assign(field, { quote: null, quote_start: null, quote_end: null, chunk_id: null, question: "직접 적어 주세요." });
+        }
+      } else {
+        sendJson(res, 405, { detail: "Method Not Allowed" });
+        return;
+      }
+      card.updated_at = "2026-11-11T03:00:00Z";
+      sendJson(res, 200, cardDetail(card));
     });
     return;
   }

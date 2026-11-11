@@ -12,7 +12,7 @@ const MEMBER_SCREENS = [
   { path: "/quiz/today", screenId: "REV_02_001" }, // F-004부터 주소가 세션 종류(today · wrong · note-번호)
   { path: "/quiz/today/result", screenId: "REV_02_002" },
   { path: "/cards", screenId: "CRD_01_001" },
-  { path: "/cards/c1", screenId: "CRD_01_002" },
+  { path: "/cards/801", screenId: "CRD_01_002" }, // F-006부터 실제 카드를 불러온다(가짜 백엔드의 카드 801)
   { path: "/applications", screenId: "APL_01_001" },
   { path: "/applications/a1/analysis", screenId: "APL_02_002" },
   { path: "/applications/a1/draft", screenId: "APL_02_003" },

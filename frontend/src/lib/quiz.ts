@@ -1,5 +1,6 @@
 import { parseDbId } from "@/lib/ids";
-import { detailOf, isObject, isStringArray, readJson } from "@/lib/json";
+import { ApiRequestError, apiRequest } from "@/lib/api-request";
+import { isObject, isStringArray } from "@/lib/json";
 
 // 퀴즈 · 복습(F-004) 응답 모양과 확인 함수. 서버 컴포넌트(lib/quiz-data.ts)와 브라우저(퀴즈 풀기 · 문제 만들기)가 같이 쓴다.
 // 서버: backend/app/api/quizzes.py. 목록에는 정답 · 해설 · 인용이 없고, 답을 낸 뒤에만 받는다.
@@ -137,72 +138,29 @@ function toAnswerResult(value: unknown): AnswerResult | null {
   };
 }
 
-// --- 브라우저에서 부르는 요청(TanStack Query useMutation의 mutationFn, D-012) ---
-// 브라우저는 같은 주소의 /api/*로 부르고 Next가 FastAPI로 넘긴다(next.config.ts rewrites, D-010).
-
-/** 실패 이유를 담은 오류. 화면은 message를 그대로 보여 주고, needsLogin이면 로그인 링크를 같이 둔다. */
-export class QuizRequestError extends Error {
-  readonly needsLogin: boolean;
-  readonly status: number | null;
-
-  constructor(message: string, { needsLogin = false, status = null }: { needsLogin?: boolean; status?: number | null } = {}) {
-    super(message);
-    this.name = "QuizRequestError";
-    this.needsLogin = needsLogin;
-    this.status = status;
-  }
-}
-
-const NETWORK_ERROR = "네트워크 문제로 보내지 못했어요. 연결을 확인하고 다시 시도해 주세요.";
-const LOGIN_ERROR = "로그인이 풀렸어요. 다시 로그인해 주세요.";
-
-async function postJson(path: string, payload?: unknown): Promise<{ response: Response; body: unknown }> {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      method: "POST",
-      headers: payload === undefined ? undefined : { "Content-Type": "application/json" },
-      body: payload === undefined ? undefined : JSON.stringify(payload),
-    });
-  } catch {
-    throw new QuizRequestError(NETWORK_ERROR);
-  }
-  const body = await readJson(response);
-  if (response.status === 401) {
-    throw new QuizRequestError(LOGIN_ERROR, { needsLogin: true, status: 401 });
-  }
-  return { response, body };
-}
+// --- 브라우저에서 부르는 요청(TanStack Query useMutation의 mutationFn, D-012 — 요청 · 오류는 lib/api-request.ts) ---
 
 export async function submitAnswer(quizId: number, chosenIndex: number): Promise<AnswerResult> {
-  const { response, body } = await postJson(`/api/quizzes/${quizId}/answer`, { chosen_index: chosenIndex });
-  if (!response.ok) {
-    throw new QuizRequestError(detailOf(body) ?? "답을 보내지 못했어요. 잠시 뒤 다시 시도해 주세요.", {
-      status: response.status,
-    });
-  }
+  const body = await apiRequest("POST", `/api/quizzes/${quizId}/answer`, "답을 보내지 못했어요. 잠시 뒤 다시 시도해 주세요.", {
+    chosen_index: chosenIndex,
+  });
   const result = toAnswerResult(body);
   if (result === null) {
-    throw new QuizRequestError("채점 결과를 읽지 못했어요. 잠시 뒤 다시 시도해 주세요.", { status: response.status });
+    throw new ApiRequestError("채점 결과를 읽지 못했어요. 잠시 뒤 다시 시도해 주세요.");
   }
   return result;
 }
 
 /** [문제 만들기]. 409(이미 있음 · 만드는 중) · 422 · 429 · 502 · 503은 서버 문구(detail)를 그대로 보여 준다. */
 export async function generateQuizzes(noteId: number): Promise<GenerateResult> {
-  const { response, body } = await postJson(`/api/notes/${noteId}/quizzes`);
-  if (!response.ok) {
-    throw new QuizRequestError(detailOf(body) ?? "문제를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.", {
-      status: response.status,
-    });
-  }
+  const body = await apiRequest("POST", `/api/notes/${noteId}/quizzes`, "문제를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.");
   if (
     !isObject(body) ||
     typeof body.created !== "number" ||
     typeof body.dropped !== "number" ||
     typeof body.remaining_today !== "number"
   ) {
-    throw new QuizRequestError("만든 결과를 읽지 못했어요. 새로 고침해 확인해 주세요.", { status: response.status });
+    throw new ApiRequestError("만든 결과를 읽지 못했어요. 새로 고침해 확인해 주세요.");
   }
   return { created: body.created, dropped: body.dropped, remainingToday: body.remaining_today };
 }

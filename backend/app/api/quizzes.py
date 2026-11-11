@@ -20,24 +20,22 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.api.notes import NOTE_NOT_FOUND_DETAIL
+from app.api.errors import (
+    NOTE_NOT_FOUND_DETAIL,
+    OTHER_AI_WORK_DETAIL,
+    daily_limit_detail,
+    llm_client_or_500,
+    llm_error_status,
+)
 from app.config import MAX_DB_ID
 from app.db.models import User
 from app.db.session import get_db
-from app.llm import (
-    LLMClient,
-    LLMConfigError,
-    LLMError,
-    LLMInvalidOutput,
-    MockLLMClient,
-    get_llm_client,
-    load_llm_settings,
-)
+from app.llm import LLMClient, LLMError
 from app.services.quiz_generation import (
     GenerationInProgress,
     NoEligibleChunks,
     NoteNotFound,
-    OtherNoteInProgress,
+    OtherAIWorkInProgress,
     QuizzesAlreadyExist,
     abandon_generation,
     mock_quiz_responder,
@@ -62,31 +60,18 @@ router = APIRouter(tags=["quizzes"])
 
 ALREADY_EXISTS_DETAIL = "이 노트에는 이미 문제가 있어요."
 IN_PROGRESS_DETAIL = "이 노트의 문제를 만드는 중이에요. 잠시 뒤 다시 확인해 주세요."
-OTHER_NOTE_IN_PROGRESS_DETAIL = "다른 노트의 문제를 만드는 중이에요. 끝난 뒤 다시 시도해 주세요."
 SAVE_FAILED_DETAIL = "만든 문제를 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요."
 NO_ELIGIBLE_CHUNKS_DETAIL = "문제를 만들 만큼 내용이 긴 부분이 없어요."
 INVALID_OUTPUT_DETAIL = "AI 답이 정해진 형식에 맞지 않아 문제를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요."
-UNAVAILABLE_DETAIL = "지금은 AI에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요."
-AI_NOT_CONFIGURED_DETAIL = "서버의 AI 설정이 완료되지 않았어요."
 QUIZ_NOT_FOUND_DETAIL = "문제를 찾을 수 없어요."
 INVALID_CHOICE_DETAIL = "보기 중에서 골라 주세요."
 # 노트 · 문제 번호 상한(PostgreSQL integer). 넘는 번호는 DB에 묻기 전에 404(app/config.py MAX_DB_ID)
 
 
-def daily_limit_detail(limit: int) -> str:
-    return f"오늘 AI 사용량({limit}회)을 다 썼어요. 한국 시간 0시에 다시 쓸 수 있어요."
-
-
 def get_quiz_llm_client() -> LLMClient:
     """문제 만들기에 쓰는 AI(테스트에서 바꿔 끼움). LLM_PROVIDER=mock(기본)이면 조각으로 가짜 문제를 만드는 mock
     (키 없이 화면 확인용). 설정이 틀리면 500 — 화면에는 설정 내용을 보여 주지 않는다."""
-    try:
-        settings = load_llm_settings()
-        if settings.provider == "mock":
-            return MockLLMClient(responder=mock_quiz_responder)
-        return get_llm_client(settings)
-    except LLMConfigError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=AI_NOT_CONFIGURED_DETAIL) from exc
+    return llm_client_or_500(mock_quiz_responder)
 
 
 class GenerateQuizzesResponse(BaseModel):
@@ -104,7 +89,7 @@ def generate_quizzes(
     db: Session = Depends(get_db),
     client: LLMClient = Depends(get_quiz_llm_client),
 ) -> GenerateQuizzesResponse:
-    """401: 로그인 안 함 / 404: 내 노트가 아님 / 409: 이미 문제가 있음 · 이 노트나 다른 노트를 만드는 중 / 422: 긴 조각이 없음
+    """401: 로그인 안 함 / 404: 내 노트가 아님 / 409: 이미 문제가 있음 · 이 노트를 만드는 중 · 다른 AI 작업 진행 중 / 422: 긴 조각이 없음
     429: 오늘 AI 사용량을 다 씀 / 502: AI 답 형식 오류(재시도 후) / 503: AI 연결 안 됨 · AI 서버 한도
     500: 서버 AI 설정 오류 · 만든 문제 저장 실패. 화면은 detail 문구를 그대로 보여 준다.
     """
@@ -118,8 +103,8 @@ def generate_quizzes(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=ALREADY_EXISTS_DETAIL) from exc
     except GenerationInProgress as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=IN_PROGRESS_DETAIL) from exc
-    except OtherNoteInProgress as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=OTHER_NOTE_IN_PROGRESS_DETAIL) from exc
+    except OtherAIWorkInProgress as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=OTHER_AI_WORK_DETAIL) from exc
     except NoEligibleChunks as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=NO_ELIGIBLE_CHUNKS_DETAIL) from exc
     except DailyLimitExceeded as exc:
@@ -150,12 +135,7 @@ def generate_quizzes(
 
 
 def _llm_error_status(exc: LLMError) -> tuple[int, str]:
-    if isinstance(exc, LLMInvalidOutput):
-        return status.HTTP_502_BAD_GATEWAY, INVALID_OUTPUT_DETAIL
-    if isinstance(exc, LLMConfigError):  # 키 거절 · 모델 이름 틀림 등은 부른 뒤에야 알 수 있다
-        return status.HTTP_500_INTERNAL_SERVER_ERROR, AI_NOT_CONFIGURED_DETAIL
-    # LLMRateLimited(AI 서버 한도) · LLMUnavailable · LLMRequestError(우리 요청이 거절됨 — 사용자가 고칠 수 없음)
-    return status.HTTP_503_SERVICE_UNAVAILABLE, UNAVAILABLE_DETAIL
+    return llm_error_status(exc, invalid_output_detail=INVALID_OUTPUT_DETAIL)
 
 
 # --- 풀기 · 복습 ---

@@ -17,7 +17,8 @@ export function PageHeader({
 }) {
   return (
     <header className="flex flex-wrap items-end gap-4 px-5 pt-10 pb-6 lg:px-12">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      {/* basis-64: 좁은 화면에서 제목이 버튼에 밀려 한두 글자씩 꺾이지 않게, 이보다 좁아지면 버튼이 아랫줄로 간다 */}
+      <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
         <h1 id={titleId} className="text-title-1 font-semibold wrap-break-word text-text-main">
           {title}
         </h1>

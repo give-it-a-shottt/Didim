@@ -19,13 +19,13 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.quizzes import get_quiz_llm_client
 from app.config import DEFAULT_DAILY_LIMIT, QUIZ_CLAIM_STALE_SECONDS, SESSION_COOKIE_NAME, Settings
-from app.db.models import AIUsageLog, Chunk, Note, NoteQuizClaim, Quiz, QuizGenerationLog, QuizReview
+from app.db.models import AIUsageLog, Chunk, Note, NoteCardClaim, NoteQuizClaim, Quiz, QuizGenerationLog, QuizReview
 from app.korea_time import korea_today
 from app.llm import (
     LLMConfigError,
@@ -50,17 +50,21 @@ from app.services.quiz_generation import (
     DROP_QUOTE_TOO_SHORT,
     DROP_TOO_LONG,
     DROP_UNKNOWN_CHUNK,
+    ClaimLost,
     GenerationInProgress,
-    OtherNoteInProgress,
+    OtherAIWorkInProgress,
     QuizBatchIn,
     abandon_generation,
     QuizDraftIn,
     build_messages,
     check_drafts,
     prepare_generation,
+    release_claim,
     save_generation,
     select_chunks,
 )
+from app.services import note_claim
+from app.services.card_generation import prepare_search
 from app.services.usage_service import FEATURE_QUIZ_GENERATE, record_usage
 
 TCP_QUOTE = "TCP는 연결을 먼저 맺고 데이터를 보내는 연결 지향 프로토콜이라서, 보낸 순서대로 도착하는 것을 보장해요."
@@ -89,6 +93,11 @@ SHORT_NOTE = """# 메모
 이것도 짧아요.
 """
 
+
+
+def _as_utc(value: datetime) -> datetime:
+    """SQLite는 시간대 없는 시각을 돌려준다(저장은 UTC) — 비교 전에 맞춘다."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 def _login(client: TestClient, db: Session, settings: Settings, sub: str) -> int:
     user = get_or_create_google_user(db, GoogleProfile(sub=sub, email=f"{sub}@example.com", name=sub))
@@ -687,7 +696,7 @@ def test_one_generation_per_user_at_a_time(client: TestClient, db_session: Sessi
     response = client.post(f"/api/notes/{other.id}/quizzes")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "다른 노트의 문제를 만드는 중이에요. 끝난 뒤 다시 시도해 주세요."
+    assert response.json()["detail"] == "다른 AI 작업(문제 만들기 · 카드 후보 찾기)이 진행 중이에요. 끝난 뒤 다시 시도해 주세요."
     assert mock.calls == [] and _claims(db_session) == [busy.id]
 
 
@@ -736,7 +745,7 @@ def test_two_notes_at_the_same_time_only_one_claims(db_session: Session) -> None
             try:
                 prepare_generation(session, user_id=user_id, note_id=note_id)
                 results.append("claimed")
-            except OtherNoteInProgress:
+            except OtherAIWorkInProgress:
                 results.append("busy")
 
     threads = [threading.Thread(target=attempt, args=(note_id,)) for note_id in note_ids]
@@ -812,7 +821,7 @@ def test_stale_claim_and_another_note_at_the_same_time_only_one_claims(db_sessio
             try:
                 prepare_generation(session, user_id=user_id, note_id=note_id)
                 results.append("claimed")
-            except (OtherNoteInProgress, GenerationInProgress):
+            except (OtherAIWorkInProgress, GenerationInProgress):
                 results.append("busy")
 
     threads = [threading.Thread(target=attempt, args=(note_id,)) for note_id in (stale_note, other_note)]
@@ -822,3 +831,108 @@ def test_stale_claim_and_another_note_at_the_same_time_only_one_claims(db_sessio
         thread.join(timeout=30)
 
     assert sorted(results) == ["busy", "claimed"]
+
+
+# --- F-006 2차 리뷰 반영: 선점 주인 확인 · AI 출력 제어 문자 · 기능 간 1개(D-020) ---
+
+
+def _taken_over(db: Session, note_id: int, claimed_at: datetime) -> datetime:
+    """다른 요청이 오래된 선점을 가져간 상황을 만든다(선점 시각을 바꿈). 새 시각을 돌려준다."""
+    taken_at = claimed_at + timedelta(seconds=QUIZ_CLAIM_STALE_SECONDS + 1)
+    db.execute(update(NoteQuizClaim).where(NoteQuizClaim.note_id == note_id).values(claimed_at=taken_at))
+    db.commit()
+    return taken_at
+
+
+def _quiz_reply(db: Session, note: Note) -> StructuredReply[QuizBatchIn]:
+    batch = QuizBatchIn.model_validate_json(_reply(_draft(_chunks(db, note)["TCP"].id, TCP_QUOTE)))
+    return StructuredReply(value=batch, reply=LLMReply(content="", model="mock"), attempts=1, usage=LLMUsage(calls=1))
+
+
+def test_lost_claim_saves_no_quiz_and_late_cleanup_leaves_the_new_owner_alone(db_session: Session) -> None:
+    """AI가 늦어 내 선점을 다른 요청이 가져갔으면 문제를 저장하지 않고, 늦은 정리도 새 주인의 선점을 지우지 않는다."""
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-lost", email="l@example.com", name="l")).id
+    note = _add_note(db_session, user_id)
+    plan = prepare_generation(db_session, user_id=user_id, note_id=note.id)
+    taken_at = _taken_over(db_session, note.id, plan.claimed_at)
+
+    with pytest.raises(ClaimLost):
+        save_generation(db_session, plan, _quiz_reply(db_session, note))
+    release_claim(db_session, plan)  # 실패 정리가 한 번 더 불려도
+
+    assert _count(db_session, Quiz) == 0
+    db_session.expire_all()
+    claim = db_session.scalars(select(NoteQuizClaim)).one()
+    assert _as_utc(claim.claimed_at) == taken_at  # 새 주인의 선점은 그대로
+    assert db_session.scalar(select(AIUsageLog.outcome)) == "save_failed"
+
+
+def test_control_characters_in_ai_quiz_text_are_removed(db_session: Session) -> None:
+    """AI가 NUL 같은 제어 문자를 섞어도 지우고 저장한다(PostgreSQL은 NUL을 받지 않음). 인용은 원문 비교라 그대로."""
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-nul", email="n@example.com", name="n")).id
+    note = _add_note(db_session, user_id)
+    tcp = _chunks(db_session, note)["TCP"]
+    draft = QuizDraftIn.model_validate(
+        _draft(tcp.id, TCP_QUOTE, question="TCP는\u0000?", choices=["가\u0007", "나", "다", "라"], explanation="해설\u0000")
+    )
+
+    result = check_drafts([draft], [tcp])
+
+    assert len(result.kept) == 1
+    kept = result.kept[0]
+    assert (kept.question, kept.choices[0], kept.explanation) == ("TCP는?", "가", "해설")
+
+
+@pytest.mark.skipif(not ON_POSTGRES, reason="사용자 줄 잠금(FOR NO KEY UPDATE)은 PostgreSQL에서만 시험한다")
+def test_quiz_and_card_started_at_the_same_time_only_one_claims(db_session: Session) -> None:
+    """문제 만들기와 카드 후보 찾기를 동시에 눌러도 하나만 선점한다(사용자당 AI 작업 1개, D-020)."""
+    user_id = get_or_create_google_user(db_session, GoogleProfile(sub="c-cross", email="x@example.com", name="x")).id
+    quiz_note = _add_note(db_session, user_id)
+    card_note = _add_note(db_session, user_id, content=NETWORK_NOTE + "\n카드용", title="카드용")
+    make_session = sessionmaker(bind=db_session.get_bind(), expire_on_commit=False)
+    barrier = threading.Barrier(2)
+    results: list[str] = []
+
+    def attempt(kind: str) -> None:
+        with make_session() as session:
+            barrier.wait()
+            try:
+                if kind == "quiz":
+                    prepare_generation(session, user_id=user_id, note_id=quiz_note.id)
+                else:
+                    prepare_search(session, user_id=user_id, note_id=card_note.id)
+                results.append("claimed")
+            except OtherAIWorkInProgress:
+                results.append("busy")
+
+    threads = [threading.Thread(target=attempt, args=(kind,)) for kind in ("quiz", "card")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    assert sorted(results) == ["busy", "claimed"]
+    quiz_claims = db_session.scalar(select(func.count()).select_from(NoteQuizClaim)) or 0
+    card_claims = db_session.scalar(select(func.count()).select_from(NoteCardClaim)) or 0
+    assert quiz_claims + card_claims == 1
+
+
+def test_lost_claim_answers_500_with_the_save_failed_message(
+    client: TestClient, db_session: Session, test_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """API로도: 선점을 잃으면 문제를 저장하지 않고 500 '저장하지 못했어요'(F-006 3차 리뷰 R3 — 카드와 같은 기준)."""
+    user_id = _login(client, db_session, test_settings, "c-lost-api")
+    note = _add_note(db_session, user_id)
+    _use_mock(_reply(_draft(_chunks(db_session, note)["TCP"].id, TCP_QUOTE)))
+
+    def lost(*args: object, **kwargs: object) -> None:
+        raise ClaimLost
+
+    monkeypatch.setattr(note_claim, "ensure_still_owned", lost)
+
+    response = client.post(f"/api/notes/{note.id}/quizzes")
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "만든 문제를 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요."
+    assert _count(db_session, Quiz) == 0
+    assert db_session.scalar(select(AIUsageLog.outcome)) == "save_failed"

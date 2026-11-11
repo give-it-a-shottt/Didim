@@ -35,20 +35,24 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/lib/import-records.ts   기록 가져오기 요청 · 응답 모양, 보내기 전 개수 · 용량 확인 (F-002)
   src/lib/backend.ts      서버 컴포넌트 → FastAPI 호출 한 곳(BACKEND_URL · 세션 쿠키 붙이기, `fetchBackendAsUser`). auth.ts · records.ts가 같이 씀 (F-003 1차 리뷰 B)
   src/lib/records.ts      검색 · 노트 상세 API를 부르고 응답 모양 확인 (F-003)
+  src/lib/api-request.ts  브라우저 요청 한 곳(`apiRequest` · `ApiRequestError` — 네트워크 · 401 · 서버 문구 처리). quiz.ts · cards.ts가 같이 씀 (F-006 1차 리뷰 R1)
+  src/lib/quiz.ts · cards.ts   퀴즈 · 경험 카드 응답 모양 확인 + 브라우저 요청, quiz-data.ts · cards-data.ts는 서버 컴포넌트용(server-only) (F-004 · F-006)
+  src/components/card-*.tsx   경험 카드 화면(card-editor 상세 · card-review-sheet 후보 검토 · card-tile 목록 · note-card-panel 노트 상세 칸 · card-parts 원문 인용 부품) (F-006)
+  src/components/request-error.tsx   요청 실패 문구 + 로그인 링크(`RequestErrorText` 한 줄 · `RequestErrorBlock` 버튼 모양) — 퀴즈 · 카드 화면이 같이 씀 (F-006 2차 리뷰 R1)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, record-search.spec.ts, mock-backend.mjs)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
-  app/api/                라우터 (health.py, auth.py, notes.py, search.py, deps.py) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, deps.py) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
   app/importers/          가져오기 어댑터(D-001) — 파일을 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py). 지금은 마크다운 하나라 함수(read_markdown_file)만 두고, 어댑터 인터페이스(Protocol)는 4주차 노션을 붙일 때 만든다(사용자 확인). 줄 읽기 도구를 공용 위치로 옮길지도 그때 정한다
-  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py)
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py) + note_claim.py(AI를 오래 부르는 기능의 노트 선점 규칙 한 곳 — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2)
   app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk, SearchLog) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
   alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
   app/search/             기록 검색(F-003, D-016) — 검색 약속(Searcher) · 키워드 방식(pg_trgm) · 낱말 뽑기 · 발췌 · 평가 채점(evaluation.py)
-  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py, search_eval.py — 로컬 평가 세트로 검색 채점)
-  eval/                   검색 평가 세트 예시(search_eval.example.json). 실제 세트 *.local.json · 결과 results/는 레포에 안 올림
+  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py, search_eval.py — 로컬 평가 세트로 검색 채점, quiz_eval.py · card_eval.py — 가상 노트로 퀴즈 · 카드 평가, D-005)
+  eval/                   검색 평가 세트 예시(search_eval.example.json, 실제 세트 *.local.json · 결과 results/는 레포에 안 올림), quiz/ · cards/(지어낸 가상 노트 · 정답지 · 결과 — 레포에 올림)
   tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py, test_search.py, test_search_eval.py)
 ```
 - 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/`는 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다. `app/search/`도 서비스가 부르는 아래층인데, 검색 방식 자체가 "DB에서 어떻게 찾나"라서 db 모델은 읽는다(api · services는 가져다 쓰지 않음).
@@ -72,6 +76,12 @@ backend/                  FastAPI (uv)
 | 퀴즈 답 제출(진행 중 · 채점 결과 · 오류) | TanStack Query `useMutation`(`quiz-runner.tsx`) | 서버 수정이라서(D-012 예시). 진행 · 오류 상태를 직접 짜지 않고, 자동 재시도는 꺼 둔다(다시 보내면 풀이 기록이 두 번 남음 — `query-provider.tsx`) | F-004 |
 | [문제 만들기](진행 중 · 만든 결과 · 오류) | TanStack Query `useMutation`(`note-quiz-panel.tsx`) + 성공 뒤 `router.refresh()` | 서버 수정이라서. 새로 받은 서버 컴포넌트가 문제 수를 바꾸고, 만든 결과 문구는 mutation이 갖고 있어 새로 고친 뒤에도 남는다. 자동 재시도 끔(AI를 두 번 부를 수 있음) | F-004 |
 | 퀴즈 결과 점수(`/quiz/[sessionId]/result?correct=&total=`) | 주소 | 세션 표가 없어서. 새로 고침해도 같은 점수가 나오고, 답 하나하나는 이미 서버(quiz_attempts)에 있다. 이전 세션과의 점수 변화는 세션 기록이 생긴 뒤 | F-004 |
+| 경험 카드 목록 · 탭(`/cards?tab=candidate`) · 노트의 카드 후보 · 찾았는지 · 카드 상세 첫 내용 | 주소(`?tab=`) + 서버 컴포넌트(`cards/page.tsx` · `cards/[cardId]/page.tsx` · `records/[noteId]/page.tsx`, `lib/cards-data.ts`) | 처음 화면을 그릴 때 필요한 서버 데이터라서. 탭을 주소에 두면 새로 고침 · 뒤로 가기에도 같은 탭 | F-006 |
+| [카드 후보 찾기](진행 중 · 찾은 결과 · 오류) | TanStack Query `useMutation`(`note-card-panel.tsx`) + 성공 뒤 `router.refresh()` | [문제 만들기]와 같은 이유. 자동 재시도 끔(AI를 두 번 부를 수 있음) | F-006 |
+| 후보 검토 시트: 열림 · 몇 번째 후보 · 저장한 후보 · 제목 입력 | 컴포넌트 안(`useState`, `card-review-sheet.tsx`) | 시트 하나에서만 쓰는 값이라서. 닫을 때 바뀐 게 있으면 `router.refresh()` | F-006 |
+| 후보 하나의 내용(시트) | TanStack Query `useQuery`(`card-review-sheet.tsx`, 키 `["card", id]`) | 시트를 열 때 브라우저가 받는 서버 데이터라서. 자동 재시도 끔(실패 문구 + [다음 후보 보기]) | F-006 |
+| 카드 상세: 받은 카드 · 입력 중인 제목 · 칸 답 | 컴포넌트 안(`useState`, `card-editor.tsx`) | 이 화면 하나에서만 쓰고, 저장 · 인용 빼기 응답(카드 전체)으로 바꿔 끼운다 | F-006 |
+| 카드 저장 · 인용 빼기 · 지우기 · 후보 저장 · 버리기 | TanStack Query `useMutation`(`card-editor.tsx` · `card-review-sheet.tsx`) | 서버 수정이라서. 저장은 바뀐 칸만 차례로 보내고(실패하면 거기서 멈춤) 마지막에 제목 저장 | F-006 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.

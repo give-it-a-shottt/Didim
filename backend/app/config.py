@@ -71,6 +71,33 @@ MAX_REVIEW_SESSION_QUIZZES = 100
 # 기록 · 복습 홈 노트 목록에 한 번에 보내는 노트 수 상한(최근 올린 것부터). 전체 개수는 따로 알려 준다. 임시값 — 리뷰 때 확인
 MAX_NOTE_LIST = 200
 
+# 경험 카드 (F-006 설계 의도, 사용자 확인 2026-11-11)
+# 칸 이름: 상황 · 과제 · 행동 · 결과. DB card_fields.slot과 API 경로 /fields/{slot}이 같이 쓴다.
+CARD_SLOTS = ("situation", "task", "action", "result")
+CARD_STATUS_CANDIDATE = "candidate"  # 후보 찾기로 생김, 검토 전
+CARD_STATUS_SAVED = "saved"  # 사용자가 [저장]을 누름
+# 카드 제목(AI 제안 → 저장 때 사용자 확인) 길이. (사용자 확인 2026-11-11, F-006 1차 리뷰)
+CARD_TITLE_MAX_CHARS = 100
+CARD_MAX_CANDIDATES_PER_NOTE = 3  # 노트당 후보 최대 3개 (사용자 확인 2026-11-11, F-006 1차 리뷰)
+# [카드 후보 찾기]에 보내는 범위(원칙 6). 노트 앞에서부터 조각 순서대로, 둘 중 먼저 닿는 곳까지. (사용자 확인 2026-11-11, F-006 1차 리뷰)
+CARD_MAX_CHUNKS_SENT = 40
+CARD_MAX_CHARS_SENT = 12_000
+# 원문 인용 길이(공백 뺀 최소 · 전체 최대). 낱말 하나로 근거 검사를 통과하거나 조각을 통째로 옮기지 않게. (사용자 확인 2026-11-11, F-006 1차 리뷰)
+CARD_MIN_QUOTE_CHARS = 10
+CARD_MAX_QUOTE_CHARS = 500
+CARD_MAX_QUESTION_CHARS = 300  # 빈칸 질문 길이 상한. 넘거나 비면 아래 기본 질문을 쓴다
+# AI가 질문을 주지 않거나 쓸 수 없을 때 빈칸에 보여 주는 고정 질문(AI가 만든 글이 아님)
+CARD_DEFAULT_QUESTIONS = {
+    "situation": "이 경험은 어떤 상황에서 시작됐나요?",
+    "task": "그때 내가 맡은 일이나 풀어야 할 문제는 무엇이었나요?",
+    "action": "문제를 풀려고 내가 직접 한 일은 무엇인가요?",
+    "result": "그 결과 무엇이 달라졌나요?",
+}
+# 선점이 이보다 오래되면 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초). 문제 만들기와 같은 이유 · 같은 값
+CARD_CLAIM_STALE_SECONDS = QUIZ_CLAIM_STALE_SECONDS
+CARD_MAX_ANSWER_CHARS = 2_000  # 칸 하나에 쓰는 내 답 길이 상한. (사용자 확인 2026-11-11, F-006 1차 리뷰)
+MAX_CARD_LIST = 200  # 카드 목록 한 번에 보내는 수(최근 고친 것부터). 전체 개수는 따로 알려 준다. (사용자 확인 2026-11-11, F-006 1차 리뷰)
+
 
 @dataclass(frozen=True)
 class Settings:

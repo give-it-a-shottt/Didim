@@ -19,10 +19,10 @@
 | quiz_reviews | 복습 상태 | `user_id` · `quiz_id`(FK `ON DELETE CASCADE`, quiz_id 유니크 — 문제마다 하나), `next_review_on`(한국 날짜), `interval_step`(0~4 → 당일 · 1 · 3 · 7 · 14일), `correct_streak`, `in_wrong_notes`, `updated_at`, 색인 (`user_id`, `next_review_on`). 오답노트는 복습일이 다른 날 두 번 연속 맞히면 빠짐(F-004, 버전 0004) |
 | quiz_attempts | 푼 기록 | `user_id` · `quiz_id`(FK `ON DELETE CASCADE`), `chosen_index`, `is_correct`, `created_at`. 미리 풀어 복습 상태가 그대로여도 남김(F-004, 버전 0004) |
 | quiz_generation_logs | 문제 만들기 평가 로그 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(외래키 아님 — 노트가 지워져도 평가 로그는 남김), `chunks_sent`, `kept`, `dropped`, `drop_reasons`(JSON — 이유별 버린 수), `outcome`, `created_at`. 버려진 문제 비율 채점용(D-005, F-004, 버전 0004) |
-| cards | 경험 카드 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(후보를 찾은 노트, `SET NULL` — 노트가 지워져도 카드는 남음), `title`(AI 제안 → 저장 때 사용자 확인, 근거로 안 씀), `status`(candidate · saved), `created_at` · `updated_at` (F-006, 버전 0005 계획) |
-| card_fields | 카드 칸 + 근거 | `user_id` · `card_id`(FK `ON DELETE CASCADE`), `slot`(situation · task · action · result, 카드+칸 유니크), 원문 인용 `quote` · `quote_start` · `quote_end` · `chunk_id`(`SET NULL`), AI 빈칸 질문 `question`, 사용자 답 `answer`, `updated_at`. 빈칸 = 인용도 답도 없음, 근거 수 = 인용 있는 칸 수. 처음 계획한 `card_evidence`를 합침(근거가 칸 단위, D-003) (F-006, 버전 0005 계획) |
-| note_card_claims | 카드 후보 찾기 선점 | `note_quiz_claims`와 같은 구조(note_id 유니크) — 이미 찾은 노트 409 (F-006, 버전 0005 계획) |
-| card_generation_logs | 카드 후보 찾기 평가 로그 | `user_id`, `note_id`(외래키 아님), 보낸 조각 수, 후보 수, 인용 칸 수, 인용 검사로 빈칸이 된 칸 수, `outcome`, `created_at` (F-006, 버전 0005 계획) |
+| cards | 경험 카드 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(후보를 찾은 노트, `SET NULL` — 노트가 지워져도 카드는 남음), `title`(AI 제안 → 저장 때 사용자 확인, 근거로 안 씀), `status`(candidate · saved), `created_at` · `updated_at` (F-006, 버전 0005) |
+| card_fields | 카드 칸 + 근거 | `user_id` · `card_id`(FK `ON DELETE CASCADE`), `slot`(situation · task · action · result, 카드+칸 유니크), 원문 인용 `quote` · `quote_start` · `quote_end` · `chunk_id`(`SET NULL`), AI 빈칸 질문 `question`, 사용자 답 `answer`, `updated_at`. 빈칸 = 인용도 답도 없음, 근거 수 = 인용 있는 칸 수. 처음 계획한 `card_evidence`를 합침(근거가 칸 단위, D-003). 네 칸 모두 인용을 빼서 근거가 0개인 카드도 허용(Q-022 → feature.md, 사용자 확인 2026-11-11) (F-006, 버전 0005) |
+| note_card_claims | 카드 후보 찾기 선점 | `note_quiz_claims` 구조(note_id 유니크) + `finished_at`(비어 있음 = 찾는 중, 있음 = 이미 찾은 노트 → 409, 후보를 모두 버려도 남음). AI 실패 · 후보 0개 · 저장 실패면 지워서 다시 누를 수 있음 (F-006, 버전 0005, 사용자 확인 2026-11-11) |
+| card_generation_logs | 카드 후보 찾기 평가 로그 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(외래키 아님), `chunks_sent`, `candidates`, `quoted_fields`, `emptied_fields`(인용 검사로 빈칸이 된 칸 수), `drop_reasons`(JSON — 이유별 수), `outcome`, `created_at`. 평가 세트 채점은 `scripts/card_eval.py`(D-005) (F-006, 버전 0005) |
 | postings | 공고 | 붙여 넣은 본문 · URL, 기업 · 직무, 마감일, 상태(준비 · 작성 중 · 제출) |
 | requirements | 요구 역량 | posting_id, 매칭된 card_id 목록 · 점수 |
 | drafts | 자소서 | posting_id, 문항, 상태, 내가 고친 비율 |

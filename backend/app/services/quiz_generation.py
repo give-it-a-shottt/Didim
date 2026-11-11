@@ -19,17 +19,15 @@ import logging
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from sqlalchemy import delete, exists, select, update
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.config import (
     MAX_QUIZZES_PER_NOTE,
-    QUIZ_CLAIM_STALE_SECONDS,
     QUIZ_MAX_CHOICE_CHARS,
     QUIZ_MAX_EXPLANATION_CHARS,
     QUIZ_MAX_QUESTION_CHARS,
@@ -38,10 +36,13 @@ from app.config import (
     QUIZ_MIN_QUOTE_CHARS,
     QUIZ_OX_CHOICES,
 )
-from app.db.models import Chunk, Note, NoteQuizClaim, Quiz, QuizGenerationLog, QuizReview, User
+from app.db.models import Chunk, Note, Quiz, QuizGenerationLog, QuizReview
 from app.korea_time import korea_today, now_utc
 from app.llm.base import LLMClient, LLMError, LLMUsage, Message
 from app.llm.structured import StructuredReply, complete_json
+from app.services import note_claim
+from app.services.note_claim import ClaimLost, ClaimRules, OtherAIWorkInProgress  # noqa: F401 — 라우터 · 테스트가 여기서 가져감
+from app.services.text_clean import strip_forbidden_control
 from app.services.note_service import get_note_for_user, list_chunks_for_note_for_user
 from app.services.usage_service import (
     FEATURE_QUIZ_GENERATE,
@@ -78,11 +79,6 @@ class QuizzesAlreadyExist(Exception):
 
 class GenerationInProgress(Exception):
     """같은 노트의 문제를 다른 요청이 만드는 중이다(동시 클릭). AI를 부르지 않는다."""
-
-
-class OtherNoteInProgress(Exception):
-    """같은 사용자가 다른 노트의 문제를 만드는 중. 사용자당 동시에 1개만 — 요청마다 작업 스레드를 최대 180초
-    붙잡으므로, 한 사용자가 노트 여러 개에 동시에 보내 서버 전체를 붙잡지 못하게 한다(F-004 1차 리뷰 R2)."""
 
 
 class NoEligibleChunks(Exception):
@@ -188,9 +184,11 @@ class CheckResult:
 
 def _check_one(draft: QuizDraftIn, chunk: Chunk) -> CheckedQuiz | str:
     """통과하면 CheckedQuiz, 아니면 버린 이유."""
-    question = draft.question.strip()
-    explanation = draft.explanation.strip()
-    choices = [choice.strip() for choice in draft.choices]
+    # AI가 섞은 제어 문자(NUL 등)는 지운다 — PostgreSQL이 NUL을 받지 않아 저장이 500이 된다(F-006 2차 리뷰 R2).
+    # 인용(quote)은 원문과 글자 그대로 비교하므로 손대지 않는다.
+    question = strip_forbidden_control(draft.question).strip()
+    explanation = strip_forbidden_control(draft.explanation).strip()
+    choices = [strip_forbidden_control(choice).strip() for choice in draft.choices]
 
     if not question or not explanation:
         return DROP_EMPTY_TEXT
@@ -258,86 +256,25 @@ def check_drafts(drafts: Sequence[QuizDraftIn], chunks: Sequence[Chunk]) -> Chec
 # --- 1 · 4. DB 쪽 ---
 
 
-def _has_active_claim_on_other_note(db: Session, *, user_id: int, note_id: int, stale_before: datetime) -> bool:
-    """다른 노트에 아직 진행 중인 선점이 있는가. 성공한 선점은 남지만 그 노트에는 문제가 있으므로 진행 중이 아니다."""
-    has_quiz = exists().where(Quiz.user_id == user_id, Quiz.note_id == NoteQuizClaim.note_id)
-    return bool(
-        db.scalar(
-            select(
-                exists().where(
-                    NoteQuizClaim.user_id == user_id,
-                    NoteQuizClaim.note_id != note_id,
-                    NoteQuizClaim.claimed_at >= stale_before,
-                    ~has_quiz,
-                )
-            )
-        )
-    )
-
-
-def _claim_note(db: Session, *, user_id: int, note_id: int, at: datetime) -> None:
-    """노트를 선점한다. 사용자당 진행 중인 선점은 하나만, 노트마다 선점은 하나만.
-
-    사용자 줄을 잠그고(PostgreSQL FOR NO KEY UPDATE — 같은 사용자의 선점을 차례로 세움) 그 잠금 안에서
-    "다른 노트에 진행 중인 선점이 있나 → 이 노트의 선점이 없으면 새로, 5분 지났으면 가져가고, 진행 중이면 409"를
-    모두 정한 뒤 한 번만 커밋한다. 커밋 · rollback 전까지 잠금이 남아 있어 두 요청이 사이에 끼어들 수 없다
-    (F-004 2차 리뷰 R2 — 전에는 유니크 충돌 rollback이 잠금을 먼저 풀어 오래된 선점 경로가 잠금 밖이었다).
-    FOR NO KEY UPDATE는 이 잠금끼리만 막고, 같은 사용자 줄을 가리키는 외래키 INSERT(사용량 · 풀이 기록)는 막지 않는다.
-    SQLite(테스트)는 줄 잠금이 없어서 note_id 유니크 제약이 같은 노트의 동시 선점을 막는 안전망이 된다.
-    전제: 격리 수준 READ COMMITTED(PostgreSQL 기본값, 엔진은 따로 정하지 않음). 잠금을 얻은 뒤의 SELECT가 새 스냅숏으로
-    앞 요청이 커밋한 선점을 봐야 한다. REPEATABLE READ로 바꾸면 다른 노트 두 개가 함께 통과할 수 있다(3차 리뷰 R2).
-    """
-    stale_before = at - timedelta(seconds=QUIZ_CLAIM_STALE_SECONDS)
-    db.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True))
-    if _has_active_claim_on_other_note(db, user_id=user_id, note_id=note_id, stale_before=stale_before):
-        db.rollback()
-        raise OtherNoteInProgress
-
-    # 이 노트의 선점: 없으면 None, 있으면 5분이 지났는지(비교는 DB에서 — 시간대 표기가 DB마다 달라서)
-    is_stale = db.scalar(
-        select(NoteQuizClaim.claimed_at < stale_before).where(
-            NoteQuizClaim.note_id == note_id, NoteQuizClaim.user_id == user_id
-        )
-    )
-    if is_stale is None:
-        db.add(NoteQuizClaim(user_id=user_id, note_id=note_id, claimed_at=at))
-    elif is_stale:
-        # 읽은 뒤 잠금 밖의 해제(DELETE)가 끼어들 수 있어서 "아직 오래된 선점이 있을 때만" 바꾸고 바뀐 줄을 센다(3차 리뷰 R2)
-        taken = db.execute(
-            update(NoteQuizClaim)
-            .where(
-                NoteQuizClaim.note_id == note_id,
-                NoteQuizClaim.user_id == user_id,
-                NoteQuizClaim.claimed_at < stale_before,
-            )
-            .values(claimed_at=at)
-        ).rowcount
-        if taken != 1:
-            db.rollback()
-            raise GenerationInProgress
-        logger.warning("오래된 문제 만들기 선점을 가져감 user_id=%s note_id=%s", user_id, note_id)
-    else:
-        db.rollback()
-        raise GenerationInProgress
-    try:
-        db.commit()
-    except IntegrityError:  # 줄 잠금이 없는 DB에서 같은 노트를 동시에 선점한 경우(유니크 제약이 막음)
-        db.rollback()
-        raise GenerationInProgress from None
+# 노트 선점 규칙은 카드 후보 찾기와 같이 쓴다(app/services/note_claim.py). 퀴즈는 그 노트에 문제가 있으면 '끝남'이다 —
+# 성공한 선점은 남지만 진행 중이 아니고, 이미 문제가 있는 노트는 선점 전에 QuizzesAlreadyExist로 막는다.
+_CLAIM_RULES = ClaimRules(
+    table=note_claim.QUIZ_CLAIMS,
+    in_progress=GenerationInProgress,
+    already_done=None,
+    label="문제 만들기",
+)
 
 
 def _release_claim_statement(plan: "GenerationPlan"):  # noqa: ANN202
-    return delete(NoteQuizClaim).where(NoteQuizClaim.note_id == plan.note.id, NoteQuizClaim.user_id == plan.user_id)
+    return note_claim.release_statement(
+        _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at
+    )
 
 
 def release_claim(db: Session, plan: "GenerationPlan") -> None:
-    """선점을 지운다(다시 누를 수 있게). 실패해도 5분 뒤 풀리므로 오류를 올리지 않는다."""
-    try:
-        db.execute(_release_claim_statement(plan))
-        db.commit()
-    except Exception as exc:  # noqa: BLE001
-        db.rollback()
-        logger.warning("문제 만들기 선점 해제 실패 user_id=%s error=%s", plan.user_id, type(exc).__name__)
+    """내 선점을 지운다(다시 누를 수 있게). 실패해도 5분 뒤 풀리므로 오류를 올리지 않는다."""
+    note_claim.release_claim(db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at)
 
 
 @dataclass(frozen=True)
@@ -347,13 +284,14 @@ class GenerationPlan:
     chunks: list[Chunk]
     usage_before: DailyUsage
     messages: list[Message]
+    claimed_at: datetime  # 이 요청이 잡은 선점의 시각(해제 때 내 선점인지 확인)
 
 
 def prepare_generation(db: Session, *, user_id: int, note_id: int, now: datetime | None = None) -> GenerationPlan:
     """AI를 부르기 전에 확인할 것을 모두 확인한다. 하나라도 걸리면 AI를 부르지 않는다.
 
     NoteNotFound / QuizzesAlreadyExist / NoEligibleChunks / DailyLimitExceeded(usage_service) /
-    GenerationInProgress(같은 노트를 다른 요청이 만드는 중) / OtherNoteInProgress(같은 사용자가 다른 노트를 만드는 중)
+    GenerationInProgress(같은 노트를 다른 요청이 만드는 중) / OtherAIWorkInProgress(같은 사용자가 다른 노트를 만드는 중)
     마지막에 노트를 선점한다(note_quiz_claims). 이 함수가 끝나면 save_generation · save_failed_generation ·
     abandon_generation 중 하나가 반드시 불려야 선점이 정리된다(안 불리면 5분 뒤 다른 요청이 가져감).
     """
@@ -366,13 +304,16 @@ def prepare_generation(db: Session, *, user_id: int, note_id: int, now: datetime
     if not chunks:
         raise NoEligibleChunks
     usage_before = ensure_within_daily_limit(db, user_id=user_id, now=now)
-    _claim_note(db, user_id=user_id, note_id=note.id, at=now if now is not None else now_utc())
+    claimed_at = note_claim.claim_note(
+        db, _CLAIM_RULES, user_id=user_id, note_id=note.id, at=now if now is not None else now_utc()
+    )
     return GenerationPlan(
         user_id=user_id,
         note=note,
         chunks=chunks,
         usage_before=usage_before,
         messages=build_messages(note, chunks),
+        claimed_at=claimed_at,
     )
 
 
@@ -405,6 +346,7 @@ def save_generation(
     """검사를 통과한 문제 · 복습 상태(오늘부터) · 평가 로그를 한 번에 저장하고, 사용량을 기록한다.
 
     문제 저장이 실패해도 AI는 이미 불렀으므로 사용량은 기록한 뒤 오류를 올린다.
+    내 선점을 다른 요청이 가져갔으면(5분 넘게 걸린 경우) 저장하지 않는다 — 카드 후보 찾기와 같은 기준(F-006 2차 리뷰 R2).
     """
     at = now if now is not None else now_utc()
     checked = check_drafts(reply.value.quizzes, plan.chunks)
@@ -413,6 +355,10 @@ def save_generation(
     today = korea_today(at)
 
     try:
+        if checked.kept:
+            note_claim.ensure_still_owned(
+                db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at
+            )
         for item in checked.kept:
             quiz = Quiz(
                 user_id=plan.user_id,

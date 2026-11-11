@@ -13,19 +13,19 @@ import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type RefObject, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { RequestErrorBlock } from "@/components/request-error";
 import {
   type AnswerResult,
   evidenceHref,
   formatReviewDate,
   type QuizCard,
-  QuizRequestError,
   quizKindLabel,
   submitAnswer,
 } from "@/lib/quiz";
 import { FocusTitle, FocusTopBar } from "@/components/focus-top-bar";
 import { Icon } from "@/components/icon";
 import { SourceQuote } from "@/components/page-parts";
-import { BADGE_LINE, BADGE_SOFT, CARD, CARD_LABEL, PRIMARY_BUTTON_L, SECONDARY_BUTTON } from "@/lib/ui-classes";
+import { BADGE_LINE, BADGE_SOFT, CARD, CARD_LABEL, PRIMARY_BUTTON_L } from "@/lib/ui-classes";
 
 type Score = { correct: number; answered: number };
 
@@ -147,7 +147,12 @@ export function QuizRunner({ sessionId, title, titleId, notice, quizzes }: QuizR
                 채점하고 있어요…
               </p>
             ) : null}
-            {answer.error ? <AnswerError error={answer.error} /> : null}
+            {answer.error ? (
+              <RequestErrorBlock
+                error={answer.error}
+                hint={<p className="text-body-3 text-text-sub">보기를 다시 고르고 [답 내기]를 눌러 주세요.</p>}
+              />
+            ) : null}
             {result ? <ResultPanel quiz={quiz} result={result} headingRef={resultHeadingRef} /> : null}
           </aside>
         </div>
@@ -260,22 +265,6 @@ function choiceMark(choiceIndex: number, chosen: number | null, answerIndex: num
   if (choiceIndex === answerIndex) return "answer";
   if (choiceIndex === chosen) return "wrong";
   return null;
-}
-
-function AnswerError({ error }: { error: Error }) {
-  const needsLogin = error instanceof QuizRequestError && error.needsLogin;
-  return (
-    <div role="alert" className="flex flex-col gap-2">
-      <p className="text-body-2 font-medium text-error-text">{error.message}</p>
-      {needsLogin ? (
-        <Link href="/login" className={`${SECONDARY_BUTTON} self-start`}>
-          로그인하러 가기
-        </Link>
-      ) : (
-        <p className="text-body-3 text-text-sub">보기를 다시 고르고 [답 내기]를 눌러 주세요.</p>
-      )}
-    </div>
-  );
 }
 
 type ResultPanelProps = {

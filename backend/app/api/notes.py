@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.api.errors import NOTE_NOT_FOUND_DETAIL
 from app.api.upload_limit import TOO_LARGE_DETAIL
 from app.config import MAX_DB_ID, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILES, MAX_IMPORT_TOTAL_BYTES
 from app.db.models import User
@@ -27,7 +28,6 @@ from app.services.note_service import (
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
-NOTE_NOT_FOUND_DETAIL = "노트를 찾을 수 없어요."
 
 
 class ImportSummary(BaseModel):

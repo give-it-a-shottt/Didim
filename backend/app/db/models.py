@@ -17,7 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.config import DEFAULT_DAILY_LIMIT, NOTE_TITLE_MAX_CHARS
+from app.config import CARD_TITLE_MAX_CHARS, DEFAULT_DAILY_LIMIT, NOTE_TITLE_MAX_CHARS
 from app.db.base import Base
 
 
@@ -288,6 +288,115 @@ class QuizGenerationLog(Base):
     kept: Mapped[int] = mapped_column(Integer, nullable=False)
     dropped: Mapped[int] = mapped_column(Integer, nullable=False)
     # 버린 이유별 개수. 예) {"quote_not_found": 2, "bad_answer_index": 1}
+    drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class Card(Base):
+    """경험 카드 (F-006, 버전 0005).
+
+    [카드 후보 찾기]로 'candidate'(후보)가 생기고, 사용자가 [저장]하면 'saved'가 된다. 카드는 후보에서만 생긴다.
+    본문은 칸(card_fields)에 있다. 카드에는 원문 인용 · 사용자 답 · 근거 링크만 저장한다(D-003).
+    title은 AI가 제안하고 저장 때 사용자가 확인 · 수정하는 이름표다 — 자소서 근거로 쓰지 않는다(사용자 확인 2026-11-11).
+    note_id는 SET NULL: 노트가 지워져도 사용자 답이 든 카드는 남고 근거만 '원문 없음'이 된다.
+    """
+
+    __tablename__ = "cards"
+    __table_args__ = (Index("ix_cards_user_status", "user_id", "status"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    note_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("notes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    title: Mapped[str] = mapped_column(String(CARD_TITLE_MAX_CHARS), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # "candidate" · "saved"
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+    fields: Mapped[list["CardField"]] = relationship(
+        back_populates="card",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class CardField(Base):
+    """카드의 한 칸 + 그 칸의 근거 (F-006, 버전 0005). 카드마다 4줄(situation · task · action · result).
+
+    한 칸에 세 가지를 따로 둔다(사용자 확인 2026-11-11 — 인용은 고정 + 내 답 덧붙이기):
+    - 원문 인용(quote · quote_start · quote_end · chunk_id): AI가 고른 내 노트 문장. 서버가 원문에 글자 그대로 있는지
+      확인한 것만 남는다. quote == notes.content[quote_start:quote_end] (파이썬 문자 단위, quizzes와 같음).
+      사용자는 고칠 수 없고 [인용 빼기]로 지울 수만 있다.
+    - question: 빈칸일 때 AI가 묻는 질문. 화면에만 보여 주고 카드 내용으로 쓰지 않는다.
+    - answer: 사용자가 쓴 답.
+    빈칸 = 인용도 답도 없음. 근거 수 = 인용이 있는 칸 수. 처음 계획한 card_evidence를 여기에 합쳤다(근거가 칸 단위).
+    chunk_id는 SET NULL: 조각이 지워져도 칸(사용자 답)은 남는다.
+    """
+
+    __tablename__ = "card_fields"
+    __table_args__ = (UniqueConstraint("card_id", "slot", name="uq_card_fields_card_slot"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False)
+    slot: Mapped[str] = mapped_column(String(16), nullable=False)
+    quote: Mapped[str | None] = mapped_column(Text, nullable=True)
+    quote_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quote_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    chunk_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("chunks.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    question: Mapped[str | None] = mapped_column(Text, nullable=True)
+    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+    card: Mapped["Card"] = relationship(back_populates="fields")
+
+
+class NoteCardClaim(Base):
+    """노트별 [카드 후보 찾기] 선점 (F-006, 버전 0005 — note_quiz_claims 구조 + finished_at).
+
+    AI를 부르기 전에 노트당 한 줄을 넣고 커밋한다(note_id 유니크). 동시에 두 번 눌러도 AI는 한 번만 부른다.
+    - finished_at 비어 있음 = 찾는 중(5분 지나면 새 요청이 가져감).
+    - finished_at 있음 = 이미 찾은 노트 → 409. 후보를 모두 버려도 남는다(카드 유무로는 알 수 없어서 — 사용자 확인 2026-11-11).
+    - AI 실패 · 후보 0개 · 저장 실패 → 선점을 지워 다시 누를 수 있게 한다(사용자 확인 2026-11-11).
+    """
+
+    __tablename__ = "note_card_claims"
+    __table_args__ = (UniqueConstraint("note_id", name="uq_note_card_claims_note_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    note_id: Mapped[int] = mapped_column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CardGenerationLog(Base):
+    """카드 후보 찾기 평가 로그 (F-006 완료 기준 7, 설계 원칙 5, 버전 0005).
+
+    [카드 후보 찾기] 한 번마다 보낸 조각 수 · 남긴 후보 수 · 인용이 들어간 칸 수 · 인용 검사로 빈칸이 된 칸 수와
+    이유를 남긴다. 호출 · 토큰은 ai_usage_logs(D-018). note_id는 외래키가 아니다(노트가 지워져도 로그는 남김).
+    """
+
+    __tablename__ = "card_generation_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    note_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunks_sent: Mapped[int] = mapped_column(Integer, nullable=False)
+    candidates: Mapped[int] = mapped_column(Integer, nullable=False)
+    quoted_fields: Mapped[int] = mapped_column(Integer, nullable=False)
+    emptied_fields: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 빈칸으로 돌리거나 버린 이유별 개수. 예) {"quote_not_found": 2, "no_quote_and_no_question": 1}
     drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
     outcome: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)

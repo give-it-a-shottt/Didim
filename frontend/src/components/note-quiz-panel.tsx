@@ -7,15 +7,15 @@
 // 새로 고친 뒤에도 남는다(같은 컴포넌트가 계속 그려지므로).
 
 import { useMutation } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { RequestErrorBlock } from "@/components/request-error";
+import { ApiRequestError } from "@/lib/api-request";
 import {
   type GenerateResult,
   generateQuizzes,
   MAX_QUIZZES_PER_NOTE,
-  QuizRequestError,
 } from "@/lib/quiz";
-import { CARD, CARD_LABEL, PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/lib/ui-classes";
+import { CARD, CARD_LABEL, PRIMARY_BUTTON } from "@/lib/ui-classes";
 
 const CONFLICT = 409;
 
@@ -26,7 +26,7 @@ export function NoteQuizPanel({ noteId, quizCount }: { noteId: number; quizCount
     onSuccess: () => router.refresh(),
     onError: (error) => {
       // 409 "이미 문제가 있어요"(다른 탭에서 먼저 만듦) — 새로 받아 [이 노트 풀기]를 보여 준다
-      if (error instanceof QuizRequestError && error.status === CONFLICT) router.refresh();
+      if (error instanceof ApiRequestError && error.status === CONFLICT) router.refresh();
     },
   });
 
@@ -71,7 +71,7 @@ export function NoteQuizPanel({ noteId, quizCount }: { noteId: number; quizCount
       )}
 
       {generate.data ? <GenerateSummary result={generate.data} /> : null}
-      {generate.error ? <GenerateError error={generate.error} /> : null}
+      {generate.error ? <RequestErrorBlock error={generate.error} /> : null}
     </section>
   );
 }
@@ -88,20 +88,6 @@ function GenerateSummary({ result }: { result: GenerateResult }) {
         <p className="text-text-sub">원문에서 근거를 확인하지 못한 {result.dropped}개는 버렸어요.</p>
       ) : null}
       <p className="text-text-sub">오늘 남은 AI 사용: {result.remainingToday}회</p>
-    </div>
-  );
-}
-
-function GenerateError({ error }: { error: Error }) {
-  const needsLogin = error instanceof QuizRequestError && error.needsLogin;
-  return (
-    <div role="alert" className="flex flex-col gap-2">
-      <p className="text-body-2 font-medium text-error-text">{error.message}</p>
-      {needsLogin ? (
-        <Link href="/login" className={`${SECONDARY_BUTTON} self-start`}>
-          로그인하러 가기
-        </Link>
-      ) : null}
     </div>
   );
 }

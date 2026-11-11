@@ -49,6 +49,10 @@ APP_TABLES = {
     "quiz_reviews",
     "quiz_attempts",
     "quiz_generation_logs",
+    "cards",
+    "card_fields",
+    "note_card_claims",
+    "card_generation_logs",
 }
 FIRST_VERSION = "0001"
 

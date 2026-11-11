@@ -1,0 +1,75 @@
+{
+  "_설명": "F-006 경험 카드 평가 정답지(D-005, 사용자 확인 전 초안). 경험 · 함정은 노트의 '## 제목' 구간으로 정한다. 후보의 인용이 가장 많이 들어간 구간으로 후보를 판정한다. missing = 기록에 없어서 빈칸으로 남아야 하는 칸(확실한 것만).",
+  "no_experience_notes": "eval/quiz/notes",
+  "notes": {
+    "c01-bookmark-n-plus-one.md": {
+      "experiences": [
+        {"id": "c01-1", "sections": ["목록 API가 느려진 문제"], "missing": []}
+      ],
+      "traps": [
+        {"section": "N+1이 뭔지 정리", "kind": "concept"},
+        {"section": "다음에 해 볼 것", "kind": "plan"}
+      ]
+    },
+    "c02-frontend-study.md": {
+      "experiences": [
+        {"id": "c02-1", "sections": ["내가 맡은 일: 상품 목록 렌더링 개선"], "missing": []},
+        {"id": "c02-2", "sections": ["스터디 발표 자료 정리"], "missing": ["result"]}
+      ],
+      "traps": [
+        {"section": "강의 메모: 렌더링 최적화 사례", "kind": "others"}
+      ]
+    },
+    "c03-team-login-bug.md": {
+      "experiences": [
+        {"id": "c03-1", "sections": ["로그인이 30분마다 풀리던 버그"], "missing": ["result"]}
+      ],
+      "traps": [
+        {"section": "JWT 구조 복습", "kind": "concept"}
+      ]
+    },
+    "c04-club-treasurer.md": {
+      "experiences": [
+        {"id": "c04-1", "sections": ["회비 정산 자동화"], "missing": []},
+        {"id": "c04-2", "sections": ["신입 부원 안내 문서"], "missing": []}
+      ],
+      "traps": [
+        {"section": "내년 총무에게 넘길 일", "kind": "plan"}
+      ]
+    },
+    "c05-coding-test-log.md": {
+      "experiences": [
+        {"id": "c05-1", "sections": ["하루 한 문제 습관"], "missing": []}
+      ],
+      "traps": [
+        {"section": "DP 개념 정리", "kind": "concept"}
+      ]
+    },
+    "c06-deploy-troubleshooting.md": {
+      "experiences": [
+        {"id": "c06-1", "sections": ["도커 이미지 크기 줄이기"], "missing": []},
+        {"id": "c06-2", "sections": ["GitHub Actions 빌드 시간"], "missing": ["result"]}
+      ],
+      "traps": [
+        {"section": "블로그에서 읽은 사례", "kind": "others"}
+      ]
+    },
+    "c07-hackathon.md": {
+      "experiences": [
+        {"id": "c07-1", "sections": ["날씨 API 연동 담당"], "missing": ["result"]},
+        {"id": "c07-2", "sections": ["시연 실패 대비"], "missing": []}
+      ],
+      "traps": [
+        {"section": "다른 팀 발표에서 인상 깊었던 점", "kind": "others"}
+      ]
+    },
+    "c08-daily-memo.md": {
+      "experiences": [
+        {"id": "c08-1", "sections": ["오늘 한 일"], "missing": []}
+      ],
+      "traps": [
+        {"section": "멘토링에서 들은 이야기", "kind": "others"}
+      ]
+    }
+  }
+}
