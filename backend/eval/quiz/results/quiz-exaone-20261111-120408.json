@@ -1,0 +1,941 @@
+{
+  "provider": "exaone",
+  "model": "k-exaone_v2.5",
+  "summary": {
+    "notes": 10,
+    "chunks_sent": 50,
+    "produced": 50,
+    "kept": 49,
+    "dropped": 1,
+    "drop_rate": 0.02,
+    "drop_reasons": {
+      "quote_not_found": 1
+    },
+    "judged": 49,
+    "unjudged": 0,
+    "answer_match_rate": 1.0,
+    "explanation_match_rate": 1.0,
+    "generation_failures": 0,
+    "retries": 6,
+    "judge_failures": 0,
+    "generation_seconds_max": 130.1,
+    "generation_seconds_avg": 85.5,
+    "usage": {
+      "generation": {
+        "calls": 22,
+        "prompt_tokens": 10393,
+        "completion_tokens": 25566
+      },
+      "judge": {
+        "calls": 21,
+        "prompt_tokens": 13695,
+        "completion_tokens": 7322
+      }
+    }
+  },
+  "rate_limit_waits": [
+    8.0,
+    13.0,
+    15.0,
+    17.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0
+  ],
+  "notes": [
+    {
+      "note_title": "HTTP 캐시 정리",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 112.7,
+      "retries": 3,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "ox",
+          "question": "응답 헤더에 `Cache-Control: max-age=3600`을 붙이면 브라우저는 그 응답을 3600초, 즉 1시간 동안 신선하다고 보고 서버에 다시 묻지 않는다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문에 `max-age=3600`이면 3600초, 즉 1시간 동안 신선하다고 보고 서버에 다시 묻지 않는다고 적혀 있다.",
+          "quote": "응답 헤더에 `Cache-Control: max-age=3600`을 붙이면 브라우저는 그 응답을 3600초, 즉 1시간 동안 신선하다고 보고 서버에 다시 묻지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 `Cache-Control: max-age=3600`을 붙이면 3600초 동안 신선하다고 보고 서버에 다시 묻지 않는다고 적혀 있어 정답 O가 뒷받침된다. 해설도 같은 내용을 말하므로 일치한다."
+        },
+        {
+          "kind": "ox",
+          "question": "`no-cache`는 이름과 달리 저장을 막지 않고, 쓰기 전에 매번 서버에 바뀌었는지 확인하라는 뜻이다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 `no-cache`가 저장을 막는 것이 아니라, 저장하되 쓰기 전에 매번 서버에 바뀌었는지 확인하라는 뜻이라고 설명한다.",
+          "quote": "`no-cache`는 이름과 달리 저장을 막지 않는다. 저장은 하되 쓰기 전에 매번 서버에 바뀌었는지 확인하라는 뜻이다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 `no-cache`는 저장을 막지 않고 저장하되 쓰기 전 매번 서버에 바뀌었는지 확인하라는 뜻이라고 적혀 있어 정답 O가 뒷받침된다. 해설도 이에 부합한다."
+        },
+        {
+          "kind": "ox",
+          "question": "이전 응답의 ETag 값을 `If-None-Match` 헤더에 담아 보내고, 서버는 내용이 그대로면 본문 없이 304 Not Modified를 돌려준다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문에 이전 응답의 ETag 값을 `If-None-Match` 헤더에 담아 보내고, 내용이 그대로면 본문 없이 304 Not Modified를 돌려준다고 적혀 있다.",
+          "quote": "이전 응답의 ETag 값을 `If-None-Match` 헤더에 담아 보내고, 서버는 내용이 그대로면 본문 없이 304 Not Modified를 돌려준다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 이전 응답의 ETag를 `If-None-Match`에 담아 보내고 내용이 그대로면 본문 없이 304 Not Modified를 돌려준다고 적혀 있어 정답 O가 뒷받침된다. 해설도 같은 내용이다."
+        },
+        {
+          "kind": "ox",
+          "question": "`Last-Modified`에서 시각은 초 단위라서 1초 안에 두 번 바뀌면 구분하지 못하고, 그래서 ETag가 더 정확하다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 시각이 초 단위라서 1초 안에 두 번 바뀌면 구분하지 못하고, 그래서 ETag가 더 정확하다고 설명한다.",
+          "quote": "다만 시각은 초 단위라서 1초 안에 두 번 바뀌면 구분하지 못하고, 그래서 ETag가 더 정확하다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 시각이 초 단위라서 1초 안에 두 번 바뀌면 구분하지 못하고 ETag가 더 정확하다고 적혀 있어 정답 O가 뒷받침된다. 해설도 원문과 어긋나지 않는다."
+        },
+        {
+          "kind": "ox",
+          "question": "내용이 바뀌면 파일 이름이 바뀌는 정적 파일에는 `max-age=31536000`(1년)과 `immutable`을 줘도 안전하다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 내용이 바뀌면 이름이 바뀌므로 이런 파일에는 `max-age=31536000`(1년)과 `immutable`을 줘도 안전하다고 적어 둔다.",
+          "quote": "내용이 바뀌면 이름이 바뀌므로 이런 파일에는 `max-age=31536000`(1년)과 `immutable`을 줘도 안전하다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 내용 해시 파일에는 `max-age=31536000`(1년)과 `immutable`을 줘도 안전하다고 적혀 있어 정답 O가 뒷받침된다. 해설도 같은 취지를 담고 있다."
+        }
+      ]
+    },
+    {
+      "note_title": "데이터베이스 인덱스",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 91.5,
+      "retries": 1,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "B-tree 인덱스를 따라 찾을 때 행이 늘어도 비교 횟수는 어떻게 늘어나는가?",
+          "choices": [
+            "로그 비율로만 늘어난다",
+            "행 수에 정비례해 계속 늘어난다",
+            "항상 일정하게 유지된다",
+            "제곱 비율로만 늘어난다"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 B-tree 인덱스가 정렬된 트리를 따라 내려가며 찾기 때문에 행이 늘어도 비교 횟수는 로그 비율로만 늘어난다고 설명한다.",
+          "quote": "대부분의 관계형 DB 기본 인덱스는 B-tree라서, 정렬된 트리를 따라 내려가며 찾기 때문에 행이 늘어도 비교 횟수는 로그 비율로만 늘어난다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 B-tree 인덱스를 따라 찾으면 행이 늘어도 비교 횟수가 로그 비율로만 늘어난다고 설명하므로 정답 보기와 해설이 모두 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "인덱스가 쓰기를 느리게 만드는 까닭은?",
+          "choices": [
+            "테이블뿐 아니라 그 열에 걸린 인덱스도 함께 고쳐야 해서",
+            "테이블 전체를 처음부터 끝까지 읽어야 해서",
+            "정렬된 트리를 따라 내려가며 찾기 때문에",
+            "값의 종류가 적어 선택도가 낮기 때문에"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 INSERT, UPDATE, DELETE를 할 때마다 테이블뿐 아니라 그 열에 걸린 인덱스도 함께 고쳐야 해서 쓰기가 느려진다고 설명한다.",
+          "quote": "INSERT, UPDATE, DELETE를 할 때마다 테이블뿐 아니라 그 열에 걸린 인덱스도 함께 고쳐야 해서 쓰기가 느려진다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 INSERT, UPDATE, DELETE 시 테이블과 그 열의 인덱스를 함께 고쳐야 해 쓰기가 느려진다고 설명하므로 정답 보기와 해설이 모두 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "(user_id, created_at) 순서로 만든 복합 인덱스에서 user_id만 조건으로 걸면 어떻게 되는가?",
+          "choices": [
+            "쓸 수 있다",
+            "맨 앞 열이 빠져서 제대로 타지 못한다",
+            "created_at만 조건으로 걸어야 쓸 수 있다",
+            "복합 인덱스는 순서와 무관하게 항상 제대로 탄다"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 (user_id, created_at) 순서로 만든 복합 인덱스는 user_id만 조건으로 걸어도 쓸 수 있다고 설명한다.",
+          "quote": "(user_id, created_at) 순서로 만든 복합 인덱스는 user_id만 조건으로 걸어도 쓸 수 있다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 (user_id, created_at) 복합 인덱스는 user_id만 조건으로 걸어도 쓸 수 있다고 설명하므로 정답 보기와 해설이 모두 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "조건에 맞는 행이 전체의 큰 비율일 때 DB는 인덱스를 어떻게 하는가?",
+          "choices": [
+            "인덱스를 쓰지 않는다",
+            "인덱스를 더 만든다",
+            "인덱스를 정렬된 트리로 바꾼다",
+            "인덱스 대조 횟수를 로그 비율로 줄인다"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 조건에 맞는 행이 전체의 큰 비율이면 DB가 인덱스를 따라가는 것보다 전체를 읽는 편이 빠르다고 판단하고 인덱스를 쓰지 않는다고 설명한다.",
+          "quote": "조건에 맞는 행이 전체의 큰 비율이면 DB는 인덱스를 따라가는 것보다 그냥 전체를 읽는 편이 빠르다고 판단하고 인덱스를 쓰지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 조건에 맞는 행이 전체의 큰 비율이면 전체를 읽는 편이 빠르다고 판단해 인덱스를 쓰지 않는다고 설명하므로 정답 보기와 해설이 모두 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "쿼리 실행 계획 결과에 전체를 읽은 것으로 나타나는 것은?",
+          "choices": [
+            "Seq Scan",
+            "Index Scan",
+            "Bitmap Index Scan",
+            "EXPLAIN ANALYZE"
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 결과에 Seq Scan이 보이면 전체를 읽은 것이고, Index Scan이나 Bitmap Index Scan이 보이면 인덱스를 쓴 것이라고 설명한다.",
+          "quote": "결과에 `Seq Scan`이 보이면 전체를 읽은 것이고, `Index Scan`이나 `Bitmap Index Scan`이 보이면 인덱스를 쓴 것이다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 실행 계획 결과에 Seq Scan이 보이면 전체를 읽은 것이라고 설명하므로 정답 보기와 해설이 모두 일치한다."
+        }
+      ]
+    },
+    {
+      "note_title": "트랜잭션 격리 수준",
+      "chunks_sent": 5,
+      "kept": 4,
+      "dropped": 1,
+      "drop_reasons": {
+        "quote_not_found": 1
+      },
+      "generation_error": null,
+      "generation_seconds": 67.5,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "ox",
+          "question": "Dirty Read는 다른 트랜잭션이 아직 커밋하지 않은 값을 읽는 현상이며, 그 트랜잭션이 롤백하면 존재한 적 없는 값을 읽은 셈이 된다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 본문에서 Dirty Read를 아직 커밋하지 않은 값을 읽는 현상으로 설명하며, 롤백하면 존재한 적 없는 값을 읽은 셈이 된다고 한다.",
+          "quote": "Dirty Read는 다른 트랜잭션이 아직 커밋하지 않은 값을 읽는 현상이다. 그 트랜잭션이 롤백하면 존재한 적 없는 값을 읽은 셈이 된다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각이 Dirty Read를 커밋되지 않은 값을 읽는 현상으로 설명하고, 롤백 시 존재한 적 없는 값을 읽은 셈이 된다고 하므로 정답은 O이다. 해설도 원문 내용과 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "PostgreSQL의 기본 트랜잭션 격리 수준은 무엇인가?",
+          "choices": [
+            "READ COMMITTED",
+            "READ UNCOMMITTED",
+            "REPEATABLE READ",
+            "SERIALIZABLE"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 본문에서 PostgreSQL의 기본 격리 수준은 READ COMMITTED라고 설명한다.",
+          "quote": "PostgreSQL의 기본 격리 수준은 READ COMMITTED다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 PostgreSQL의 기본 격리 수준은 READ COMMITTED라고 명시하므로 정답이 맞다. 해설도 이 내용을 그대로 설명한다."
+        },
+        {
+          "kind": "ox",
+          "question": "REPEATABLE READ에서는 트랜잭션이 시작된 뒤 첫 쿼리 시점의 스냅샷을 끝까지 보며, 같은 행을 다시 읽어도 값이 바뀌지 않는다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 본문에서 REPEATABLE READ는 첫 쿼리 시점의 스냅샷을 끝까지 보고 같은 행을 다시 읽어도 값이 바뀌지 않는다고 설명한다.",
+          "quote": "REPEATABLE READ에서는 트랜잭션이 시작된 뒤 첫 쿼리 시점의 스냅샷을 끝까지 본다. 같은 행을 다시 읽어도 값이 바뀌지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각이 REPEATABLE READ에서 첫 쿼리 시점 스냅샷을 끝까지 보고 같은 행을 다시 읽어도 값이 바뀌지 않는다고 설명하므로 정답은 O이다. 해설도 원문과 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "격리 수준을 올리는 대신 필요한 행만 잠그는 방법으로, 읽은 행을 트랜잭션이 끝날 때까지 다른 트랜잭션이 고치지 못하게 하는 것은?",
+          "choices": [
+            "SELECT ... FOR UPDATE로 읽은 행을 잠그는 방법",
+            "REPEATABLE READ로 격리 수준을 한 단계 올리는 방법",
+            "SERIALIZABLE로 모든 트랜잭션을 직렬화하는 방법",
+            "READ COMMITTED로 문장 단위 스냅샷을 보는 방법"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 본문에서 SELECT ... FOR UPDATE로 읽은 행은 트랜잭션이 끝날 때까지 다른 트랜잭션이 고칠 수 없다고 설명한다.",
+          "quote": "`SELECT ... FOR UPDATE`로 읽은 행은 트랜잭션이 끝날 때까지 다른 트랜잭션이 고칠 수 없다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 SELECT ... FOR UPDATE로 읽은 행은 트랜잭션이 끝날 때까지 다른 트랜잭션이 고칠 수 없다고 설명하므로 해당 보기가 맞다. 해설도 원문 내용과 일치한다."
+        }
+      ]
+    },
+    {
+      "note_title": "React 렌더링과 훅",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 73.5,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "ox",
+          "question": "props가 바뀌지 않아도 부모가 다시 그려지면 자식도 기본적으로 다시 그려진다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문에 props가 바뀌지 않아도 부모가 다시 그려지면 자식도 기본적으로 다시 그려진다고 적혀 있다.",
+          "quote": "props가 바뀌지 않아도 부모가 다시 그려지면 자식도 기본적으로 다시 그려지고, 이것을 막으려면 `React.memo`로 감싼다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 props가 바뀌지 않아도 부모가 다시 그려지면 자식도 기본적으로 다시 그려진다고 명시되어 있어 정답은 O입니다. 해설도 이 내용을 그대로 뒷받침합니다."
+        },
+        {
+          "kind": "mcq",
+          "question": "useEffect의 두 번째 인자인 의존성 배열을 빈 배열로 주면 언제 실행되는가?",
+          "choices": [
+            "처음 마운트될 때 한 번만 실행된다",
+            "의존성 값이 바뀔 때마다 실행된다",
+            "그릴 때마다 실행된다",
+            "컴포넌트가 사라질 때 실행된다"
+          ],
+          "answer_index": 0,
+          "explanation": "본문에 빈 배열을 주면 처음 마운트될 때 한 번만 실행된다고 적혀 있다.",
+          "quote": "두 번째 인자인 의존성 배열을 빈 배열로 주면 처음 마운트될 때 한 번만 실행되고, 배열에 값을 넣으면 그 값이 바뀔 때마다 다시 실행된다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 빈 의존성 배열은 처음 마운트될 때 한 번만 실행된다고 되어 있어 첫 번째 보기가 맞습니다. 해설도 같은 내용을 설명합니다."
+        },
+        {
+          "kind": "mcq",
+          "question": "useEffect에서 함수를 반환한 정리(cleanup) 함수는 언제 호출되는가?",
+          "choices": [
+            "다음 effect가 실행되기 직전에만 호출된다",
+            "컴포넌트가 사라질 때만 호출된다",
+            "다음 effect가 실행되기 직전과 컴포넌트가 사라질 때 호출된다",
+            "화면이 그려진 뒤에만 호출된다"
+          ],
+          "answer_index": 2,
+          "explanation": "본문에 다음 effect가 실행되기 직전과 컴포넌트가 사라질 때 호출된다고 적혀 있다.",
+          "quote": "`useEffect`에서 함수를 반환하면 그것이 정리(cleanup) 함수다. 다음 effect가 실행되기 직전과 컴포넌트가 사라질 때 호출된다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 정리 함수가 다음 effect 실행 직전과 컴포넌트가 사라질 때 호출된다고 적혀 있어 세 번째 보기가 맞습니다. 해설도 원문과 일치합니다."
+        },
+        {
+          "kind": "mcq",
+          "question": "프로덕션 빌드에서 StrictMode로 감싼 컴포넌트의 effect는 몇 번 실행되는가?",
+          "choices": [
+            "마운트 → 정리 → 다시 마운트 순서로 두 번",
+            "한 번",
+            "값을 바꿀 때마다",
+            "화면이 그려질 때마다"
+          ],
+          "answer_index": 1,
+          "explanation": "본문에 프로덕션 빌드에서는 한 번만 실행된다고 적혀 있다.",
+          "quote": "프로덕션 빌드에서는 한 번만 실행된다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 프로덕션 빌드에서는 한 번만 실행된다고 명시되어 있어 두 번째 보기가 맞습니다. 해설도 이 내용을 그대로 반영합니다."
+        },
+        {
+          "kind": "ox",
+          "question": "목록을 그릴 때 데이터베이스 ID처럼 항목마다 바뀌지 않는 값을 key로 쓰는 것이 좋다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "본문에 데이터베이스 ID처럼 항목마다 바뀌지 않는 값을 key로 쓴다고 적혀 있다.",
+          "quote": "그래서 데이터베이스 ID처럼 항목마다 바뀌지 않는 값을 key로 쓴다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 데이터베이스 ID처럼 항목마다 바뀌지 않는 값을 key로 쓴다고 되어 있어 정답은 O입니다. 해설도 같은 내용을 근거로 합니다."
+        }
+      ]
+    },
+    {
+      "note_title": "Docker 네트워크와 볼륨",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 82.6,
+      "retries": 1,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "기본 bridge 네트워크에 붙은 컨테이너끼리 IP로는 통신할 수 있지만, 서로를 찾을 수 없는 것은 무엇인가?",
+          "choices": [
+            "컨테이너 이름",
+            "IP 주소",
+            "호스트 이름",
+            "네트워크 이름"
+          ],
+          "answer_index": 0,
+          "explanation": "기본 bridge에서는 컨테이너끼리 IP로는 통신할 수 있지만 컨테이너 이름으로 서로를 찾을 수 없다.",
+          "quote": "기본 bridge에서는 컨테이너끼리 IP로는 통신할 수 있지만 컨테이너 이름으로 서로를 찾을 수 없다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 기본 bridge에서는 IP로 통신할 수 있지만 컨테이너 이름으로 서로 찾을 수 없다고 되어 있으므로 정답 보기와 해설이 모두 맞다."
+        },
+        {
+          "kind": "mcq",
+          "question": "docker compose가 프로젝트마다 네트워크를 하나 만들고 모든 서비스를 붙이므로, 백엔드 컨테이너에서 DB 주소를 localhost 대신 무엇으로 적는가?",
+          "choices": [
+            "서비스 이름인 db:5432",
+            "호스트 이름인 localhost",
+            "컨테이너 ID",
+            "기본 bridge 네트워크 이름"
+          ],
+          "answer_index": 0,
+          "explanation": "Compose는 프로젝트마다 네트워크를 만들고 모든 서비스를 거기에 붙이므로 서비스 이름으로 DB를 찾는다.",
+          "quote": "그래서 백엔드 컨테이너에서 DB 주소를 `localhost`가 아니라 서비스 이름인 `db:5432`로 적는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 Compose가 프로젝트별 네트워크를 만들고 서비스 이름으로 DB를 찾는다고 되어 있어 서비스 이름인 db:5432가 맞다."
+        },
+        {
+          "kind": "mcq",
+          "question": "`ports: \"127.0.0.1:5432:5432\"`처럼 포트 앞에 주소를 붙이면 어디에서 접속을 받는가?",
+          "choices": [
+            "호스트의 그 주소에서만",
+            "모든 네트워크 인터페이스",
+            "컨테이너 내부에서만",
+            "다른 컨테이너에서만"
+          ],
+          "answer_index": 0,
+          "explanation": "앞에 주소를 붙이면 호스트의 그 주소에서만 접속을 받는다.",
+          "quote": "`ports: \"127.0.0.1:5432:5432\"`처럼 앞에 주소를 붙이면 호스트의 그 주소에서만 접속을 받는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 127.0.0.1처럼 앞에 주소를 붙이면 호스트의 그 주소에서만 접속을 받는다고 되어 있어 정답과 해설이 맞다."
+        },
+        {
+          "kind": "mcq",
+          "question": "DB 데이터를 남기려면 이름 있는 볼륨을 어디에 연결한다고 되어 있는가?",
+          "choices": [
+            "/var/lib/postgresql/data",
+            "/var/lib/postgresql",
+            "/data",
+            "/var/lib/docker"
+          ],
+          "answer_index": 0,
+          "explanation": "DB 데이터를 남기려면 이름 있는 볼륨을 /var/lib/postgresql/data에 연결한다.",
+          "quote": "DB 데이터를 남기려면 이름 있는 볼륨을 `/var/lib/postgresql/data`에 연결한다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 DB 데이터를 남기려면 이름 있는 볼륨을 /var/lib/postgresql/data에 연결한다고 되어 있어 정답과 해설이 맞다."
+        },
+        {
+          "kind": "mcq",
+          "question": "`depends_on`은 컨테이너를 시작하는 순서만 정할 뿐, 무엇을 기다리지 않는가?",
+          "choices": [
+            "DB가 접속을 받을 준비가 됐는지",
+            "컨테이너가 시작됐는지",
+            "네트워크가 생성됐는지",
+            "볼륨이 연결됐는지"
+          ],
+          "answer_index": 0,
+          "explanation": "depends_on은 시작 순서만 정할 뿐, DB가 접속을 받을 준비가 됐는지는 기다리지 않는다.",
+          "quote": "`depends_on`은 컨테이너를 시작하는 순서만 정할 뿐, DB가 접속을 받을 준비가 됐는지는 기다리지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 depends_on은 시작 순서만 정하고 DB가 접속 받을 준비가 됐는지는 기다리지 않는다고 되어 있어 정답과 해설이 맞다."
+        }
+      ]
+    },
+    {
+      "note_title": "Git 브랜치 전략",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 73.8,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "rebase에 대한 설명으로 맞는 것은?",
+          "choices": [
+            "merge는 두 브랜치의 기록을 그대로 두고 합친 지점에 merge 커밋을 하나 만든다.",
+            "rebase는 내 브랜치의 커밋들을 대상 브랜치 끝으로 옮겨 다시 쌓는다.",
+            "rebase로 옮겨진 커밋들은 원래 해시를 그대로 유지한다.",
+            "merge는 기록을 한 줄로 깔끔하고 해시가 바뀐 새 커밋으로 만든다."
+          ],
+          "answer_index": 1,
+          "explanation": "조각 본문은 rebase가 내 브랜치의 커밋들을 대상 브랜치 끝으로 옮겨 다시 쌓는다고 설명한다.",
+          "quote": "rebase는 내 브랜치의 커밋들을 대상 브랜치 끝으로 옮겨 다시 쌓기 때문에 기록이 한 줄로 깔끔해지지만, 옮겨진 커밋들은 해시가 바뀐 새 커밋이 된다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 rebase는 내 브랜치의 커밋들을 대상 브랜치 끝으로 옮겨 다시 쌓는다고 했다. 선택지 0은 merge 설명이라 rebase 질문의 답이 아니고, 선택지 2·3은 원문의 해시 변경 및 merge 설명과 어긋난다."
+        },
+        {
+          "kind": "mcq",
+          "question": "이미 원격에 올려 다른 사람이 받아 간 브랜치에서 rebase를 피하는 이유로 맞는 것은?",
+          "choices": [
+            "rebase를 하면 merge 커밋이 사라진다.",
+            "rebase를 하면 커밋 해시가 바뀌어 다른 사람의 기록과 어긋난다.",
+            "rebase를 하면 작업 브랜치가 자동으로 삭제된다.",
+            "rebase를 하면 main 브랜치에만 커밋이 들어간다."
+          ],
+          "answer_index": 1,
+          "explanation": "본문은 이미 원격에 올려 다른 사람이 받아 간 브랜치를 rebase하면 커밋 해시가 바뀌어 다른 사람의 기록과 어긋난다고 설명한다.",
+          "quote": "이미 원격에 올려 다른 사람이 받아 간 브랜치를 rebase하면 커밋 해시가 바뀌어서, 다른 사람의 기록과 어긋난다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문은 이미 원격에 올려 다른 사람이 받아 간 브랜치를 rebase하면 커밋 해시가 바뀌어 다른 사람의 기록과 어긋난다고 설명한다. 해설도 이 내용을 그대로 뒷받침한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "`--force-with-lease`를 쓰는 효과로 맞는 것은?",
+          "choices": [
+            "강제 푸시가 필요 없게 만든다.",
+            "마지막으로 받아 온 뒤 다른 사람이 원격에 새 커밋을 올렸으면 푸시를 거절한다.",
+            "rebase한 브랜치의 커밋 해시를 원래대로 되돌린다.",
+            "남의 커밋을 덮어쓰는 사고를 막지 못하고 허용한다."
+          ],
+          "answer_index": 1,
+          "explanation": "본문은 --force-with-lease가 내가 마지막으로 받아 온 뒤에 다른 사람이 원격에 새 커밋을 올렸을 경우 푸시를 거절해서 남의 커밋을 덮어쓰는 사고를 막는다고 설명한다.",
+          "quote": "이때 `--force` 대신 `--force-with-lease`를 쓰면, 내가 마지막으로 받아 온 뒤에 다른 사람이 원격에 새 커밋을 올렸을 경우 푸시를 거절해서 남의 커밋을 덮어쓰는 사고를 막는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문은 --force-with-lease가 마지막으로 받아 온 뒤 다른 사람이 원격에 새 커밋을 올렸을 경우 푸시를 거절해 남의 커밋을 덮어쓰는 사고를 막는다고 설명한다. 해설과 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "squash merge의 결과로 맞는 것은?",
+          "choices": [
+            "작업 브랜치의 커밋 여러 개가 main에 커밋 하나로 들어간다.",
+            "main의 커밋 여러 개가 작업 브랜치에 하나로 합쳐진다.",
+            "작업 브랜치의 중간 커밋 메시지가 main에 그대로 보인다.",
+            "PR을 merge하면 커밋이 모두 사라진다."
+          ],
+          "answer_index": 0,
+          "explanation": "본문은 PR을 squash merge하면 작업 브랜치의 커밋 여러 개가 main에는 커밋 하나로 들어간다고 설명한다.",
+          "quote": "PR을 squash merge하면 작업 브랜치의 커밋 여러 개가 main에는 커밋 하나로 들어간다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문은 squash merge하면 작업 브랜치의 커밋 여러 개가 main에는 커밋 하나로 들어간다고 설명한다. 다른 보기들은 원문과 반대되거나 언급되지 않은 내용이다."
+        },
+        {
+          "kind": "mcq",
+          "question": "이미 푸시한 커밋을 되돌릴 때 본문에서 권장하는 방식은?",
+          "choices": [
+            "`git reset`으로 기록을 지운다.",
+            "`git revert`로 그 커밋의 변경을 거꾸로 적용한 새 커밋을 만든다.",
+            "`git merge`로 커밋을 대상 브랜치 끝으로 옮긴다.",
+            "`git rebase`로 커밋 여러 개를 하나로 합친다."
+          ],
+          "answer_index": 1,
+          "explanation": "본문은 이미 푸시한 커밋을 되돌릴 때 git reset으로 기록을 지우지 않고 git revert를 쓰며, revert는 변경을 거꾸로 적용한 새 커밋을 만든다고 설명한다.",
+          "quote": "이미 푸시한 커밋을 되돌릴 때는 `git reset`으로 기록을 지우지 않고 `git revert`를 쓴다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문은 이미 푸시한 커밋을 되돌릴 때 git reset으로 기록을 지우지 않고 git revert를 쓴다고 설명한다. 해설도 revert가 변경을 거꾸로 적용한 새 커밋을 만든다고 설명한다."
+        }
+      ]
+    },
+    {
+      "note_title": "세션과 JWT",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 130.1,
+      "retries": 1,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "세션 방식에서 로그인 후 브라우저에 주는 것은?",
+          "choices": [
+            "세션 ID만 든 쿠키",
+            "사용자 정보와 함께 서버 저장소에 저장된 세션 ID",
+            "서버의 비밀 키로 서명된 토큰",
+            "만료 시각이 담긴 액세스 토큰"
+          ],
+          "answer_index": 0,
+          "explanation": "세션 방식에서는 서버가 세션 ID를 만들어 서버 쪽 저장소에 사용자 정보와 함께 저장하고, 브라우저에는 세션 ID만 쿠키로 준다.",
+          "quote": "세션 방식에서는 로그인하면 서버가 세션 ID를 만들어 서버 쪽 저장소(메모리, Redis, DB)에 사용자 정보와 함께 저장하고, 브라우저에는 세션 ID만 쿠키로 준다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 로그인 후 서버 저장소에 세션 ID를 저장하고 브라우저에는 세션 ID만 쿠키로 준다고 했으므로 정답 보기가 맞고, 해설도 이를 그대로 설명한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "JWT에 비밀번호 같은 값을 넣지 않는 이유로 본문이 든 것은?",
+          "choices": [
+            "토큰 내용이 서명만 됐을 뿐 암호화되지 않아 누구나 디코딩해 읽을 수 있어서",
+            "서버가 저장소에서 세션 ID를 찾지 않아서",
+            "만료 시각을 토큰 안에 담을 수 없어서",
+            "서버를 여러 대로 늘리기 어려워서"
+          ],
+          "answer_index": 0,
+          "explanation": "토큰 내용은 서명만 됐을 뿐 암호화되지 않아 누구나 디코딩해 읽을 수 있으므로 비밀번호 같은 값은 넣지 않는다.",
+          "quote": "다만 토큰 내용은 서명만 됐을 뿐 암호화되지 않아서 누구나 디코딩해 읽을 수 있으므로 비밀번호 같은 값은 넣지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 JWT 내용은 서명만 됐을 뿐 암호화되지 않아 누구나 디코딩해 읽을 수 있으므로 비밀번호 같은 값을 넣지 않는다고 했으므로 정답 보기가 맞고 해설도 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "본문에서 JWT의 로그아웃 문제가 생기는 이유는?",
+          "choices": [
+            "서버가 따로 저장하지 않기 때문에 한 번 발급하면 만료 시각 전까지 서버가 무효로 만들기 어려워서",
+            "토큰이 암호화되어 누구나 디코딩할 수 있어서",
+            "토큰을 localStorage에 두면 XSS로 읽어 가서",
+            "세션 ID를 서버 저장소에 저장해서"
+          ],
+          "answer_index": 0,
+          "explanation": "JWT는 서버가 따로 저장하지 않기 때문에 한 번 발급하면 만료 시각 전까지는 서버가 무효로 만들기 어렵다.",
+          "quote": "JWT는 서버가 따로 저장하지 않기 때문에, 한 번 발급하면 만료 시각 전까지는 서버가 무효로 만들기 어렵다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 JWT는 서버가 따로 저장하지 않아 한 번 발급하면 만료 시각 전까지 무효로 만들기 어렵다고 했으므로 정답 보기가 맞고 해설도 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "토큰을 localStorage에 두면 페이지에 주입된 스크립트(XSS)가 읽어 갈 수 있다. 본문에서 XSS로 토큰을 훔쳐 가는 것을 막을 수 있다고 한 쿠키 속성은?",
+          "choices": [
+            "HttpOnly",
+            "localStorage",
+            "document.cookie",
+            "XSS"
+          ],
+          "answer_index": 0,
+          "explanation": "쿠키에 HttpOnly 속성을 주면 자바스크립트의 document.cookie로 읽을 수 없어서 XSS로 토큰을 훔쳐 가는 것을 막을 수 있다.",
+          "quote": "쿠키에 `HttpOnly` 속성을 주면 자바스크립트의 `document.cookie`로 읽을 수 없어서 XSS로 토큰을 훔쳐 가는 것을 막을 수 있다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 HttpOnly 속성을 주면 자바스크립트의 document.cookie로 읽을 수 없어 XSS로 토큰을 훔쳐 가는 것을 막을 수 있다고 했으므로 정답 보기가 맞고 해설도 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "쿠키의 SameSite=Lax가 다른 사이트에서 시작한 어떤 요청에는 쿠키를 붙이지 않는다고 본문에 쓰였나?",
+          "choices": [
+            "POST 요청",
+            "GET 이동",
+            "같은 사이트 POST",
+            "같은 사이트 GET"
+          ],
+          "answer_index": 0,
+          "explanation": "SameSite=Lax는 다른 사이트에서 시작한 POST 요청에는 쿠키를 붙이지 않고, 다른 사이트의 링크를 눌러 들어오는 GET 이동에는 붙인다.",
+          "quote": "쿠키의 `SameSite=Lax`는 다른 사이트에서 시작한 POST 요청에는 쿠키를 붙이지 않고, 다른 사이트의 링크를 눌러 들어오는 GET 이동에는 붙인다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 SameSite=Lax는 다른 사이트에서 시작한 POST 요청에는 쿠키를 붙이지 않는다고 했으므로 정답 보기가 맞고 해설도 일치한다."
+        }
+      ]
+    },
+    {
+      "note_title": "프로세스와 스레드",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 78.8,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "같은 프로세스 안의 스레드들이 공유하는 영역과 스레드마다 따로 가지는 영역은?",
+          "choices": [
+            "코드, 데이터, 힙 영역을 공유하고 스택만 따로 가진다",
+            "스택을 공유하고 코드, 데이터, 힙 영역만 따로 가진다",
+            "코드, 데이터, 힙, 스택 모두 공유한다",
+            "스레드끼리 어떤 메모리 영역도 공유하지 않는다"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 내용에서 같은 프로세스 안의 스레드들은 코드, 데이터, 힙 영역을 공유하고 스택만 스레드마다 따로 가진다고 설명한다.",
+          "quote": "같은 프로세스 안의 스레드들은 코드, 데이터, 힙 영역을 공유하고 스택만 스레드마다 따로 가진다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 같은 프로세스 안의 스레드들이 코드, 데이터, 힙 영역을 공유하고 스택만 따로 가진다고 설명하므로 정답 보기가 확인된다."
+        },
+        {
+          "kind": "mcq",
+          "question": "스레드끼리 컨텍스트 스위칭이 프로세스끼리 바꿀 때보다 비용이 작은 까닭은?",
+          "choices": [
+            "스레드끼리 메모리 공간을 공유하므로 저장하고 바꿀 것이 적어서",
+            "스레드가 프로세스보다 항상 더 많은 메모리를 써서",
+            "컨텍스트 스위칭은 스레드끼리만 가능해서",
+            "프로세스는 레지스터를 사용하지 않아서"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 내용에서 스레드끼리는 메모리 공간을 공유하므로 프로세스끼리 바꿀 때보다 저장하고 바꿀 것이 적어 비용이 작다고 한다.",
+          "quote": "스레드끼리는 메모리 공간을 공유하므로 프로세스끼리 바꿀 때보다 저장하고 바꿀 것이 적어서 비용이 작다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 스레드끼리 메모리 공간을 공유하므로 프로세스끼리 바꿀 때보다 저장하고 바꿀 것이 적어 비용이 작다고 설명한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "경쟁 조건(race condition)에 대한 설명으로 맞는 것은?",
+          "choices": [
+            "두 스레드가 같은 변수를 동시에 읽고 고치면 실행 순서에 따라 결과가 달라질 수 있다",
+            "두 스레드가 같은 변수를 동시에 읽고 고쳐도 결과는 항상 같다",
+            "한 스레드만 변수를 읽고 고치면 실행 순서가 결과를 바꾼다",
+            "뮤텍스는 경쟁 조건을 더 자주 발생시킨다"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 내용에서 두 스레드가 같은 변수를 동시에 읽고 고치면 실행 순서에 따라 결과가 달라질 수 있고 이것을 경쟁 조건이라 한다고 설명한다.",
+          "quote": "두 스레드가 같은 변수를 동시에 읽고 고치면 실행 순서에 따라 결과가 달라질 수 있는데, 이것을 경쟁 조건(race condition)이라 한다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 두 스레드가 같은 변수를 동시에 읽고 고치면 실행 순서에 따라 결과가 달라질 수 있다고 설명하므로 정답 보기가 맞는다."
+        },
+        {
+          "kind": "mcq",
+          "question": "CPython의 GIL 때문에 계산이 많은 작업을 스레드로 늘릴 때 나타나는 결과로 적힌 것은?",
+          "choices": [
+            "빨라지지 않고, 이럴 때는 multiprocessing으로 프로세스를 나눈다",
+            "스레드 수가 늘수록 항상 빨라진다",
+            "GIL이 자동으로 해제되어 병렬 실행된다",
+            "멀티프로세싱을 쓸 수 없게 된다"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 내용에서 GIL 때문에 한 프로세스 안에서는 한 번에 한 스레드만 파이썬 바이트코드를 실행하고, 계산이 많은 작업은 스레드를 늘려도 빨라지지 않는다고 한다.",
+          "quote": "그래서 계산이 많은 작업은 스레드를 늘려도 빨라지지 않고, 이럴 때는 multiprocessing으로 프로세스를 나눈다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 GIL 때문에 한 프로세스 안에서는 한 번에 한 스레드만 파이썬 바이트코드를 실행하고 계산이 많은 작업은 스레드를 늘려도 빨라지지 않는다고 설명한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "GIL이 있어도 스레드로 빨라지는 작업으로 적힌 것은?",
+          "choices": [
+            "네트워크 요청이나 파일 읽기처럼 기다리는 시간이 긴 입출력 작업",
+            "파이썬 바이트코드 실행 자체",
+            "한 프로세스 안의 계산 작업",
+            "스택 메모리 할당 작업"
+          ],
+          "answer_index": 0,
+          "explanation": "조각 내용에서 GIL이 있어도 네트워크 요청이나 파일 읽기처럼 기다리는 시간이 긴 입출력 작업은 스레드로 빨라진다고 설명한다.",
+          "quote": "GIL이 있어도 네트워크 요청이나 파일 읽기처럼 기다리는 시간이 긴 입출력 작업은 스레드로 빨라진다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문 조각에서 GIL이 있어도 네트워크 요청이나 파일 읽기처럼 기다리는 시간이 긴 입출력 작업은 스레드로 빨라진다고 설명한다."
+        }
+      ]
+    },
+    {
+      "note_title": "정렬 알고리즘",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 64.2,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "퀵 정렬의 평균 시간 복잡도는 무엇인가?",
+          "choices": [
+            "O(n log n)",
+            "O(n²)",
+            "O(n)",
+            "O(log n)"
+          ],
+          "answer_index": 0,
+          "explanation": "퀵 정렬은 평균 시간 복잡도가 O(n log n)이고, 피벗을 계속 가장 작거나 가장 큰 값으로 고르면 O(n²)까지 느려진다.",
+          "quote": "평균 시간 복잡도는 O(n log n)이지만, 피벗을 계속 가장 작거나 가장 큰 값으로 고르면 O(n²)까지 느려진다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 퀵 정렬의 평균 시간 복잡도가 O(n log n)이라고 제시되어 있어 정답을 뒷받침하며, 해설도 원문 내용과 일치한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "병합 정렬에 대한 설명으로 옳은 것은?",
+          "choices": [
+            "입력이 어떻든 최악의 경우 O(n log n)을 보장한다.",
+            "합치는 과정에서 추가 메모리가 필요하지 않다.",
+            "배열을 한 번만 나누어 정렬한다.",
+            "최악의 경우 O(n²)이 가능하다."
+          ],
+          "answer_index": 0,
+          "explanation": "병합 정렬은 입력이 어떻든 최악의 경우에도 O(n log n)을 보장하지만, 합치는 과정에서 원래 배열 크기만큼의 추가 메모리 O(n)이 필요하다.",
+          "quote": "입력이 어떻든 최악의 경우에도 O(n log n)을 보장하지만, 합치는 과정에서 원래 배열 크기만큼의 추가 메모리 O(n)이 필요하다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 병합 정렬은 입력과 무관하게 최악의 경우 O(n log n)을 보장한다고 되어 있어 정답을 뒷받침하며, 해설도 원문과 일치한다."
+        },
+        {
+          "kind": "ox",
+          "question": "병합 정렬과 삽입 정렬은 안정 정렬이다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "병합 정렬과 삽입 정렬은 안정 정렬이고, 일반적인 퀵 정렬과 힙 정렬은 안정 정렬이 아니라고 적혀 있다.",
+          "quote": "병합 정렬과 삽입 정렬은 안정 정렬이고, 일반적인 퀵 정렬과 힙 정렬은 안정 정렬이 아니다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에서 병합 정렬과 삽입 정렬은 안정 정렬이라고 명시되어 O가 정답이며, 해설도 같은 내용을 담고 있다."
+        },
+        {
+          "kind": "mcq",
+          "question": "삽입 정렬에 대한 설명으로 옳은 것은?",
+          "choices": [
+            "최악의 시간 복잡도는 O(n log n)이다.",
+            "이미 거의 정렬된 배열에서는 O(n)에 가깝게 빠르다.",
+            "원소가 적은 구간에서는 퀵 정렬보다 항상 느리다.",
+            "앞쪽의 정렬된 부분에 원소를 끼워 넣지 않는다."
+          ],
+          "answer_index": 1,
+          "explanation": "삽입 정렬은 최악이 O(n²)이지만 이미 거의 정렬된 배열에서는 O(n)에 가깝게 빠르고, 원소가 적은 구간에서는 퀵 정렬보다 빠르기도 하다.",
+          "quote": "최악은 O(n²)이지만 이미 거의 정렬된 배열에서는 O(n)에 가깝게 빠르다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 삽입 정렬은 이미 거의 정렬된 배열에서 O(n)에 가깝게 빠르다고 되어 있어 정답을 뒷받침하며, 해설도 원문과 어긋나지 않는다."
+        },
+        {
+          "kind": "mcq",
+          "question": "파이썬의 Timsort에 대한 설명으로 옳은 것은?",
+          "choices": [
+            "병합 정렬과 삽입 정렬을 섞은 방식으로 안정 정렬이다.",
+            "이미 정렬된 구간(run)을 찾아 활용하지 않는다.",
+            "sorted()는 원래 리스트를 바꾸고 None을 돌려준다.",
+            "list.sort()는 새 리스트를 돌려준다."
+          ],
+          "answer_index": 0,
+          "explanation": "Timsort는 병합 정렬과 삽입 정렬을 섞은 방식으로, 이미 정렬된 구간(run)을 찾아 활용하며 안정 정렬이다.",
+          "quote": "Timsort는 병합 정렬과 삽입 정렬을 섞은 방식으로, 이미 정렬된 구간(run)을 찾아 활용하며 안정 정렬이다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 Timsort가 병합 정렬과 삽입 정렬을 섞은 방식이며 안정 정렬이고 정렬된 구간(run)을 활용한다고 되어 있어 정답을 뒷받침한다."
+        }
+      ]
+    },
+    {
+      "note_title": "Python asyncio",
+      "chunks_sent": 5,
+      "kept": 5,
+      "dropped": 0,
+      "drop_reasons": {},
+      "generation_error": null,
+      "generation_seconds": 80.6,
+      "retries": 0,
+      "judge_error": null,
+      "quizzes": [
+        {
+          "kind": "mcq",
+          "question": "asyncio에서 코루틴이 `await`에서 기다리는 동안 이벤트 루프는 무엇을 하나?",
+          "choices": [
+            "다른 코루틴을 실행한다",
+            "현재 코루틴을 즉시 종료한다",
+            "새 스레드를 만들어 코루틴을 실행한다",
+            "네트워크 요청을 모두 거절한다"
+          ],
+          "answer_index": 0,
+          "explanation": "코루틴이 `await`에서 기다리는 동안 이벤트 루프는 다른 코루틴을 실행한다고 적혀 있다.",
+          "quote": "코루틴이 `await`에서 기다리는 동안 이벤트 루프는 다른 코루틴을 실행한다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 코루틴이 `await`에서 기다리는 동안 이벤트 루프가 다른 코루틴을 실행한다고 적혀 있어 정답 보기가 맞다. 해설도 같은 내용을 말한다."
+        },
+        {
+          "kind": "ox",
+          "question": "`async def`로 정의한 함수를 호출하면 바로 실행된다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 1,
+          "explanation": "`async def`로 정의한 함수를 호출하면 바로 실행되지 않고 코루틴 객체만 만들어진다.",
+          "quote": "`async def`로 정의한 함수를 호출하면 바로 실행되지 않고 코루틴 객체만 만들어진다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 `async def` 함수 호출 시 바로 실행되지 않고 코루틴 객체만 만들어진다고 적혀 있어 문제 문장은 거짓이고 정답은 X다. 해설도 이를 뒷받침한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "코루틴 안에서 `time.sleep()`처럼 블로킹하는 함수를 부르면 어떻게 되나?",
+          "choices": [
+            "이벤트 루프 전체가 멈춰서 다른 코루틴도 실행되지 않는다",
+            "이벤트 루프가 다른 코루틴을 더 빠르게 실행한다",
+            "블로킹 함수만 별도 프로세스로 옮겨진다",
+            "기다리는 동안 다른 코루틴은 정상적으로 실행된다"
+          ],
+          "answer_index": 0,
+          "explanation": "블로킹하는 함수를 부르면 그동안 이벤트 루프 전체가 멈춰서 다른 코루틴도 실행되지 않는다고 적혀 있다.",
+          "quote": "코루틴 안에서 `time.sleep()`이나 동기 DB 드라이버처럼 블로킹하는 함수를 부르면, 그동안 이벤트 루프 전체가 멈춰서 다른 코루틴도 실행되지 않는다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 블로킹 함수 호출 시 이벤트 루프 전체가 멈춰 다른 코루틴도 실행되지 않는다고 적혀 있어 정답 보기가 맞다. 해설도 같은 내용을 전한다."
+        },
+        {
+          "kind": "mcq",
+          "question": "`asyncio.gather()`에 코루틴 여러 개를 넘겼을 때 결과는 어떻게 돌아오나?",
+          "choices": [
+            "넘긴 순서대로 리스트로 돌아온다",
+            "임의 순서로 딕셔너리로 돌아온다",
+            "가장 빠른 코루틴의 결과만 돌아온다",
+            "코루틴 객체만 만들고 결과는 기다리지 않는다"
+          ],
+          "answer_index": 0,
+          "explanation": "결과는 넘긴 순서대로 리스트로 돌아온다고 적혀 있다.",
+          "quote": "결과는 넘긴 순서대로 리스트로 돌아온다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 `asyncio.gather()` 결과가 넘긴 순서대로 리스트로 돌아온다고 적혀 있어 정답 보기가 맞다. 해설도 같은 내용을 말한다."
+        },
+        {
+          "kind": "ox",
+          "question": "`asyncio.wait_for(코루틴, timeout=5)`에서 제한 시간이 지나면 TimeoutError가 일어난다.",
+          "choices": [
+            "O",
+            "X"
+          ],
+          "answer_index": 0,
+          "explanation": "제한 시간이 지나면 작업을 취소하고 TimeoutError를 일으킨다고 적혀 있다.",
+          "quote": "제한 시간이 지나면 작업을 취소하고 TimeoutError를 일으킨다.",
+          "answer_supported": true,
+          "explanation_consistent": true,
+          "reason": "원문에 `wait_for`의 제한 시간이 지나면 작업을 취소하고 TimeoutError를 일으킨다고 적혀 있어 문제 문장은 참이고 정답은 O다. 해설도 이를 뒷받침한다."
+        }
+      ]
+    }
+  ]
+}

@@ -306,3 +306,42 @@ def test_unexpected_error_in_evaluation_cleans_up_like_the_service(db_session: S
 
     assert db_session.scalars(select(NoteQuizClaim)).all() == []
     assert db_session.scalars(select(AIUsageLog.outcome)).one() == "error"
+
+
+# --- 실행 스크립트(scripts/quiz_eval.py) ---
+
+
+def test_script_keeps_going_when_one_note_breaks(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """노트 하나에서 예상 못 한 오류가 나도 그 노트를 오류로 적고 다음 노트로 간다."""
+    from scripts import quiz_eval
+
+    calls: list[str] = []
+    real_evaluate = quiz_eval.evaluate_note
+
+    async def flaky_evaluate(db: Session, *, note, **kwargs: object):  # noqa: ANN001, ANN202
+        calls.append(note.title)
+        if len(calls) == 1:
+            raise RuntimeError("첫 노트만 터짐")
+        return await real_evaluate(db, note=note, **kwargs)
+
+    monkeypatch.setattr(quiz_eval, "evaluate_note", flaky_evaluate)
+    monkeypatch.setattr(quiz_eval, "RESULTS_DIR", tmp_path)
+
+    code = asyncio.run(quiz_eval._run("mock", 2, True, 0.0, 0, 0.0))
+
+    assert code == 0 and len(calls) == 2
+    [out] = list(tmp_path.glob("quiz-mock-*.json"))
+    notes = json.loads(out.read_text(encoding="utf-8"))["notes"]
+    assert [n["generation_error"] for n in notes] == ["RuntimeError", None]
+    assert notes[1]["kept"] == 5
+
+
+@pytest.mark.parametrize("flag", ["--retries", "--pause", "--retry-wait"])
+def test_script_rejects_negative_numbers(monkeypatch: pytest.MonkeyPatch, flag: str) -> None:
+    from scripts import quiz_eval
+
+    monkeypatch.setattr("sys.argv", ["quiz_eval", "mock", flag, "-1"])
+
+    with pytest.raises(SystemExit) as caught:
+        quiz_eval.main()
+    assert caught.value.code == 2

@@ -144,7 +144,7 @@ async def _run(
         ),
         encoding="utf-8",
     )
-    print(f"결과 파일: {out.relative_to(BACKEND_DIR)}")
+    print(f"결과 파일: {out.relative_to(BACKEND_DIR) if out.is_relative_to(BACKEND_DIR) else out}")
     return 0
 
 

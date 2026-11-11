@@ -284,6 +284,8 @@ def _claim_note(db: Session, *, user_id: int, note_id: int, at: datetime) -> Non
     (F-004 2차 리뷰 R2 — 전에는 유니크 충돌 rollback이 잠금을 먼저 풀어 오래된 선점 경로가 잠금 밖이었다).
     FOR NO KEY UPDATE는 이 잠금끼리만 막고, 같은 사용자 줄을 가리키는 외래키 INSERT(사용량 · 풀이 기록)는 막지 않는다.
     SQLite(테스트)는 줄 잠금이 없어서 note_id 유니크 제약이 같은 노트의 동시 선점을 막는 안전망이 된다.
+    전제: 격리 수준 READ COMMITTED(PostgreSQL 기본값, 엔진은 따로 정하지 않음). 잠금을 얻은 뒤의 SELECT가 새 스냅숏으로
+    앞 요청이 커밋한 선점을 봐야 한다. REPEATABLE READ로 바꾸면 다른 노트 두 개가 함께 통과할 수 있다(3차 리뷰 R2).
     """
     stale_before = at - timedelta(seconds=QUIZ_CLAIM_STALE_SECONDS)
     db.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True))
@@ -300,11 +302,19 @@ def _claim_note(db: Session, *, user_id: int, note_id: int, at: datetime) -> Non
     if is_stale is None:
         db.add(NoteQuizClaim(user_id=user_id, note_id=note_id, claimed_at=at))
     elif is_stale:
-        db.execute(
+        # 읽은 뒤 잠금 밖의 해제(DELETE)가 끼어들 수 있어서 "아직 오래된 선점이 있을 때만" 바꾸고 바뀐 줄을 센다(3차 리뷰 R2)
+        taken = db.execute(
             update(NoteQuizClaim)
-            .where(NoteQuizClaim.note_id == note_id, NoteQuizClaim.user_id == user_id)
+            .where(
+                NoteQuizClaim.note_id == note_id,
+                NoteQuizClaim.user_id == user_id,
+                NoteQuizClaim.claimed_at < stale_before,
+            )
             .values(claimed_at=at)
-        )
+        ).rowcount
+        if taken != 1:
+            db.rollback()
+            raise GenerationInProgress
         logger.warning("오래된 문제 만들기 선점을 가져감 user_id=%s note_id=%s", user_id, note_id)
     else:
         db.rollback()

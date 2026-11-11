@@ -1,7 +1,7 @@
 # F-004 퀴즈 복습 · 복습 주기 · 오답노트
 
 ## 한눈에 보기 (코드 몰라도 OK)
-상태: [주의] 백엔드 · 화면 구현 끝(코드 커밋 전, 2026-11-11). 다음은 평가 세트 → 리뷰.
+상태: [통과] 구현 · 평가 · 리뷰 3차 끝(2026-11-11).
 언제: 3주차
 무엇을: 노트에서 객관식 · OX 문제를 만들고(D-006), 맞히면 간격을 늘려(당일 → 1 → 3 → 7 → 14일) 다시 내요. 틀린 문제는 오답노트로, 2번 연속 맞히면 빠져요
 왜: 기록을 올려도 다시 보지 않으면 잊혀서, 근거가 확인된 문제로 정해진 간격마다 다시 풀게 하려고요.
@@ -39,18 +39,20 @@
 - 데이터: 버전 파일 `backend/migrations/versions/0004_quiz_review_and_ai_usage.py` — `ai_usage_logs` · `quizzes`(chunk_id 유니크) · `note_quiz_claims`(note_id 유니크) · `quiz_reviews` · `quiz_attempts` · `quiz_generation_logs`. 모델 `app/db/models.py`.
 - 서버: `app/api/quizzes.py`(API 5개, 동기 엔드포인트 + AI만 `anyio.from_thread.run`), `app/services/quiz_generation.py`(조각 고르기 · 프롬프트 · 내용 검사 · 선점 · 저장), `app/services/quiz_review.py`(복습 간격 · 오답노트 · 목록), `app/services/usage_service.py`(D-018), `app/korea_time.py`, 노트 목록 `GET /api/notes`(`app/api/notes.py`, `note_service.list_note_summaries_for_user`).
 - 화면: 기록 · 복습 홈(오늘 복습 N · 노트 목록 · 빈 상태), 노트 상세 문제 칸(`components/note-quiz-panel.tsx`), 퀴즈 집중 모드(`components/quiz-runner.tsx`), 결과 · 오답노트 페이지. 답 제출 · 문제 만들기는 TanStack Query `useMutation`(`@tanstack/react-query@5.105.0`, `components/query-provider.tsx`). 상태 관리 지도는 architecture.md.
-- 평가: 가상 노트 10개 `backend/eval/quiz/notes/`, `scripts/quiz_eval.py`(임시 SQLite에서 실제 서비스 함수로 문제 만들기 → 채점 AI), `app/services/quiz_evaluation.py`. **중간 결과(2026-11-11, EXAONE, 응답 간격 상한 120초)**: 노트 10개 중 5개만 문제 만들기 성공(나머지는 EXAONE HTTP 500) — AI가 낸 문제 25개, 버려진 비율 0/25 = 0%, 정답 일치율 · 해설 일치율 15/15 = 100%(채점 실패로 10개는 판정 못 받음), 문제 만들기 평균 55.5초 · 최대 67초. 표본이 작아 최종 수치는 나머지 노트를 채운 뒤 기록.
+- 평가: 가상 노트 10개 `backend/eval/quiz/notes/`, `scripts/quiz_eval.py`(임시 SQLite에서 실제 서비스 함수로 문제 만들기 → 채점 AI), `app/services/quiz_evaluation.py`. **평가 결과(완료 기준 7, 2026-11-11, EXAONE, 결과 파일 `backend/eval/quiz/results/quiz-exaone-20261111-120408.json`)**: 가상 노트 10개 · 조각 50개 → AI가 낸 문제 50개. **버려진 문제 비율 2%(1/50, 이유: 근거 인용이 원문에 글자 그대로 없음)**, **정답 일치율 100%(49/49)**, **해설 일치율 100%(49/49)** — 정답 · 해설 판정은 채점 AI(사람 검수 전, 너그러울 수 있음). 실패 0 · 재시도 7번(EXAONE HTTP 500) · 429 대기 9번. 문제 만들기 기록 시간 평균 85.5초 · 최대 130초(호출 사이 쉬는 시간 20초 포함 — 실제 AI 응답은 평균 65초 안팎으로 추정). 실행: `uv run --env-file .env python -m scripts.quiz_eval exaone`(기본 호출 간격 20초 · 500/429면 60초 쉬고 2번까지 다시 — 무료 API가 짧은 간격의 연속 호출을 막는 것 같아서, 사용자 확인).
 - 설계 의도와 다른 점: API가 1개 늘어남(`GET /api/notes`, 사용자 확인). 결과 화면의 '점수 변화'는 이번 세션 점수만(세션 기록 없음, 사용자 확인). 개념 탭은 없음. Next rewrites 프록시 시간 상한을 200초로 올림(`next.config.ts`, 기본 30초).
-- 테스트: pytest SQLite 276 · PostgreSQL 283, Playwright 30(2026-11-11).
+- 테스트: pytest SQLite 295 · PostgreSQL 304, Playwright 32(2026-11-11).
 
 ## 리뷰
-- (리뷰 전)
+- [review/SUMMARY.md](review/SUMMARY.md) — 3차 [통과](2026-11-11). 1차 [주의](R1~R4, 주의 6 → 5개 수정 · 1개 해당 없음) → 2차 [주의](R1 · R2 · R3, 신규 주의 2 → 수정) → 3차 [통과](R2 · R3, 제안 3 → 반영).
 
 ## 열린 질문
 - 없음
 
 ## 면접 예상 질문
-- (리뷰 후 AI 작성)
+- Q1. AI가 만든 문제가 내 기록에 근거했는지 어떻게 확인했나요? 평가에서 버려진 비율 2%(1/50)는 무엇을 뜻하나요? (근거 인용이 조각 안에 글자 그대로 있는지 서버가 검사 · 버린 수를 로그로 · 채점 AI의 한계)
+- Q2. 같은 사용자가 [문제 만들기]를 동시에 여러 번 누르면 어떻게 막았나요? 왜 그게 필요했나요? (노트 선점 행 + 유니크 제약, 사용자 줄 잠금 FOR NO KEY UPDATE, READ COMMITTED 전제, 요청마다 작업 스레드를 최대 180초 붙잡는 문제)
+- Q3. 퀴즈 진행은 useState, 답 제출은 TanStack Query, 목록은 서버 컴포넌트로 나눈 이유는요? (D-012, Next 16 Activity로 근거 칩 → 뒤로 가기 상태 유지)
 - 답 (사용자 확인 — 문장 정리사 사용)
 
 최종 수정: 2026-11-07 · 관련: D-006
