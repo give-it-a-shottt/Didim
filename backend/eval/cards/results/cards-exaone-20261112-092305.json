@@ -1,0 +1,528 @@
+{
+  "provider": "exaone",
+  "model": "k-exaone_v2.5",
+  "complete": true,
+  "summary": {
+    "notes": 18,
+    "notes_with_experience": 8,
+    "chunks_sent": 71,
+    "candidates": 4,
+    "seeded_experiences": 12,
+    "found_experiences": 4,
+    "found_rate": 0.3333,
+    "missed_experiences": [
+      "c02-1",
+      "c02-2",
+      "c03-1",
+      "c04-1",
+      "c04-2",
+      "c07-1",
+      "c07-2",
+      "c08-1"
+    ],
+    "false_candidates": 0,
+    "false_candidates_by_kind": {},
+    "false_candidates_by_trap": {},
+    "duplicate_candidates": 0,
+    "mixed_candidates": 0,
+    "quotes_given": 12,
+    "quotes_emptied": 0,
+    "emptied_rate": 0.0,
+    "drop_reasons": {},
+    "missing_slots_checked": 1,
+    "missing_slots_kept_blank": 1,
+    "missing_kept_blank_rate": 1.0,
+    "failures": 5,
+    "retries": 14,
+    "seconds_max": 126.0,
+    "seconds_avg": 64.0,
+    "usage": {
+      "calls": 58,
+      "prompt_tokens": 14611,
+      "completion_tokens": 5486
+    }
+  },
+  "rate_limit_waits": [
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0,
+    30.0
+  ],
+  "notes": [
+    {
+      "file": "c01-bookmark-n-plus-one.md",
+      "note_title": "북마크 서비스 회고 — 목록 API가 느렸던 일",
+      "has_experience": true,
+      "chunks_sent": 3,
+      "error": null,
+      "retries": 1,
+      "seconds": 100.6,
+      "quoted_fields": 4,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c01-1"
+      ],
+      "found": [
+        "c01-1"
+      ],
+      "candidates": [
+        {
+          "card_id": 1,
+          "title": "북마크 목록 API N+1 개선",
+          "verdict": "experience",
+          "target": "c01-1",
+          "mixed": false,
+          "duplicate": false,
+          "fields": [
+            {
+              "slot": "situation",
+              "quote": "북마크가 300개쯤 쌓인 테스트 계정으로 목록 화면을 열면 3초 넘게 걸렸다.",
+              "region": "c01-1",
+              "question": null
+            },
+            {
+              "slot": "task",
+              "quote": "친구들에게 시연하기로 한 날이 이틀 남아서 그 전에 고쳐야 했다.",
+              "region": "c01-1",
+              "question": null
+            },
+            {
+              "slot": "action",
+              "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다. SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고, 같은 실수를 막으려고 쿼리 수를 세는 테스트를 하나 추가했다.",
+              "region": "c01-1",
+              "question": null
+            },
+            {
+              "slot": "result",
+              "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+              "region": "c01-1",
+              "question": null
+            }
+          ]
+        }
+      ],
+      "missing_checks": []
+    },
+    {
+      "file": "c02-frontend-study.md",
+      "note_title": "프론트엔드 스터디 4주차 회고",
+      "has_experience": true,
+      "chunks_sent": 3,
+      "error": "LLMUnavailable",
+      "retries": 2,
+      "seconds": 180.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c02-1",
+        "c02-2"
+      ],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "c03-team-login-bug.md",
+      "note_title": "팀 프로젝트 3주차 — 로그인 풀림 문제",
+      "has_experience": true,
+      "chunks_sent": 2,
+      "error": "LLMUnavailable",
+      "retries": 2,
+      "seconds": 180.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c03-1"
+      ],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "c04-club-treasurer.md",
+      "note_title": "사진 동아리 총무 1년 정리",
+      "has_experience": true,
+      "chunks_sent": 3,
+      "error": "LLMUnavailable",
+      "retries": 2,
+      "seconds": 180.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c04-1",
+        "c04-2"
+      ],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "c05-coding-test-log.md",
+      "note_title": "코딩테스트 준비 일지",
+      "has_experience": true,
+      "chunks_sent": 2,
+      "error": null,
+      "retries": 0,
+      "seconds": 120.1,
+      "quoted_fields": 3,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c05-1"
+      ],
+      "found": [
+        "c05-1"
+      ],
+      "candidates": [
+        {
+          "card_id": 2,
+          "title": "코딩테스트 하루 한 문제 준비",
+          "verdict": "experience",
+          "target": "c05-1",
+          "mixed": false,
+          "duplicate": false,
+          "fields": [
+            {
+              "slot": "situation",
+              "quote": "8월에 처음 본 코딩테스트에서 2문제 중 하나도 못 풀었다. 문제를 읽고 어디서부터 손대야 할지 모르는 상태였다.",
+              "region": "c05-1",
+              "question": null
+            },
+            {
+              "slot": "task",
+              "quote": null,
+              "region": null,
+              "question": "그 당시 코딩테스트 준비에서 가장 해결하고 싶었던 과제는 무엇이었나요?"
+            },
+            {
+              "slot": "action",
+              "quote": "9월 1일부터 프로그래머스 문제를 하루 한 문제씩 풀고, 못 푼 문제는 다른 사람 풀이를 본 뒤 다음 날 빈 화면에서 다시 짜 보는 규칙을 세웠다. 풀이마다 왜 이 자료구조를 골랐는지 세 줄로 적었다.",
+              "region": "c05-1",
+              "question": null
+            },
+            {
+              "slot": "result",
+              "quote": "60일 동안 하루도 빠지지 않았고, 10월 말 모의 테스트에서는 3문제 중 2문제를 풀었다.",
+              "region": "c05-1",
+              "question": null
+            }
+          ]
+        }
+      ],
+      "missing_checks": []
+    },
+    {
+      "file": "c06-deploy-troubleshooting.md",
+      "note_title": "배포 트러블슈팅 모음",
+      "has_experience": true,
+      "chunks_sent": 3,
+      "error": null,
+      "retries": 2,
+      "seconds": 73.2,
+      "quoted_fields": 5,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c06-1",
+        "c06-2"
+      ],
+      "found": [
+        "c06-1",
+        "c06-2"
+      ],
+      "candidates": [
+        {
+          "card_id": 3,
+          "title": "도커 이미지 경량화와 배포 시간 개선",
+          "verdict": "experience",
+          "target": "c06-1",
+          "mixed": false,
+          "duplicate": false,
+          "fields": [
+            {
+              "slot": "situation",
+              "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+              "region": "c06-1",
+              "question": null
+            },
+            {
+              "slot": "task",
+              "quote": null,
+              "region": null,
+              "question": "이미지 크기와 배포 시간 문제를 어떤 목표로 삼아 접근했나요?"
+            },
+            {
+              "slot": "action",
+              "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고, 빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다. .dockerignore에 테스트 폴더와 .git을 넣었다.",
+              "region": "c06-1",
+              "question": null
+            },
+            {
+              "slot": "result",
+              "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+              "region": "c06-1",
+              "question": null
+            }
+          ]
+        },
+        {
+          "card_id": 4,
+          "title": "GitHub Actions CI 캐시 도입",
+          "verdict": "experience",
+          "target": "c06-2",
+          "mixed": false,
+          "duplicate": false,
+          "fields": [
+            {
+              "slot": "situation",
+              "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다. 리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+              "region": "c06-2",
+              "question": null
+            },
+            {
+              "slot": "task",
+              "quote": null,
+              "region": null,
+              "question": "CI 의존성 설치 시간을 줄이기 위해 무엇을 개선하려 했나요?"
+            },
+            {
+              "slot": "action",
+              "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+              "region": "c06-2",
+              "question": null
+            },
+            {
+              "slot": "result",
+              "quote": null,
+              "region": null,
+              "question": "actions/cache로 바꾼 뒤 CI 시간이 얼마나 줄었나요?"
+            }
+          ]
+        }
+      ],
+      "missing_checks": [
+        {
+          "experience": "c06-2",
+          "card_id": 4,
+          "slot": "result",
+          "kept_blank": true
+        }
+      ]
+    },
+    {
+      "file": "c07-hackathon.md",
+      "note_title": "교내 해커톤 회고 (24시간)",
+      "has_experience": true,
+      "chunks_sent": 3,
+      "error": "LLMUnavailable",
+      "retries": 2,
+      "seconds": 180.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c07-1",
+        "c07-2"
+      ],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "c08-daily-memo.md",
+      "note_title": "11월 3일 메모",
+      "has_experience": true,
+      "chunks_sent": 2,
+      "error": "LLMUnavailable",
+      "retries": 2,
+      "seconds": 180.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [
+        "c08-1"
+      ],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "01-http-cache.md",
+      "note_title": "HTTP 캐시 정리",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 95.5,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "02-db-index.md",
+      "note_title": "데이터베이스 인덱스",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 37.4,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "03-transaction-isolation.md",
+      "note_title": "트랜잭션 격리 수준",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 29.8,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "04-react-render-hooks.md",
+      "note_title": "React 렌더링과 훅",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 53.9,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "05-docker-network-volume.md",
+      "note_title": "Docker 네트워크와 볼륨",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 30.1,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "06-git-branch.md",
+      "note_title": "Git 브랜치 전략",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 68.7,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "07-session-jwt.md",
+      "note_title": "세션과 JWT",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 52.2,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "08-process-thread.md",
+      "note_title": "프로세스와 스레드",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 3.8,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "09-sorting.md",
+      "note_title": "정렬 알고리즘",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 0,
+      "seconds": 41.1,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    },
+    {
+      "file": "10-python-asyncio.md",
+      "note_title": "Python asyncio",
+      "has_experience": false,
+      "chunks_sent": 5,
+      "error": null,
+      "retries": 1,
+      "seconds": 126.0,
+      "quoted_fields": 0,
+      "emptied_fields": 0,
+      "drop_reasons": {},
+      "seeded": [],
+      "found": [],
+      "candidates": [],
+      "missing_checks": []
+    }
+  ]
+}
