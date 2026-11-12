@@ -124,6 +124,39 @@ def test_chunk_location_upgrade_keeps_existing_chunks(empty_db_engine: Engine) -
     assert tuple(row) == ("body", "", 0, 0)
 
 
+def test_notion_page_id_upgrade_and_downgrade_keep_notes_and_chunks(empty_db_engine: Engine) -> None:
+    """0006(notes.notion_page_id)은 notes 표를 다시 만들지 않는다 — SQLite에서 다시 만들면 CASCADE로 조각이 지워졌다."""
+    _run_alembic(empty_db_engine, "upgrade", "0005")
+    with empty_db_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO users (id, google_sub, email, name, daily_limit, created_at) "
+                "VALUES (1, 'sub-1', 'a@example.com', 'A', 30, CURRENT_TIMESTAMP)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO notes (id, user_id, title, content, source, kind, content_hash, created_at, updated_at) "
+                "VALUES (1, 1, 't', 'body', 'markdown', 'study', 'h', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO chunks (id, user_id, note_id, position, heading_path, start_offset, end_offset, content, created_at) "
+                "VALUES (1, 1, 1, 0, '', 0, 4, 'body', CURRENT_TIMESTAMP)"
+            )
+        )
+
+    _run_alembic(empty_db_engine, "upgrade", "head")
+    with empty_db_engine.connect() as connection:
+        assert connection.execute(text("SELECT notion_page_id FROM notes WHERE id = 1")).scalar_one() is None
+        assert connection.execute(text("SELECT count(*) FROM chunks")).scalar_one() == 1
+
+    _run_alembic(empty_db_engine, "downgrade", "0005")
+    with empty_db_engine.connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM chunks")).scalar_one() == 1
+
+
 def test_migrated_db_passes_the_check(empty_db_engine: Engine) -> None:
     _run_alembic(empty_db_engine, "upgrade", "head")
     ensure_db_migrated(empty_db_engine)  # 오류 없이 지나가야 한다

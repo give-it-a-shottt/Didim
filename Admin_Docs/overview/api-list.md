@@ -29,10 +29,16 @@
 | POST | /api/cards/{card_id}/save | 후보 → 저장. 요청 `{ title }`(공백 정리, 1~100자). 이미 저장한 카드면 제목만 바꿈. 응답 200: 상세와 같은 모양. 오류: 401, 404, 422 제목이 비었거나 김 · 제어 문자(NUL 등) — 본문이 터무니없이 크면(1,000자 초과) FastAPI 기본 검증이라 `detail`이 목록, 화면은 기본 문구 | F-006 | 테스트 통과(2026-11-11) |
 | DELETE | /api/cards/{card_id} | 후보 버리기 · 카드 삭제(칸도 같이). 노트의 '이미 찾음'은 그대로. 응답 204. 오류: 401, 404 | F-006 | 테스트 통과(2026-11-11) |
 | PUT | /api/cards/{card_id}/fields/{slot} | 내 답 저장 · 인용 빼기. 요청 `{ answer, remove_quote }` — 답은 앞뒤 공백을 걷고 비면 지움(최대 2,000자), `remove_quote: true`면 인용 · 근거를 지우고 기본 질문을 붙임. 인용 글 자체는 고칠 수 없음. 응답 200: 상세와 같은 모양. 오류: 401, 404, 422 칸 이름 틀림 · 답이 김 · 제어 문자(NUL 등, 줄바꿈 · 탭은 됨). 검증 오류(칸 이름 · status 값 · 필드 누락)는 FastAPI 기본이라 `detail`이 목록 — 화면은 기본 문구를 씀 | F-006 | 테스트 통과(2026-11-11) |
+| GET | /api/notion/connect | 노션 동의 화면(`https://api.notion.com/v1/oauth/authorize`, `owner=user`)으로 302. 연결을 시작한 사용자 번호를 담은 서명 state를 쿠키(`didim_notion_state`, 경로 `/api/notion`, 10분)와 쿼리에 같이 둔다. 서버 설정이 없으면 `/settings?notion_error=not_configured`, 비로그인이면 `/login`으로 302(주소 이동이라 JSON 401 대신) | F-005 | 테스트 통과(2026-11-12) |
+| GET | /api/notion/callback | 노션이 돌려보낸 `code`를 토큰으로 바꿔(HTTP Basic) 지금 로그인한 사용자의 연결로 암호화 저장 → `/settings?notion=connected`. 실패하면 `/settings?notion_error=access_denied · invalid_state(쿠키 · 쿼리 state 다름, 다른 사용자의 state) · exchange_failed · not_configured · save_failed`. 비로그인이면 `/login`으로 302 | F-005 | 테스트 통과(2026-11-12) |
+| GET | /api/notion/status | 연결 상태. 응답 200: `{ configured, status: "none" \| "connected" \| "broken", workspace_name }` — `configured`는 서버에 노션 client ID · secret · 토큰 암호화 키가 있는지. 토큰은 내보내지 않음. 오류: 401 | F-005 | 테스트 통과(2026-11-12) |
+| DELETE | /api/notion/connection | 연결 끊기 — 노션에서도 접근 토큰 회수(`POST /v1/oauth/revoke`)를 한 번 시도하고(실패 · 암호화 키 문제여도 넘어감) 우리 쪽 토큰 삭제, 가져온 노트는 남김. 연결이 없어도 204. 오류: 401 | F-005 | 테스트 통과(2026-11-12) |
+| GET | /api/notion/pages | 이 연결에 공유된 페이지(노션 search, 최근 수정 순 최대 100개, 휴지통 제외). 응답 200: `{ pages: [{ id, title, last_edited_time, imported_note_id }], truncated }` — `id`는 하이픈 있는 소문자 UUID, `imported_note_id`는 내가 이미 가져온 노트, `truncated`는 100개보다 많아 오래된 페이지가 빠졌는지. 토큰이 401이면 한 번 갱신 뒤 다시. 오류: 401, 409 연결 안 됨 · 끊김(갱신 실패), 502 노션 응답 없음 · 검색 권한 없음(이유 문구 다름), 503 서버 설정 없음 · 갱신이 invalid_client | F-005 | 테스트 통과(2026-11-12) |
+| POST | /api/notion/import | 고른 페이지 가져오기(사용자당 하나, 요청 한 번에 처리, 요청 시각부터 140초 예산 — 노션 호출 하나 안에서도 지킴). 요청 `{ page_ids: string[1~20], kind: "study" \| "project" }` — 번호 하나는 64자까지 · 하이픈 없어도 됨, 같은 번호는 한 번만. 응답 200: `{ summary: { notes, chunks, duplicates, failed, skipped_blocks }, imported: [{ page_id, note_id, title, chunk_count, skipped_blocks }], duplicates: [{ page_id, title, existing_note_id, existing_title }], failed: [{ page_id, title, reason }], connection_broken }` — 이미 가져온 페이지 · 같은 내용은 중복, 공유 안 됨 · 휴지통 · 블록 2,000개 초과 · 시간 예산 초과 · 노션 응답 없음은 그 페이지만 실패, 도중에 연결이 끊기거나 다른 창에서 끊으면 저장한 것은 남기고 `connection_broken: true`, 도중 서버 설정 문제(갱신 invalid_client)면 저장한 것은 남기고 남은 페이지만 실패. 오류: 401, 409 시작 전 연결 안 됨 · 끊김 · 이미 가져오는 중, 422 번호 형식 · 개수 · 길이 · kind, 502, 503 | F-005 | 테스트 통과(2026-11-12) |
 
 규칙
 - 모든 서버 경로는 `/api`로 시작한다. 브라우저는 Next.js 주소의 `/api/*`로 부르고, Next.js가 FastAPI로 넘긴다(D-010, Q-012).
 - 모든 회원 API는 로그인 사용자 기준으로만 데이터를 돌려준다(D-004).
 - AI를 부르는 API는 사용량 한도를 먼저 확인하고, 한도에 걸리면 부분 결과를 보존한다.
 
-최종 수정: 2026-11-11 · 관련: F-000, F-001, F-002, F-003, F-004, F-006, D-004, D-010, D-016
+최종 수정: 2026-11-12 · 관련: F-000, F-001, F-002, F-003, F-004, F-005, F-006, D-004, D-010, D-016

@@ -9,7 +9,7 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 8 · 일부 1 · 다음 7 · 열린 질문 11개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 8 · 일부 2 · 다음 6 · 열린 질문 11개
 
 - 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-018, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인), 마크다운 가져오기 1주차(F-002, 4차 리뷰 [통과], SQLite · PostgreSQL 테스트 통과), 기록 검색(F-003, 키워드 검색 D-016, 2차 리뷰 [통과], 평가 기준선 낱말 겹침 1.00 · 다른낱말 0.60)
 - 다음(이 순서로):
@@ -109,6 +109,7 @@ Admin_Docs/
 | [D-018](decisions/D-018-ai-usage-ledger.md) | AI 사용량은 공용 표(`ai_usage_logs`)로 세고, 하루 상한은 실제 호출 수 · 한국 시간 0시 기준 | [통과] |
 | [D-019](decisions/D-019-figma-is-design-source.md) | 화면 디자인은 Figma 디딤 파일이 원본(md와 다르면 Figma), 글꼴 next/font, 모바일은 PC 기준 + 안 깨지게 | [통과] |
 | [D-020](decisions/D-020-one-ai-job-per-user.md) | 사용자당 진행 중인 AI 작업은 기능을 가리지 않고 1개(퀴즈 만드는 중엔 카드 찾기 409) | [통과] |
+| [D-021](decisions/D-021-notion-oauth-connection.md) | 노션은 공개 OAuth로 연결, 토큰은 암호화해 사용자당 하나, 다시 해도 안 될 때만 끊김(갱신 토큰 무효 · 토큰을 못 풂 · 새 토큰도 거절), 가져오기는 사용자당 하나 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
@@ -119,7 +120,7 @@ Admin_Docs/
 | [F-002](features/F-002-import-markdown/feature.md) | 마크다운 가져오기 | 1 | [됨] 1주차 기준 · 4차 [통과] ('만들기'는 3 · 4주차) |
 | [F-003](features/F-003-record-search-rag/feature.md) | 기록 검색 + 근거 (RAG) | 2 | [됨] 2주차 기준 · 2차 [통과] · 평가 기준선 0.80 |
 | [F-004](features/F-004-quiz-review/feature.md) | 퀴즈 · 복습 주기 · 오답노트 | 3 | [됨] 3차 [통과] |
-| [F-005](features/F-005-notion-import/feature.md) | 노션 연결 | 4 | 설계 의도 전 |
+| [F-005](features/F-005-notion-import/feature.md) | 노션 연결 | 4 | [일부] 구현 · 리뷰 2차 반영 — 실제 노션 연결 확인 전 |
 | [F-006](features/F-006-experience-cards/feature.md) | 경험 카드 | 4 | [됨] 3차 [통과] · 평가 찾은 비율 12/12 · 없는 경험 후보 0 |
 | [F-007](features/F-007-posting-analysis/feature.md) | 공고 분석 · 매칭 | 5 | 설계 의도 전 |
 | [F-008](features/F-008-evidence-draft/feature.md) | 근거 달린 자소서 + 근거 검사 | 3~4(단순) · 6 | 설계 의도 전 |

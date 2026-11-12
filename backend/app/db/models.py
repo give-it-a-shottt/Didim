@@ -17,7 +17,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.config import CARD_TITLE_MAX_CHARS, DEFAULT_DAILY_LIMIT, NOTE_TITLE_MAX_CHARS
+from app.config import (
+    CARD_TITLE_MAX_CHARS,
+    DEFAULT_DAILY_LIMIT,
+    NOTE_TITLE_MAX_CHARS,
+    NOTION_PAGE_ID_LENGTH,
+    NOTION_WORKSPACE_ID_MAX_CHARS,
+    NOTION_WORKSPACE_NAME_MAX_CHARS,
+)
 from app.db.base import Base
 
 
@@ -56,6 +63,9 @@ class Note(Base):
     __tablename__ = "notes"
     __table_args__ = (
         UniqueConstraint("user_id", "content_hash", name="uq_notes_user_content_hash"),
+        # 같은 노션 페이지는 한 번만 가져온다(F-005 — '이미 가져옴' · 중복 안내 기준). 마크다운 노트는 NULL이라 걸리지 않는다.
+        # 제약이 아니라 유니크 색인인 이유는 버전 파일 0006 참고(SQLite에서 표를 다시 만들지 않게).
+        Index("uq_notes_user_notion_page", "user_id", "notion_page_id", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -70,6 +80,8 @@ class Note(Base):
     source: Mapped[str] = mapped_column(String(32), nullable=False)
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # 노션에서 가져온 노트의 페이지 번호(하이픈 있는 UUID, 소문자). 마크다운 노트는 NULL (F-005, 버전 0006)
+    notion_page_id: Mapped[str | None] = mapped_column(String(NOTION_PAGE_ID_LENGTH), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
@@ -400,6 +412,33 @@ class CardGenerationLog(Base):
     drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
     outcome: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class NotionConnection(Base):
+    """사용자의 노션 연결 (F-005, 버전 0006). 사용자당 1줄(user_id 유니크).
+
+    토큰은 암호화해서 저장한다(app/services/token_crypto.py). 화면 · 로그 · API 응답에 토큰을 내보내지 않는다.
+    갱신이 실패하면 status=broken으로 바꾸고 토큰을 지운다 → 설정에서 다시 연결.
+    """
+
+    __tablename__ = "notion_connections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    workspace_id: Mapped[str] = mapped_column(String(NOTION_WORKSPACE_ID_MAX_CHARS), nullable=False)
+    workspace_name: Mapped[str] = mapped_column(String(NOTION_WORKSPACE_NAME_MAX_CHARS), nullable=False)
+    bot_id: Mapped[str] = mapped_column(String(NOTION_WORKSPACE_ID_MAX_CHARS), nullable=False)
+    access_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    refresh_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 노션이 만료 시간(expires_in)을 주면 저장한다. 없으면 NULL — 401을 받았을 때 갱신한다.
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    # 가져오기를 시작한 시각(사용자당 하나 — F-005 1차 리뷰 D). 끝나면 NULL. 오래되면(NOTION_IMPORT_CLAIM_STALE_SECONDS) 새 요청이 가져간다
+    importing_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
 
 # pg_trgm · btree_gin 확장은 테이블보다 먼저 있어야 검색 색인을 만들 수 있다. create_all(테스트)도 같은 순서를 따르게 한다.

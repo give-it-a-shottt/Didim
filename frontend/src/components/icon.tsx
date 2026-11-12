@@ -17,7 +17,8 @@ export type IconName =
   | "success"
   | "upload"
   | "check"
-  | "chat";
+  | "chat"
+  | "warning";
 
 // Figma 크기: 메뉴 24, 버튼 M 20, 버튼 S 16, 파일 칸 32
 const SIZE_CLASS = { 16: "size-4", 20: "size-5", 24: "size-6", 32: "size-8" } as const;

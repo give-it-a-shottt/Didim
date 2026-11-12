@@ -176,6 +176,12 @@ const noteExists = (noteId) => noteId === MOCK_NOTE.id || noteId === BIG_NOTE.id
 
 const isLoggedIn = (req) => (req.headers.cookie ?? "").includes(`didim_session=${VALID_TOKEN}`);
 
+// 노션 연결(F-005) 가짜 페이지 번호
+const NOTION_PAGE_A = "0000000a-0000-4000-8000-00000000000a";
+const NOTION_PAGE_B = "0000000b-0000-4000-8000-00000000000b";
+const NOTION_PAGE_C = "0000000c-0000-4000-8000-00000000000c";
+const notionFlakySeen = new Set(); // "-notion-flaky": 세션마다 첫 목록 요청만 실패
+
 const sendJson = (res, status, body) => {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
@@ -427,6 +433,95 @@ const server = http.createServer((req, res) => {
       sendJson(res, 404, { detail: "노트를 찾을 수 없어요." });
     }
     return;
+  }
+
+  // --- 노션 연결(F-005) ---
+  // 상황은 세션 토큰 뒤에 붙인 이름으로 고른다(서버 컴포넌트는 세션 쿠키만 넘기므로): 기본 = 연결됨,
+  // "<토큰>-notion-none" 연결 안 됨 · "-notion-broken" 끊김 · "-notion-midbreak" 가져오는 중 끊김 ·
+  // "-notion-empty" 공유 페이지 없음 · "-notion-many" 25개 + 100개 넘음(truncated) · "-notion-flaky" 목록 첫 요청 500 ·
+  // "-notion-disconnectfail" 끊기 500 · "-notion-importfail" 가져오기 502
+  if (url.pathname.startsWith("/api/notion/")) {
+    if (!isLoggedIn(req)) {
+      sendJson(res, 401, { detail: "로그인이 필요해요." });
+      return;
+    }
+    const cookie = req.headers.cookie ?? "";
+    const notionCase = cookie.match(/-notion-([a-z]+)/)?.[1] ?? "connected";
+    const status = notionCase === "none" || notionCase === "broken" ? notionCase : "connected";
+    const pages =
+      notionCase === "empty"
+        ? []
+        : notionCase === "many"
+          ? Array.from({ length: 25 }, (_, index) => ({
+              id: `000000${String(index).padStart(2, "0")}-0000-4000-8000-0000000000${String(index).padStart(2, "0")}`,
+              title: `페이지 ${index + 1}`,
+              last_edited_time: "2026-11-10T09:00:00.000Z",
+              imported_note_id: null,
+            }))
+          : [
+              { id: NOTION_PAGE_A, title: "트랜잭션 공부", last_edited_time: "2026-11-10T09:00:00.000Z", imported_note_id: null },
+              { id: NOTION_PAGE_B, title: "네트워크 정리", last_edited_time: "2026-11-09T09:00:00.000Z", imported_note_id: null },
+              { id: NOTION_PAGE_C, title: "이미 가져온 페이지", last_edited_time: "2026-11-08T09:00:00.000Z", imported_note_id: 5 },
+            ];
+    if (req.method === "GET" && url.pathname === "/api/notion/status") {
+      sendJson(res, 200, { configured: true, status, workspace_name: status === "none" ? null : "디딤 워크스페이스" });
+      return;
+    }
+    if (req.method === "DELETE" && url.pathname === "/api/notion/connection") {
+      if (notionCase === "disconnectfail") {
+        // 실제 FastAPI처럼 처리 못 한 오류의 500은 JSON이 아닌 글자 — 화면은 기본 문구를 보여 준다
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("Internal Server Error");
+        return;
+      }
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (status !== "connected") {
+      const detail =
+        status === "none"
+          ? "노션이 연결되어 있지 않아요. 설정에서 연결해 주세요."
+          : "노션 연결이 끊겼어요. 설정에서 다시 연결해 주세요."
+      sendJson(res, 409, { detail });
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/notion/pages") {
+      // flaky: 같은 세션의 첫 요청만 실패 → [다시 불러오기]로 받아진다
+      if (notionCase === "flaky" && !notionFlakySeen.has(cookie)) {
+        notionFlakySeen.add(cookie);
+        sendJson(res, 502, { detail: "노션이 잠시 응답하지 않아요. 잠시 후 다시 시도해 주세요." });
+        return;
+      }
+      sendJson(res, 200, { pages, truncated: notionCase === "many" });
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/api/notion/import") {
+      if (notionCase === "importfail") {
+        sendJson(res, 502, { detail: "노션이 잠시 응답하지 않아요. 잠시 후 다시 시도해 주세요." });
+        return;
+      }
+      const chunks = [];
+      req.on("data", (chunk) => chunks.push(chunk));
+      req.on("end", () => {
+        const { page_ids: pageIds = [] } = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+        const picked = pages.filter((page) => pageIds.includes(page.id));
+        const ok = notionCase === "midbreak" ? picked.slice(0, 1) : picked;
+        const rest = notionCase === "midbreak" ? picked.slice(1) : [];
+        sendJson(res, 200, {
+          summary: { notes: ok.length, chunks: ok.length * 3, duplicates: 0, failed: rest.length, skipped_blocks: 2 },
+          imported: ok.map((page, index) => ({
+            page_id: page.id, note_id: 100 + index, title: page.title, chunk_count: 3, skipped_blocks: 2,
+          })),
+          duplicates: [],
+          failed: rest.map((page) => ({
+            page_id: page.id, title: null, reason: "노션 연결이 끊겨서 가져오지 못했어요. 설정에서 다시 연결해 주세요.",
+          })),
+          connection_broken: notionCase === "midbreak",
+        });
+      });
+      return;
+    }
   }
 
   if (req.method === "GET" && req.url === "/api/health") {

@@ -35,6 +35,8 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/lib/import-records.ts   기록 가져오기 요청 · 응답 모양, 보내기 전 개수 · 용량 확인 (F-002)
   src/lib/backend.ts      서버 컴포넌트 → FastAPI 호출 한 곳(BACKEND_URL · 세션 쿠키 붙이기, `fetchBackendAsUser`). auth.ts · records.ts가 같이 씀 (F-003 1차 리뷰 B)
   src/lib/records.ts      검색 · 노트 상세 API를 부르고 응답 모양 확인 (F-003)
+  src/lib/notion.ts · notion-status.ts · notion-data.ts   노션 연결(F-005) — 브라우저 요청(목록 · 가져오기 · 끊기) / 상태 모양 · 안내 문구(서버 · 브라우저 공용, 요청 코드 없음) / 서버 컴포넌트의 상태 요청
+  src/components/notion-connection-row.tsx   설정 '연결' 칸의 노션 줄 (F-005)
   src/lib/api-request.ts  브라우저 요청 한 곳(`apiRequest` · `ApiRequestError` — 네트워크 · 401 · 서버 문구 처리). quiz.ts · cards.ts가 같이 씀 (F-006 1차 리뷰 R1)
   src/lib/quiz.ts · cards.ts   퀴즈 · 경험 카드 응답 모양 확인 + 브라우저 요청, quiz-data.ts · cards-data.ts는 서버 컴포넌트용(server-only) (F-004 · F-006)
   src/components/card-*.tsx   경험 카드 화면(card-editor 상세 · card-review-sheet 후보 검토 · card-tile 목록 · note-card-panel 노트 상세 칸 · card-parts 원문 인용 부품) (F-006)
@@ -44,9 +46,10 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
-  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, deps.py) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
-  app/importers/          가져오기 어댑터(D-001) — 파일을 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py). 지금은 마크다운 하나라 함수(read_markdown_file)만 두고, 어댑터 인터페이스(Protocol)는 4주차 노션을 붙일 때 만든다(사용자 확인). 줄 읽기 도구를 공용 위치로 옮길지도 그때 정한다
-  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py) + note_claim.py(AI를 오래 부르는 기능의 노트 선점 규칙 한 곳 — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2)
+  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, deps.py) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/importers/          가져오기 어댑터(D-001) — 파일 · 노션 페이지를 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py, notion.py — 블록 나무 → 마크다운 글, 노션을 부르지 않는 순수 함수). 노션도 입력 모양(파일 바이트 · 블록 나무)이 달라 Protocol 없이 함수 두 개로 둠(F-005)
+  app/notion/             노션 REST API 클라이언트(F-005) — 토큰 교환 · 갱신 · 회수 · 검색 · 페이지 · 블록 읽기, 호출 간격 · 429 · 5xx 재시도(토큰 요청은 다시 보내지 않음), 시간 예산(호출 안에서도 마감을 지킴). HTTP만 맡고 DB는 모름
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py, notion_service.py — 노션 연결 저장 · 토큰 갱신(줄 잠금) · 페이지 목록 · 가져오기, token_crypto.py — 토큰 암호화) + note_claim.py(AI를 오래 부르는 기능의 노트 선점 규칙 한 곳 — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2)
   app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk, SearchLog) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
   alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
@@ -55,8 +58,9 @@ backend/                  FastAPI (uv)
   eval/                   검색 평가 세트 예시(search_eval.example.json, 실제 세트 *.local.json · 결과 results/는 레포에 안 올림), quiz/ · cards/(지어낸 가상 노트 · 정답지 · 결과 — 레포에 올림)
   tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py, test_search.py, test_search_eval.py)
 ```
-- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/`는 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다. `app/search/`도 서비스가 부르는 아래층인데, 검색 방식 자체가 "DB에서 어떻게 찾나"라서 db 모델은 읽는다(api · services는 가져다 쓰지 않음).
+- 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/` · `app/notion/`은 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다. `app/search/`도 서비스가 부르는 아래층인데, 검색 방식 자체가 "DB에서 어떻게 찾나"라서 db 모델은 읽는다(api · services는 가져다 쓰지 않음).
 - 기록 검색(F-003): 라우터(`GET /api/search`)가 `Depends(get_searcher)`로 검색 방식을 받아 서비스에 넘기고 → 서비스가 낱말을 뽑아 검색 → 발췌를 만들고 → 검색 로그를 남긴다. 화면은 서버 컴포넌트가 주소의 `?q=`로 결과를 그리고, 결과를 누르면 노트 상세가 `?chunk=`의 조각 위치를 강조한다.
+- 노션 가져오기(F-005): 라우터가 `NotionSession`(토큰 꺼내기 · 미리 갱신 · 401 뒤 한 번 갱신)을 열고 사용자당 가져오기 하나를 선점(`claim_import`, 연결 줄의 `importing_since`)한 뒤 서비스에 넘기고 → 서비스가 페이지마다 블록 나무를 읽어(상한 · 시간 예산) 어댑터로 마크다운 글로 바꾼 뒤 F-002와 같은 나누기 · 저장 함수로 넣는다. 노션을 부르는 동안에는 DB 트랜잭션을 닫아 둔다(연결 풀을 붙잡지 않게). 노션 오류 → HTTP 응답은 라우터의 `_http_error` 한 곳. 연결은 OAuth(설정 화면 → 노션 동의 화면 → 콜백, 비로그인이면 /login), 토큰은 암호화 저장.
 - 기록 가져오기(F-002): 라우터가 파일 앞부분(상한 + 1바이트)만 읽어 서비스에 넘기고 → 서비스가 파일마다 어댑터로 읽기 → 내 노트 안에서 중복 확인 → 나누기 → 저장(파일마다 커밋)한다. 조각은 노트 원문의 구간이고 제목 경로 · 원문 위치를 같이 저장한다(설계 원칙 1).
 
 ### 상태 관리 지도 (D-012)
@@ -82,6 +86,9 @@ backend/                  FastAPI (uv)
 | 후보 하나의 내용(시트) | TanStack Query `useQuery`(`card-review-sheet.tsx`, 키 `["card", id]`) | 시트를 열 때 브라우저가 받는 서버 데이터라서. 자동 재시도 끔(실패 문구 + [다음 후보 보기]) | F-006 |
 | 카드 상세: 받은 카드 · 입력 중인 제목 · 칸 답 | 컴포넌트 안(`useState`, `card-editor.tsx`) | 이 화면 하나에서만 쓰고, 저장 · 인용 빼기 응답(카드 전체)으로 바꿔 끼운다 | F-006 |
 | 카드 저장 · 인용 빼기 · 지우기 · 후보 저장 · 버리기 | TanStack Query `useMutation`(`card-editor.tsx` · `card-review-sheet.tsx`) | 서버 수정이라서. 저장은 바뀐 칸만 차례로 보내고(실패하면 거기서 멈춤) 마지막에 제목 저장 | F-006 |
+| 노션 연결 상태(설정 '연결' 칸) · 연결 뒤 돌아온 안내(`?notion=connected` · `?notion_error=`) | 서버 컴포넌트(`settings/page.tsx`, `lib/notion-data.ts` · `lib/notion-status.ts`) + 주소 | 처음 화면을 그릴 때 필요한 서버 데이터라서. 연결 결과는 콜백이 주소로 넘긴다. [연결 끊기]는 `useState`(진행 중 · 오류, `notion-connection-row.tsx`) + 성공 뒤 `router.refresh()` | F-005 |
+| 기록 추가의 가져올 곳 탭 · 고른 노션 페이지 | 컴포넌트 안(`useState`, `import-records-dialog.tsx`) | 모달 하나에서만 쓰는 값이라서 | F-005 |
+| 가져올 노션 페이지 목록 | TanStack Query `useQuery`(`import-records-dialog.tsx` NotionPicker, 키 `["notion", "pages"]`) + 가져온 뒤 무효화 | 모달을 열고 노션 탭을 고를 때 브라우저가 받는 서버 데이터라서. 가져온 뒤 '이미 가져옴'을 새로 받는다. 자동 재시도 끔, 1분은 그대로 쓰고 창 포커스 때 다시 받지 않음(노션 호출 줄이기, 1차 리뷰 R2). 모달이 사이드바에도 있어 QueryProvider를 회원 레이아웃 전체(사이드바 포함)로 올림 | F-005 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.

@@ -28,6 +28,7 @@ GOOGLE_HTTP_TIMEOUT_SECONDS = 10.0
 
 PURPOSE_SESSION = "session"
 PURPOSE_OAUTH_STATE = "oauth_state"
+PURPOSE_NOTION_STATE = "notion_state"
 
 
 class SessionConfigError(RuntimeError):
@@ -153,17 +154,47 @@ def create_oauth_state_token(
     return _sign_payload(payload, secret)
 
 
+def _states_match(query_state: str, cookie_state: str) -> bool:
+    """콜백 쿼리의 state와 쿠키의 state가 같은지(구글 로그인 · 노션 연결 공용, F-005 3차 리뷰 R1).
+
+    compare_digest는 str에 ASCII 아닌 글자가 있으면 TypeError(500)를 낸다 — 우리 state는 ASCII뿐이라 먼저 거른다(F-005 1차 R2).
+    """
+    if not query_state or not cookie_state:
+        return False
+    if not (query_state.isascii() and cookie_state.isascii()):
+        return False
+    return hmac.compare_digest(query_state, cookie_state)
+
+
 def verify_oauth_state_token(
     query_state: str,
     cookie_state: str,
     secret: str,
 ) -> bool:
     """콜백 쿼리의 state와 쿠키의 state가 일치하고 만료되지 않았는지 검증한다."""
-    if not query_state or not cookie_state:
-        return False
-    if not hmac.compare_digest(query_state, cookie_state):
+    if not _states_match(query_state, cookie_state):
         return False
     return _verify_payload(query_state, secret, PURPOSE_OAUTH_STATE) is not None
+
+
+def create_notion_state_token(user_id: int, secret: str, *, max_age_seconds: int) -> str:
+    """노션 연결(F-005) 위조 방지 state. 연결을 시작한 사용자 번호를 담아, 콜백 때 같은 사용자인지 확인한다
+    (남이 시작한 연결 · 다른 사용자의 콜백이 내 계정에 붙지 않게). 구글 로그인 state와 용도가 달라 서로 못 쓴다."""
+    payload: dict[str, object] = {
+        "purpose": PURPOSE_NOTION_STATE,
+        "uid": user_id,
+        "nonce": secrets.token_urlsafe(24),
+        "exp": int(time.time()) + max_age_seconds,
+    }
+    return _sign_payload(payload, secret)
+
+
+def verify_notion_state_token(query_state: str, cookie_state: str, secret: str, *, user_id: int) -> bool:
+    """콜백 쿼리의 state = 쿠키의 state, 서명 · 만료 · 용도가 맞고, 담긴 사용자가 지금 로그인한 사용자인지."""
+    if not _states_match(query_state, cookie_state):
+        return False
+    payload = _verify_payload(query_state, secret, PURPOSE_NOTION_STATE)
+    return payload is not None and payload.get("uid") == user_id
 
 
 def build_google_authorize_url(settings: Settings, state: str) -> str:

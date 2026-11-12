@@ -22,13 +22,14 @@ test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인�
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   await expect(dialog.locator('[data-screen-id="IMP_01_001"]')).toBeVisible();
-  await expect(dialog.getByRole("tab", { name: "노션 연결" })).toBeDisabled();
+  await expect(dialog.getByRole("tab", { name: "마크다운 파일" })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("tab", { name: "노션 연결" })).toHaveAttribute("aria-selected", "false");
   await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 
   // 기록 종류는 칩(라디오를 숨기고 글자 칸을 누름) — 사람이 누르는 칩 글자를 눌러 고른다
   await dialog.getByText("프로젝트 · 경험", { exact: true }).click();
   await expect(dialog.getByRole("radio", { name: "프로젝트 · 경험" })).toBeChecked();
-  await dialog.getByLabel("마크다운 파일").setInputFiles([
+  await dialog.getByLabel("올릴 마크다운 파일").setInputFiles([
     markdownFile("react.md", "# React\n본문"),
     markdownFile("os.md", "# 운영체제\n본문"),
   ]);
@@ -49,7 +50,7 @@ test("파일을 끌어다 놓아도 고른 것과 같이 올라가고, 끄는 �
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
-  const fileInput = dialog.getByLabel("마크다운 파일");
+  const fileInput = dialog.getByLabel("올릴 마크다운 파일");
 
   // 브라우저 안에서 파일 2개를 담은 DataTransfer를 만들어 드래그 이벤트로 넘긴다
   const dataTransfer = await page.evaluateHandle(() => {
@@ -79,7 +80,7 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
   const selectStep = dialog.locator('[data-screen-id="IMP_01_001"]');
-  const fileInput = dialog.getByLabel("마크다운 파일");
+  const fileInput = dialog.getByLabel("올릴 마크다운 파일");
 
   // 글자를 끌어오면(파일 아님) 강조도 드롭도 없다
   const textOnly = await page.evaluateHandle(() => {
@@ -115,7 +116,7 @@ test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
-  const input = dialog.getByLabel("마크다운 파일");
+  const input = dialog.getByLabel("올릴 마크다운 파일");
 
   await input.setInputFiles(Array.from({ length: 21 }, (_, index) => markdownFile(`${index}.md`, "본문")));
   await expect(dialog.getByRole("alert")).toHaveText("한 번에 20개까지 올릴 수 있어요.");
@@ -135,7 +136,7 @@ async function openAndSubmit(page: Page) {
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
-  await dialog.getByLabel("마크다운 파일").setInputFiles([markdownFile("a.md", "# A\n본문")]);
+  await dialog.getByLabel("올릴 마크다운 파일").setInputFiles([markdownFile("a.md", "# A\n본문")]);
   await dialog.getByRole("button", { name: "1개 가져오기" }).click();
   return dialog;
 }
@@ -245,7 +246,7 @@ test("하나도 읽지 못하면 오류(IMP_01_900)와 이유가 보이고, 다�
 
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
-  await dialog.getByLabel("마크다운 파일").setInputFiles([
+  await dialog.getByLabel("올릴 마크다운 파일").setInputFiles([
     { name: "memo.txt", mimeType: "text/plain", buffer: Buffer.from("메모", "utf8") },
   ]);
   await dialog.getByRole("button", { name: "1개 가져오기" }).click();

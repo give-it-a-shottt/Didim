@@ -10,7 +10,7 @@
 | 테이블 | 담는 것 | 메모 |
 |---|---|---|
 | users | 계정 | `id`, `google_sub`(UNIQUE), `email`, `name`, 하루 사용량 상한(`daily_limit`), `created_at` (1주차 생성) |
-| notes | 가져온 기록(원문) | `user_id`(FK `ON DELETE CASCADE`), source(markdown · notion), kind(학습 노트 · 프로젝트 경험), 원문 해시(중복 확인), 수정일 (1주차 생성) |
+| notes | 가져온 기록(원문) | `user_id`(FK `ON DELETE CASCADE`), source(markdown · notion), kind(학습 노트 · 프로젝트 경험), 원문 해시(중복 확인), 수정일 (1주차 생성). `notion_page_id`(노션에서 가져온 페이지 번호, 마크다운은 NULL) + 유니크 색인 `uq_notes_user_notion_page`(`user_id`, `notion_page_id`) — 같은 페이지는 한 번만(F-005, 버전 0006). 제약이 아니라 색인인 이유: SQLite에서 제약을 더하면 notes를 다시 만들며 CASCADE로 조각이 지워짐 |
 | chunks | 기록 조각 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(FK `ON DELETE CASCADE`), 순서(`position`), 제목 경로(`heading_path`, 예: `# React > ## useEffect`, 제목 한 단계는 200자까지 · 넘으면 '…'), 원문 위치(`start_offset` · `end_offset`, 조각 내용 == 노트 원문[시작:끝], 파이썬 문자 단위) (1주차 생성, 위치 컬럼은 F-002 · 버전 0002). 키워드 검색 색인 `ix_chunks_user_content_trgm` — GIN (`user_id`, `content` gin_trgm_ops), pg_trgm + btree_gin 확장(버전 0003, F-003). 사용자 조건과 본문 비슷함을 한 색인으로 같이 거른다(따로 두면 내 조각을 전부 읽는 계획이 나옴 — 1차 리뷰 뒤 실측 · 사용자 확인). embedding(vector)은 평가로 비교한 뒤 붙임(D-016) — 지금 모델에는 없음 |
 | search_logs | 검색 로그 | `user_id`(FK `ON DELETE CASCADE`), `query`(검색어), `method`(검색 방식, 지금 `keyword`), `results`(JSON — 순위 순서 `[{chunk_id, score}]`), `created_at`. 평가 채점용(D-005) (2주차 생성, F-003 · 버전 0003) |
 | ai_usage_logs | AI 사용량 | `user_id`(FK `ON DELETE CASCADE`), `feature`, `calls`, `prompt_tokens`, `completion_tokens`, `outcome`, `created_at`, 색인 (`user_id`, `created_at`). 모든 AI 기능이 같이 쓰고 하루 상한(`users.daily_limit`)을 이 표의 호출 수 합계로 센다. `outcome`: ok · invalid_output · rate_limited · unavailable · config_error · request_error · error · save_failed (D-018, 3주차 · 버전 0004) |
@@ -23,6 +23,7 @@
 | card_fields | 카드 칸 + 근거 | `user_id` · `card_id`(FK `ON DELETE CASCADE`), `slot`(situation · task · action · result, 카드+칸 유니크), 원문 인용 `quote` · `quote_start` · `quote_end` · `chunk_id`(`SET NULL`), AI 빈칸 질문 `question`, 사용자 답 `answer`, `updated_at`. 빈칸 = 인용도 답도 없음, 근거 수 = 인용 있는 칸 수. 처음 계획한 `card_evidence`를 합침(근거가 칸 단위, D-003). 네 칸 모두 인용을 빼서 근거가 0개인 카드도 허용(Q-022 → feature.md, 사용자 확인 2026-11-11) (F-006, 버전 0005) |
 | note_card_claims | 카드 후보 찾기 선점 | `note_quiz_claims` 구조(note_id 유니크) + `finished_at`(비어 있음 = 찾는 중, 있음 = 이미 찾은 노트 → 409, 후보를 모두 버려도 남음). AI 실패 · 후보 0개 · 저장 실패면 지워서 다시 누를 수 있음 (F-006, 버전 0005, 사용자 확인 2026-11-11) |
 | card_generation_logs | 카드 후보 찾기 평가 로그 | `user_id`(FK `ON DELETE CASCADE`), `note_id`(외래키 아님), `chunks_sent`, `candidates`, `quoted_fields`, `emptied_fields`(인용 검사로 빈칸이 된 칸 수), `drop_reasons`(JSON — 이유별 수), `outcome`, `created_at`. 평가 세트 채점은 `scripts/card_eval.py`(D-005) (F-006, 버전 0005) |
+| notion_connections | 노션 연결 | `user_id`(FK `ON DELETE CASCADE`, UNIQUE — 사용자당 1줄), `workspace_id`, `workspace_name`, `bot_id`, `access_token_enc` · `refresh_token_enc`(Fernet 암호화, 키는 환경변수 `NOTION_TOKEN_KEY`), `expires_at`(노션이 주면), `status`(connected · broken — 갱신 실패면 broken + 토큰 지움), `importing_since`(가져오기 시작 시각 — 사용자당 하나, 5분 지나면 새 요청이 가져감, 1차 리뷰 D), `created_at`, `updated_at` (F-005, 버전 0006) |
 | postings | 공고 | 붙여 넣은 본문 · URL, 기업 · 직무, 마감일, 상태(준비 · 작성 중 · 제출) |
 | requirements | 요구 역량 | posting_id, 매칭된 card_id 목록 · 점수 |
 | drafts | 자소서 | posting_id, 문항, 상태, 내가 고친 비율 |
@@ -32,7 +33,7 @@
 | eval_runs | 평가 실행 기록 | 데이터 세트 버전, 지표 3개, 날짜 |
 
 - 모든 사용자 데이터 테이블에 `user_id`(외래키 `ON DELETE CASCADE`)를 두고, 조회할 때 항상 `user_id` 조건을 건다.
-- 전체 테이블 계획은 위 표대로 유지하되, 실제 DB 마이그레이션은 주차별로 쓰는 테이블부터 만든다(1주차: `users`, `notes`, `chunks` / 2주차: `search_logs`, 조각 검색 색인 / 3주차: `ai_usage_logs`, `quizzes`, `quiz_reviews`, `quiz_attempts`, `quiz_generation_logs`, `note_quiz_claims` / 4주차: `cards`, `card_fields`, `note_card_claims`, `card_generation_logs`).
+- 전체 테이블 계획은 위 표대로 유지하되, 실제 DB 마이그레이션은 주차별로 쓰는 테이블부터 만든다(1주차: `users`, `notes`, `chunks` / 2주차: `search_logs`, 조각 검색 색인 / 3주차: `ai_usage_logs`, `quizzes`, `quiz_reviews`, `quiz_attempts`, `quiz_generation_logs`, `note_quiz_claims` / 4주차: `cards`, `card_fields`, `note_card_claims`, `card_generation_logs`, `notion_connections`, `notes.notion_page_id`).
 - 검색 평가 세트와 결과는 DB가 아니라 로컬 파일(`backend/eval/`, 레포 밖)에 둔다(F-003, 사용자 확인). `eval_runs`는 F-010 평가 리포트 때 정한다.
 - 샘플 체험 데이터는 읽기 전용 별도 표시(같은 테이블에 플래그 vs 별도 스키마 — Q-004).
 

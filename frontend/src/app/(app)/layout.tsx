@@ -12,25 +12,26 @@ export const metadata: Metadata = {
 
 // 회원 화면 공통 레이아웃: 왼쪽 메뉴 + 본문.
 // Next.js 16 cacheComponents 규칙에 따라 세션 쿠키 확인(MemberAuthGuard)은 Suspense 안에서 수행한다.
+// QueryProvider(TanStack Query, D-012)는 사이드바까지 감싼다 — 사이드바의 [기록 추가] 모달이 노션 페이지 목록을
+// useQuery로 받기 때문(F-005). 서버 컴포넌트는 children으로 넘어가 그대로 서버에서 그려진다.
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex min-h-screen bg-bg-light text-text-main">
-      <AppSidebar />
-      {/* min-w-0: 본문의 긴 글이 사이드바를 밀어내지 않게 */}
-      <main className="min-w-0 flex-1">
-        <Suspense
-          fallback={
-            <div className="p-12 text-body-2 text-text-sub" role="status">
-              계정 정보를 확인하고 있어요…
-            </div>
-          }
-        >
-          <MemberAuthGuard>
-            {/* 답 제출 · 문제 만들기(TanStack Query, D-012)를 쓰는 화면이 이 아래에 있다 */}
-            <QueryProvider>{children}</QueryProvider>
-          </MemberAuthGuard>
-        </Suspense>
-      </main>
-    </div>
+    <QueryProvider>
+      <div className="flex min-h-screen bg-bg-light text-text-main">
+        <AppSidebar />
+        {/* min-w-0: 본문의 긴 글이 사이드바를 밀어내지 않게 */}
+        <main className="min-w-0 flex-1">
+          <Suspense
+            fallback={
+              <div className="p-12 text-body-2 text-text-sub" role="status">
+                계정 정보를 확인하고 있어요…
+              </div>
+            }
+          >
+            <MemberAuthGuard>{children}</MemberAuthGuard>
+          </Suspense>
+        </main>
+      </div>
+    </QueryProvider>
   );
 }

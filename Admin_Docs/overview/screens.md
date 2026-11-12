@@ -41,10 +41,10 @@
 | APL_02_002 공고 분석 | `/applications/[id]/analysis` | 사이드바 | …/[id]/analysis/page.tsx | F-007 |
 | APL_02_003 자소서 | `/applications/[id]/draft` | 사이드바(접힘) | …/[id]/draft/page.tsx | F-008 |
 | APL_02_004 면접 연습 | `/applications/[id]/interview` | 사이드바 | …/[id]/interview/page.tsx | F-009 |
-| SET_01_001 설정 | `/settings` | 사이드바 | (app)/settings/page.tsx | F-001 |
+| SET_01_001 설정 | `/settings` | 사이드바 | (app)/settings/page.tsx | F-001(계정) · F-005(연결 — 노션, 연결을 마치면 `?notion=connected` · 실패면 `?notion_error=`로 돌아옴) |
 | SET_02_001 평가 리포트 | `/settings/report` | 사이드바 | (app)/settings/report/page.tsx | F-010 |
 
-- URL 없는 화면: IMP_01_001~003 · 900(기록 추가 모달), APL_01_002(공고 추가 모달), CRD_01_003(후보 검토 시트 — 노트 상세 '후보 N개 검토' · `/cards?tab=candidate`에서 열림), REV_01_900 · CRD_01_900 · APL_02_900(상태). 2차 SRC_01_001 · APL_01_003은 만들지 않음.
+- URL 없는 화면: IMP_01_001~003 · 900(기록 추가 모달 — IMP_01_001에 가져올 곳 탭: 마크다운 파일 · 노션 연결(F-005)), APL_01_002(공고 추가 모달), CRD_01_003(후보 검토 시트 — 노트 상세 '후보 N개 검토' · `/cards?tab=candidate`에서 열림), REV_01_900 · CRD_01_900 · APL_02_900(상태). 2차 SRC_01_001 · APL_01_003은 만들지 않음.
 - 레이아웃 3종(라우트 그룹, URL에는 안 나옴): `(guest)` 게스트 · `(app)` 왼쪽 메뉴 · `(focus)` 메뉴 숨김(퀴즈).
 - 로그인 확인(회원 화면 막기)은 F-001에서 붙인다.
 - SEO용 메타 경로(화면 · API 아님): `/robots.txt`(frontend/src/app/robots.ts), `/sitemap.xml`(sitemap.ts). 공개 페이지는 `/`, `/login`뿐이고, 공개 페이지를 추가하면 `frontend/src/lib/site.ts`의 `PUBLIC_PATHS`도 같이 고친다.

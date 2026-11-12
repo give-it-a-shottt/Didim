@@ -41,6 +41,7 @@ def create_note_for_user(
     source: str = "markdown",
     kind: str = "study",
     chunks: Sequence[ChunkDraft] = (),
+    notion_page_id: str | None = None,
 ) -> Note:
     """특정 사용자의 노트(및 조각)를 저장한다. 항상 user_id를 함께 기록한다.
 
@@ -55,6 +56,7 @@ def create_note_for_user(
         source=source,
         kind=kind,
         content_hash=content_hash,
+        notion_page_id=notion_page_id,
     )
     db.add(note)
     try:
