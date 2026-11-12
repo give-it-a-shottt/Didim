@@ -1,7 +1,7 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 8 · 일부 2 · 다음 6 · 열린 질문 11개
+됨 9 · 일부 1 · 다음 6 · 열린 질문 11개
 최종 수정: 2026-11-12
 
 ## 기능별 상태
@@ -14,7 +14,7 @@
 | [F-002](features/F-002-import-markdown/feature.md) 마크다운 가져오기 | [됨] | 1주차(읽기 · 나누기) 기준 [됨]: 마크다운 파일 올리기 → 제목 · 길이 기준 조각 + 제목 경로 · 원문 위치 저장. 남은 것: 리뷰 제안 4건(F-003 때) · '만들기'(3 · 4주차) | 테스트 backend/tests 152개 통과(SQLite · PostgreSQL 17 didim_test, test_import_markdown.py 41개 포함, 2026-11-10), frontend/tests/import-records.spec.ts 6개 포함 10개 통과, tsc · eslint · next build 통과, 실제 uvicorn으로 Next 프록시 업로드 · 주소 우회 400 · 가짜 쿠키 401 · 413 직접 실행(2026-11-10) | 4차 [통과] | 2026-11-10 |
 | [F-003](features/F-003-record-search-rag/feature.md) 기록 검색 + 근거 | [됨] | 2주차 기준 [됨]: 키워드 검색(pg_trgm) · 검색창 · 결과 줄 · 노트 상세 위치 강조 · 검색 로그 · 평가 기준선(낱말 겹침 1.00 · 다른낱말 0.60, 상위 5개). 남은 것: 결과를 노트별로 묶을지(Q-021), 검색 횟수 상한(Q-020), 명조 글꼴(Q-018 → D-019로 닫힘, 원문 인용에 쓰는 건 기록 · 복습 묶음), 임베딩 비교(D-016) | 평가: 경험 카드 10장 · 질문 20개로 scripts/search_eval 직접 실행 0.80(16/20, 2026-11-10). 테스트 backend/tests SQLite 178 · PostgreSQL 185개 통과(test_search.py · test_search_eval.py 포함), Playwright 16개(record-search.spec.ts 6개) · tsc · eslint · next build 통과(2026-11-10). 1차 구현 때 실제 uvicorn + next dev(개발 DB)로 프록시 거쳐 검색 · 노트 상세 강조 직접 실행. 성능: 사용자당 조각 1만에서 맞는 것 없음 6ms(didim_test 실측) | 5차 [통과] (3~5차: 노트 상세 마크다운 · 드래그 앤 드롭) | 2026-11-10 |
 | [F-004](features/F-004-quiz-review/feature.md) 퀴즈 · 복습 | [됨] | 3주차. 문제 만들기(근거 인용 검사) · 오늘 복습 · 오답노트 · 화면. 평가: 버려진 비율 2%(1/50), 정답 · 해설 일치 100%(49/49, 채점 AI — 사람 검수 전) | pytest SQLite 295 · PostgreSQL 304, Playwright 32 통과(2026-11-11), 직접 실행 mock(사용자 확인), EXAONE 평가 실행(2026-11-11) | 3차 [통과] | 2026-11-11 |
-| [F-005](features/F-005-notion-import/feature.md) 노션 연결 | [일부] | 4주차. OAuth 연결 · 토큰 암호화 · 갱신 · 끊김 · 회수 · 페이지 골라 가져오기(블록 → 마크다운 → F-002 저장) · 사용자당 가져오기 하나(D-021). 리뷰 1차 [주의] → 2차 [주의] → 3차 [통과] · 리뷰 끝. 남은 것: 실제 노션 연결 확인(노션 공개 통합 등록 · .env 필요) | pytest SQLite 394 · PostgreSQL 406(노션 49), Playwright 53(노션 11) · tsc · eslint 통과(2026-11-12) — 가짜 노션 서버 기준, 실제 노션 연결 확인 없음 | 3차 [통과] | 2026-11-12 |
+| [F-005](features/F-005-notion-import/feature.md) 노션 연결 | [됨] | 4주차. OAuth 연결 · 토큰 암호화 · 갱신 · 끊김 · 회수 · 페이지 골라 가져오기(블록 → 마크다운 → F-002 저장) · 사용자당 가져오기 하나(D-021). 리뷰 1차 [주의] → 2차 [주의] → 3차 [통과] · 리뷰 끝. 남은 것: 미룬 구조 정리(feature.md) | pytest SQLite 394 · PostgreSQL 406(노션 49), Playwright 53(노션 11) · tsc · eslint 통과, 직접 실행(사용자 확인, 2026-11-12) — 실제 노션 연결 · 페이지 가져오기 · 노트 화면 · 끊기 뒤 다시 연결 | 3차 [통과] | 2026-11-12 |
 | [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [됨] | 4주차. 후보 찾기(칸별 원문 인용 · 노트당 AI 1번) · 후보 검토 · 카드 화면 · 평가 세트. 1차 [주의] → 2차 [통과] → 3차 [통과], 3차 제안 전부 반영. 평가: 찾은 비율 12/12 · 없는 경험 후보 0 · 인용 검사 빈칸 0(노트마다 성공한 회차를 합침, 사용자 확인) | pytest SQLite 343 · PostgreSQL 355, Playwright 42 · tsc · eslint 통과(2026-11-11), EXAONE 평가 2회 — `backend/eval/cards/results/cards-exaone-20261111-170327.json`(경험 노트 8개 모두 성공) · `cards-exaone-20261112-092305.json`(경험 없는 노트 10개 모두 성공, 경험 노트 5개는 180초 상한 실패), 사용자 화면 확인(2026-11-12) | 3차 [통과] | 2026-11-12 |
 | [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [다음] | 5주차 | - | - | - |
 | [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [다음] | 3~4주차(단순) · 6주차 | - | - | - |
