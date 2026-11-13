@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.config import MAX_SEARCH_RESULTS, SEARCH_SCORE_DIGITS
+from app.config import MAX_SEARCH_RESULTS, MAX_SEARCH_RESULTS_PER_NOTE, SEARCH_SCORE_DIGITS
 from app.search.base import SearchHit, SearchQuery, Searcher
 from app.search.query import extract_terms
 
@@ -108,7 +108,10 @@ def evaluate(
     results: list[ItemResult] = []
     by_tag: dict[str, tuple[int, int]] = {}
     for item in items:
-        hits = searcher.search(db, user_id=user_id, query=SearchQuery(item.query, extract_terms(item.query)), limit=k)
+        hits = searcher.search(
+            db, user_id=user_id, query=SearchQuery(item.query, extract_terms(item.query)), limit=k,
+            max_per_note=MAX_SEARCH_RESULTS_PER_NOTE,  # 화면과 같은 규칙으로 잰다
+        )
         rank = next((position for position, hit in enumerate(hits, start=1) if is_expected(hit, item.expected)), None)
         results.append(
             ItemResult(

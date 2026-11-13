@@ -13,6 +13,7 @@ SQLite에서는 "검색을 못 쓴다는 응답(503)"과 DB가 필요 없는 부
 
 import os
 import time
+from collections import Counter
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,7 +22,15 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.api.search import TIMEOUT_DETAIL
-from app.config import MAX_DB_ID, MAX_SEARCH_QUERY_CHARS, MAX_SEARCH_RESULTS, MAX_SEARCH_TERMS, SESSION_COOKIE_NAME, Settings
+from app.config import (
+    MAX_DB_ID,
+    MAX_SEARCH_QUERY_CHARS,
+    MAX_SEARCH_RESULTS,
+    MAX_SEARCH_RESULTS_PER_NOTE,
+    MAX_SEARCH_TERMS,
+    SESSION_COOKIE_NAME,
+    Settings,
+)
 from app.db.models import SearchLog
 from app.main import app
 from app.search import SearchHit, SearchQuery, SearchTimeoutError, extract_terms, get_searcher, make_excerpt
@@ -202,7 +211,9 @@ class _FakeSearcher:
         self.hits = hits
         self.seen: list[tuple[int, SearchQuery, int]] = []
 
-    def search(self, db: Session, *, user_id: int, query: SearchQuery, limit: int) -> list[SearchHit]:
+    def search(
+        self, db: Session, *, user_id: int, query: SearchQuery, limit: int, max_per_note: int
+    ) -> list[SearchHit]:
         self.seen.append((user_id, query, limit))
         return self.hits[:limit]
 
@@ -267,7 +278,9 @@ def test_results_are_still_returned_when_saving_the_log_fails(
 class _TimeoutSearcher:
     method = "slow"
 
-    def search(self, db: Session, *, user_id: int, query: SearchQuery, limit: int) -> list[SearchHit]:
+    def search(
+        self, db: Session, *, user_id: int, query: SearchQuery, limit: int, max_per_note: int
+    ) -> list[SearchHit]:
         raise SearchTimeoutError("느림")
 
 
@@ -355,14 +368,31 @@ def test_other_users_chunks_never_appear(client: TestClient, db_session: Session
 
 
 @needs_postgres
-def test_results_are_capped_at_five(client: TestClient, db_session: Session, test_settings: Settings) -> None:
-    user_id = _login(client, db_session, test_settings, "s-cap")
+def test_one_note_shows_at_most_two_chunks(client: TestClient, db_session: Session, test_settings: Settings) -> None:
+    # 맞는 조각이 8개인 노트 하나 — 한 노트가 결과를 다 차지하지 않게 2개까지만(Q-021)
+    user_id = _login(client, db_session, test_settings, "s-cap-note")
     sections = "\n".join(f"## 절 {index}\nuseEffect 정리 {index}\n" for index in range(MAX_SEARCH_RESULTS + 3))
     _add_note(db_session, user_id, f"# 많은 절\n{sections}", "많은 절")
 
     results = client.get("/api/search", params={"q": "useEffect"}).json()["results"]
 
+    assert len(results) == MAX_SEARCH_RESULTS_PER_NOTE
+
+
+@needs_postgres
+def test_results_are_capped_at_five_across_notes(client: TestClient, db_session: Session, test_settings: Settings) -> None:
+    # 노트 4개 × 맞는 조각 3개 — 노트마다 2개까지, 전체 5개까지
+    user_id = _login(client, db_session, test_settings, "s-cap")
+    for note in range(4):
+        sections = "\n".join(f"## 절 {index}\nuseEffect 정리 {note}-{index}\n" for index in range(3))
+        _add_note(db_session, user_id, f"# 노트 {note}\n{sections}", f"노트 {note}")
+
+    results = client.get("/api/search", params={"q": "useEffect"}).json()["results"]
+
     assert len(results) == MAX_SEARCH_RESULTS
+    per_note = Counter(result["note_id"] for result in results)
+    assert max(per_note.values()) <= MAX_SEARCH_RESULTS_PER_NOTE
+    assert len(per_note) >= 3
 
 
 @needs_postgres

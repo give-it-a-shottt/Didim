@@ -33,7 +33,9 @@ class _FixedSearcher:
     def __init__(self, answers: dict[str, list[SearchHit]]) -> None:
         self.answers = answers
 
-    def search(self, db: Session, *, user_id: int, query: SearchQuery, limit: int) -> list[SearchHit]:
+    def search(
+        self, db: Session, *, user_id: int, query: SearchQuery, limit: int, max_per_note: int
+    ) -> list[SearchHit]:
         return self.answers.get(query.text, [])[:limit]
 
 

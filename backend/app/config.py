@@ -37,6 +37,8 @@ HEADING_PATH_TEXT_MAX_CHARS = 200
 # 기록 검색 (F-003 설계 의도, 사용자 확인). 검색창(frontend REV_01_001)도 같은 글자 수 상한을 쓴다.
 MAX_SEARCH_QUERY_CHARS = 200
 MAX_SEARCH_RESULTS = 5  # 완료 기준 1: 최대 5개
+# 한 노트에서 보여 주는 조각 수 상한 — 한 노트가 결과를 다 차지하지 않게(Q-021 사용자 결정 2026-11-13)
+MAX_SEARCH_RESULTS_PER_NOTE = 2
 # 질문에서 쓰는 낱말 수 · 최소 글자 수. 낱말마다 조건이 하나씩 붙으므로 개수를 막아 둔다.
 MAX_SEARCH_TERMS = 10
 MIN_SEARCH_TERM_CHARS = 2

@@ -45,6 +45,11 @@ class Searcher(Protocol):
     # 검색 로그에 남는 방식 이름. 방식별 평가 점수를 비교할 때 쓴다(D-016).
     method: str
 
-    def search(self, db: Session, *, user_id: int, query: SearchQuery, limit: int) -> list[SearchHit]:
-        """user_id의 조각만 찾아 점수 높은 순서로 limit개까지 돌려준다(D-004)."""
+    def search(
+        self, db: Session, *, user_id: int, query: SearchQuery, limit: int, max_per_note: int
+    ) -> list[SearchHit]:
+        """user_id의 조각만 찾아 점수 높은 순서로 limit개까지 돌려준다(D-004).
+
+        한 노트에서는 점수 높은 조각 max_per_note개까지만 넣는다 — 그 아래 조각 대신 다른 노트의 조각이 들어온다(Q-021).
+        """
         ...

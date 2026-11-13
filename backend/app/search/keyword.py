@@ -10,7 +10,8 @@
    한 번만 계산해 담아 둔다. MATERIALIZED는 PostgreSQL이 CTE를 바깥 쿼리로 펼치지 못하게 막는 울타리다.
    (펼치면 계산식이 정렬 키에 다시 복사되고, 노트 조인 때문에 노트마다 색인 검색을 반복하는 계획이 나왔다.
     리뷰가 제안한 서브쿼리 + OFFSET 0은 PostgreSQL 17에서 펼쳐져 울타리가 되지 않았다 — 2026-11-10 EXPLAIN 확인)
-2. 순위: 기준을 넘은 낱말의 비슷함만 더해 점수 높은 순으로 limit개(아직 본문 · 제목은 안 붙임).
+2. 순위: 기준을 넘은 낱말의 비슷함만 더해 점수를 매기고, 노트마다 점수 순번(row_number)을 붙여 max_per_note번째까지만
+   남긴 뒤(Q-021 — 한 노트가 결과를 다 차지하지 않게) 점수 높은 순으로 limit개(아직 본문 · 제목은 안 붙임).
 3. 결과: 고른 limit개에만 조각 본문 · 노트 제목을 붙인다.
 흔한 낱말이 거의 모든 조각에 맞으면 1단계가 여전히 클 수 있어, 한 번의 검색은 SEARCH_TIMEOUT_MS에서 멈춘다.
 """
@@ -37,7 +38,9 @@ def _matches(term: str) -> ColumnElement[bool]:
     return Chunk.content.op("%>", is_comparison=True)(literal(term, Text))
 
 
-def _build_statement(*, user_id: int, terms: tuple[str, ...], limit: int) -> Select[tuple[object, ...]]:
+def _build_statement(
+    *, user_id: int, terms: tuple[str, ...], limit: int, max_per_note: int
+) -> Select[tuple[object, ...]]:
     similarities = [
         func.word_similarity(literal(term, Text), Chunk.content, type_=Float).label(f"s{index}")
         for index, term in enumerate(terms)
@@ -56,9 +59,19 @@ def _build_statement(*, user_id: int, terms: tuple[str, ...], limit: int) -> Sel
             for index in range(len(terms))
         ),
     ).label("score")
+    scored = select(
+        candidates.c.chunk_id,
+        candidates.c.note_id,
+        candidates.c.position,
+        score,
+        func.row_number()
+        .over(partition_by=candidates.c.note_id, order_by=(desc(score), candidates.c.position))
+        .label("note_rank"),
+    ).subquery("scored")
     ranked = (
-        select(candidates.c.chunk_id, score)
-        .order_by(desc(score), candidates.c.note_id, candidates.c.position)
+        select(scored.c.chunk_id, scored.c.score)
+        .where(scored.c.note_rank <= max_per_note)
+        .order_by(desc(scored.c.score), scored.c.note_id, scored.c.position)
         .limit(limit)
         .subquery("ranked")
     )
@@ -102,14 +115,16 @@ def run_with_search_settings(db: Session, stmt: Select[tuple[object, ...]]) -> l
 class KeywordSearcher:
     method = "keyword"
 
-    def search(self, db: Session, *, user_id: int, query: SearchQuery, limit: int) -> list[SearchHit]:
+    def search(
+        self, db: Session, *, user_id: int, query: SearchQuery, limit: int, max_per_note: int
+    ) -> list[SearchHit]:
         if db.get_bind().dialect.name != "postgresql":
             raise SearchUnavailableError(PG_TRGM_REQUIRED_MESSAGE)
         terms = tuple(query.terms)
         if not terms:
             return []
 
-        rows = run_with_search_settings(db, _build_statement(user_id=user_id, terms=terms, limit=limit))
+        rows = run_with_search_settings(db, _build_statement(user_id=user_id, terms=terms, limit=limit, max_per_note=max_per_note))
         return [
             SearchHit(
                 chunk_id=row.id,

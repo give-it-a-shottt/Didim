@@ -1,7 +1,7 @@
 """기록 검색 (F-003, D-016). 기능 코드는 이 패키지에서 가져다 쓴다.
 
     searcher = get_searcher()                         # 지금은 키워드(pg_trgm). 임베딩은 평가로 비교한 뒤
-    hits = searcher.search(db, user_id=..., query=SearchQuery(text, extract_terms(text)), limit=5)
+    hits = searcher.search(db, user_id=..., query=SearchQuery(text, extract_terms(text)), limit=5, max_per_note=2)
 """
 
 from app.search.base import SearchHit, SearchQuery, Searcher, SearchTimeoutError, SearchUnavailableError

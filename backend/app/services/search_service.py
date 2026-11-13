@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.config import SEARCH_SCORE_DIGITS
+from app.config import MAX_SEARCH_RESULTS_PER_NOTE, SEARCH_SCORE_DIGITS
 from app.db.models import SearchLog
 from app.search import SearchHit, SearchQuery, Searcher, extract_terms, make_excerpt
 
@@ -37,7 +37,10 @@ def search_records(db: Session, searcher: Searcher, *, user_id: int, text: str, 
     """
     query_text = text.strip()
     terms = extract_terms(query_text)
-    hits = searcher.search(db, user_id=user_id, query=SearchQuery(text=query_text, terms=terms), limit=limit)
+    hits = searcher.search(
+        db, user_id=user_id, query=SearchQuery(text=query_text, terms=terms), limit=limit,
+        max_per_note=MAX_SEARCH_RESULTS_PER_NOTE,
+    )
 
     results = []
     for hit in hits:
