@@ -98,6 +98,40 @@ CARD_CLAIM_STALE_SECONDS = QUIZ_CLAIM_STALE_SECONDS
 CARD_MAX_ANSWER_CHARS = 2_000  # 칸 하나에 쓰는 내 답 길이 상한. (사용자 확인 2026-11-11, F-006 1차 리뷰)
 MAX_CARD_LIST = 200  # 카드 목록 한 번에 보내는 수(최근 고친 것부터). 전체 개수는 따로 알려 준다. (사용자 확인 2026-11-11, F-006 1차 리뷰)
 
+# 공고 분석 · 경험 매칭 (F-007 설계 의도, 사용자 확인 2026-11-12). 숫자 상한은 이 값 그대로(Q-024 사용자 결정 2026-11-13 — 평가 실패가 한도 · 시간 초과라 러프하게 둠)
+# 지원 상태: 준비 · 작성 중 · 제출. 화면(frontend/src/lib/applications.ts)에도 같은 값이 있다.
+APPLICATION_STATUSES = ("ready", "writing", "submitted")
+APPLICATION_STATUS_DEFAULT = "ready"
+APPLICATION_COMPANY_MAX_CHARS = 100
+APPLICATION_ROLE_MAX_CHARS = 100
+APPLICATION_URL_MAX_CHARS = 500  # 링크로 저장만 한다(서버가 읽지 않음, D-002). http · https만 받는다
+POSTING_TEXT_MAX_CHARS = 10_000  # 붙여 넣는 공고 본문 — ① 역량 뽑기에 통째로 보낸다
+APPLICATION_MAX_QUESTIONS = 10  # 자소서 문항 수(F-008이 씀)
+APPLICATION_QUESTION_MAX_CHARS = 500
+APPLICATION_QUESTION_CHAR_LIMIT_MAX = 10_000  # 문항 글자 수 제한 칸에 넣을 수 있는 최대값
+MAX_APPLICATION_LIST = 200  # 지원 목록 한 번에 보내는 수(D-day 순). 전체 개수는 따로 알려 준다
+# ① 요구 역량 뽑기
+REQUIREMENT_KINDS = ("required", "preferred")  # 필수 · 우대
+REQUIREMENT_NAME_MAX_CHARS = 50
+MAX_REQUIREMENTS = 12  # 공고 하나에서 남기는 역량 수(앞에서부터)
+# 공고 원문 인용 길이(공백 뺀 최소 · 전체 최대). 공고 문장은 짧아서("React 경험자") 카드 인용보다 최소가 낮다
+POSTING_MIN_QUOTE_CHARS = 4
+POSTING_MAX_QUOTE_CHARS = 300
+# ② 매칭 — 역량마다 내 저장 카드에서 키워드 점수 상위 N장만 보낸다(원칙 6)
+MATCH_CANDIDATES_PER_REQUIREMENT = 5
+MATCH_MAX_CARDS_SENT = 20  # 역량 전체를 합쳐 보내는 카드 수(서로 다른 카드)
+MATCH_FIELD_SEND_CHARS = 600  # 카드 칸 하나에서 보내는 글자 수(인용 · 내 답 각각, 앞에서부터)
+MATCH_MAX_PER_REQUIREMENT = 3  # 역량 하나에 남기는 매칭 카드 수
+MATCH_MIN_QUOTE_CHARS = 5  # 카드 칸 인용 길이(공백 뺀 최소 · 전체 최대)
+MATCH_MAX_QUOTE_CHARS = 300
+MATCH_REASON_MAX_CHARS = 300  # AI가 쓴 '맞는 이유' 길이 상한. 넘으면 자른다
+# 키워드 후보 점수에서 빼는 흔한 공고 낱말 — 거의 모든 카드 · 공고에 나와서 순위를 흐린다
+MATCH_STOP_TERMS = frozenset(
+    {"경험", "경험자", "이상", "우대", "능력", "가능", "가능자", "보유", "보유자", "관련", "활용", "이해", "사용", "업무", "있는", "있으신"}
+)
+# 선점이 이보다 오래되면 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초). 문제 만들기와 같은 이유 · 같은 값
+APPLICATION_CLAIM_STALE_SECONDS = QUIZ_CLAIM_STALE_SECONDS
+
 
 # 노션 연결 (F-005 설계 의도, 사용자 확인 2026-11-12)
 NOTION_API_BASE = "https://api.notion.com/v1"

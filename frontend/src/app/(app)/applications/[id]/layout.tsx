@@ -1,42 +1,62 @@
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ApplicationActions, ApplicationTabs } from "@/components/application-header-actions";
+import { DDay } from "@/components/application-parts";
+import { formatDeadline } from "@/lib/applications";
+import { getApplication } from "@/lib/applications-data";
+import { parseDbId } from "@/lib/ids";
 
-// APL_02_001 지원 상세: 탭 3개(공고 분석 · 자소서 · 면접 연습)를 담는 틀.
-// 탭마다 URL이 달라서 새로고침하거나 링크를 보내도 같은 탭이 열린다.
-export default function ApplicationLayout({
-  children,
-  params,
-}: LayoutProps<"/applications/[id]">) {
+// APL_02_001 지원 상세(Figma 27:1458 헤더): '회사 · 직무'(h1) + D-day + 마감일 + 상태 · 지우기, 아래에 탭 3개.
+// 탭마다 URL이 달라서 새로고침하거나 링크를 보내도 같은 탭이 열린다. 탭 화면의 제목은 h2(화면마다 h1 하나).
+export default function ApplicationLayout({ children, params }: LayoutProps<"/applications/[id]">) {
   return (
     <div>
-      <header className="p-8 pb-0">
-        <p className="text-sm">APL_02_001</p>
-        <h1 className="text-2xl font-semibold">지원 상세</h1>
-        {/* cacheComponents에서는 URL 값(params)을 Suspense 안에서만 읽을 수 있다. */}
-        <Suspense fallback={null}>
-          <ApplicationTabs params={params} />
-        </Suspense>
-      </header>
+      {/* cacheComponents에서는 URL 값(params) · 쿠키를 Suspense 안에서만 읽을 수 있다. */}
+      <Suspense fallback={<div className="h-22 border-b border-line-regular bg-bg-default" />}>
+        <ApplicationHeader params={params} />
+      </Suspense>
       {children}
     </div>
   );
 }
 
-const TABS = [
-  { segment: "analysis", label: "공고 분석" },
-  { segment: "draft", label: "자소서" },
-  { segment: "interview", label: "면접 연습" },
-] as const;
+async function ApplicationHeader({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rawId } = await params;
+  const id = parseDbId(rawId);
+  if (id === null) notFound();
+  const outcome = await getApplication(id);
+  if (outcome.status === "not-found") notFound();
 
-async function ApplicationTabs({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
   return (
-    <nav aria-label="지원 상세 탭" className="mt-4 flex gap-4">
-      {TABS.map((tab) => (
-        <Link key={tab.segment} href={`/applications/${encodeURIComponent(id)}/${tab.segment}`}>
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
+    <header className="border-b border-line-regular bg-bg-default">
+      <div className="flex flex-wrap items-center gap-3 px-5 pt-4 pb-2 lg:px-12">
+        {outcome.status === "ok" ? (
+          <>
+            <h1 className="min-w-0 text-title-3 font-semibold wrap-break-word text-text-main">
+              {outcome.application.company} · {outcome.application.role}
+            </h1>
+            <DDay daysLeft={outcome.application.daysLeft} />
+            {outcome.application.deadline ? (
+              <p className="text-body-3 text-text-sub">마감 {formatDeadline(outcome.application.deadline)}</p>
+            ) : null}
+            {outcome.application.url ? (
+              <a
+                href={outcome.application.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-body-3 text-text-sub underline"
+              >
+                공고 링크
+              </a>
+            ) : null}
+            <div className="flex-1" />
+            <ApplicationActions applicationId={id} status={outcome.application.status} />
+          </>
+        ) : (
+          <h1 className="text-title-3 font-semibold text-text-main">지원 상세</h1>
+        )}
+      </div>
+      <ApplicationTabs applicationId={id} />
+    </header>
   );
 }

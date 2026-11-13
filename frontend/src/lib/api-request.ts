@@ -25,7 +25,7 @@ const LOGIN_ERROR = "로그인이 풀렸어요. 다시 로그인해 주세요.";
  * 응답 모양 확인은 부르는 쪽이 한다(기능마다 모양이 달라서).
  */
 export async function apiRequest(
-  method: "GET" | "POST" | "PUT" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   fallback: string,
   payload?: unknown,

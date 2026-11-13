@@ -182,6 +182,136 @@ const NOTION_PAGE_B = "0000000b-0000-4000-8000-00000000000b";
 const NOTION_PAGE_C = "0000000c-0000-4000-8000-00000000000c";
 const notionFlakySeen = new Set(); // "-notion-flaky": 세션마다 첫 목록 요청만 실패
 
+// --- 지원 · 공고 분석(F-007) 가짜 데이터 ---
+const POSTING_A = "자격 요건\n- React로 화면을 만든 경험\n- 클라우드 배포 경험\n";
+const appRequirement = (id, name, kind, posting, quote, matches = []) => ({
+  id, position: 0, name, kind, quote, quote_start: posting.indexOf(quote), quote_end: posting.indexOf(quote) + quote.length, matches,
+});
+const mockApplication = (id, company, role, extra = {}) => ({
+  id, company, role, deadline: null, days_left: null, url: null, posting_text: POSTING_A, status: "ready",
+  extracted_at: null, matched_at: null, created_at: "2026-11-12T03:00:00Z", updated_at: "2026-11-12T03:00:00Z",
+  questions: [{ id: id * 10, position: 0, text: "지원 동기", char_limit: 700 }], requirements: [], ...extra,
+});
+const MOCK_APPLICATIONS = new Map(
+  [
+    mockApplication(901, "누리랩", "풀스택 개발자 (신입)", {
+      deadline: "2026-11-15", days_left: 3, status: "writing", url: "https://example.com/jobs/901",
+      extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z",
+      requirements: [
+        appRequirement(9011, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [
+          { id: 1, card_id: 801, card_title: "useEffect로 구독 정리", slot: "situation", quote: "useEffect는 그려진 뒤 부수 효과를 실행해요.",
+            quote_source: "quote", quote_start: 0, quote_end: 27, reason: "React 훅으로 화면을 다룬 경험이에요." },
+        ]),
+        appRequirement(9012, "클라우드 배포", "preferred", POSTING_A, "클라우드 배포 경험"),
+      ],
+    }),
+    mockApplication(902, "바른책방", "프론트엔드 개발자", { deadline: "2026-11-24", days_left: 12 }),
+    mockApplication(903, "모아데이터", "백엔드 개발자 인턴"),
+    mockApplication(904, "한도회사", "개발자"),
+    mockApplication(905, "지울회사", "개발자", { status: "submitted", deadline: "2026-11-01", days_left: -11 }),
+    // 906: 뽑기는 2개라고 답하지만 상세는 늦게 바뀌고(새로 받기 전 상태), 매칭은 3초 걸림 — ① 직후 화면 확인용
+    mockApplication(906, "늦은회사", "개발자"),
+  ].map((item) => [item.id, item]),
+);
+let nextApplicationId = 950;
+const appSummary = (item) => ({
+  id: item.id, company: item.company, role: item.role, deadline: item.deadline, days_left: item.days_left,
+  status: item.status, url: item.url, requirement_count: item.requirements.length,
+  matched_requirement_count: item.requirements.filter((requirement) => requirement.matches.length > 0).length,
+  extracted: item.extracted_at !== null, matched: item.matched_at !== null, created_at: item.created_at, updated_at: item.updated_at,
+});
+const dDayOrder = (item) => (item.days_left === null ? [2, 0] : item.days_left < 0 ? [1, -item.days_left] : [0, item.days_left]);
+
+function handleApplications(req, res, url, rawBody) {
+  let body = {};
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    body = {};
+  }
+  if (req.method === "GET" && url.pathname === "/api/applications") {
+    const list = [...MOCK_APPLICATIONS.values()].sort((a, b) => {
+      const [ga, va] = dDayOrder(a);
+      const [gb, vb] = dDayOrder(b);
+      return ga - gb || va - vb;
+    });
+    sendJson(res, 200, { total: list.length, applications: list.map(appSummary) });
+    return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/applications") {
+    if (!String(body.company ?? "").trim()) {
+      sendJson(res, 422, { detail: "회사 이름을(를) 적어 주세요." });
+      return;
+    }
+    const id = nextApplicationId++;
+    const item = mockApplication(id, body.company.trim(), String(body.role ?? "").trim(), {
+      posting_text: String(body.posting_text ?? "").trim() || POSTING_A, url: body.url ?? null, deadline: body.deadline ?? null,
+    });
+    MOCK_APPLICATIONS.set(id, item);
+    sendJson(res, 201, item);
+    return;
+  }
+  const match = url.pathname.match(/^\/api\/applications\/(\d+)(\/requirements|\/matches)?$/);
+  const item = match ? MOCK_APPLICATIONS.get(Number(match[1])) : undefined;
+  if (!item) {
+    sendJson(res, 404, { detail: "공고를 찾을 수 없어요." });
+    return;
+  }
+  const action = match[2];
+  if (!action && req.method === "GET") {
+    sendJson(res, 200, item);
+    return;
+  }
+  if (!action && req.method === "PATCH") {
+    if (body.status) item.status = body.status;
+    sendJson(res, 200, item);
+    return;
+  }
+  if (!action && req.method === "DELETE") {
+    MOCK_APPLICATIONS.delete(item.id);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  if (action === "/requirements" && req.method === "POST") {
+    if (item.id === 906) {
+      sendJson(res, 201, { application_id: 906, requirement_count: 2, drop_reasons: {}, remaining_today: 29 });
+      return;
+    }
+    if (item.id === 904) {
+      sendJson(res, 429, { detail: "오늘 AI 사용량(30회)을 다 썼어요. 한국 시간 0시에 다시 쓸 수 있어요." });
+      return;
+    }
+    const posting = item.posting_text;
+    const lines = posting.split("\n").map((line) => line.replace(/^-\s*/, "").trim()).filter((line) => line.length >= 4).slice(1, 3);
+    item.requirements = lines.map((line, index) => ({ ...appRequirement(item.id * 10 + index, line.slice(0, 12), "required", posting, line), position: index }));
+    item.extracted_at = "2026-11-12T04:00:00Z";
+    sendJson(res, 201, { application_id: item.id, requirement_count: item.requirements.length, drop_reasons: {}, remaining_today: 29 });
+    return;
+  }
+  if (action === "/matches" && req.method === "POST") {
+    if (item.id === 906) {
+      setTimeout(() => sendJson(res, 201, { application_id: 906, matches: 0, matched_requirements: 0, requirements_sent: 0, cards_sent: 0, drop_reasons: {}, remaining_today: 29 }), 3000);
+      return;
+    }
+    if (item.id === 903) {
+      sendJson(res, 503, { detail: "지금은 AI에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요." });
+      return;
+    }
+    item.requirements = item.requirements.map((requirement, index) => ({
+      ...requirement,
+      matches: index === 0
+        ? [{ id: requirement.id, card_id: 801, card_title: "useEffect로 구독 정리", slot: "action", quote: "상태를 바꾸면 다시 그려져요.",
+             quote_source: "quote", quote_start: 0, quote_end: 16, reason: "화면 상태를 다룬 경험이에요." }]
+        : [],
+    }));
+    item.matched_at = "2026-11-12T04:01:00Z";
+    sendJson(res, 201, { application_id: item.id, matches: 1, matched_requirements: 1, requirements_sent: 1, cards_sent: 1, drop_reasons: {}, remaining_today: 28 });
+    return;
+  }
+  sendJson(res, 405, { detail: "Method Not Allowed" });
+}
+
 const sendJson = (res, status, body) => {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
@@ -440,6 +570,20 @@ const server = http.createServer((req, res) => {
   // "<토큰>-notion-none" 연결 안 됨 · "-notion-broken" 끊김 · "-notion-midbreak" 가져오는 중 끊김 ·
   // "-notion-empty" 공유 페이지 없음 · "-notion-many" 25개 + 100개 넘음(truncated) · "-notion-flaky" 목록 첫 요청 500 ·
   // "-notion-disconnectfail" 끊기 500 · "-notion-importfail" 가져오기 502
+  // --- 지원 · 공고 분석(F-007) ---
+  // 901: 분석 · 매칭 끝(역량 2개 — 하나는 카드 801, 하나는 근거 없음) / 902: 분석 전 → 뽑기 · 매칭 성공
+  // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 950~: [공고 추가]로 만든 공고(902처럼)
+  if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/")) {
+    if (!isLoggedIn(req)) {
+      sendJson(res, 401, { detail: "로그인이 필요해요." });
+      return;
+    }
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => handleApplications(req, res, url, Buffer.concat(chunks).toString("utf8")));
+    return;
+  }
+
   if (url.pathname.startsWith("/api/notion/")) {
     if (!isLoggedIn(req)) {
       sendJson(res, 401, { detail: "로그인이 필요해요." });

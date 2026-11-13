@@ -42,8 +42,8 @@ from app.llm.base import LLMClient, LLMError, LLMUsage, Message
 from app.llm.structured import StructuredReply, complete_json
 from app.services import note_claim
 from app.services.note_claim import ClaimLost, ClaimRules, OtherAIWorkInProgress  # noqa: F401 — 라우터 · 테스트가 여기서 가져감
-from app.services.text_clean import strip_forbidden_control
 from app.services.note_service import get_note_for_user, list_chunks_for_note_for_user
+from app.services.text_clean import strip_forbidden_control, visible_chars
 from app.services.usage_service import (
     FEATURE_QUIZ_GENERATE,
     OUTCOME_OK,
@@ -107,10 +107,6 @@ class QuizBatchIn(BaseModel):
 # --- 1. 보낼 조각 고르기 ---
 
 
-def _visible_chars(text: str) -> int:
-    return sum(1 for char in text if not char.isspace())
-
-
 def select_chunks(chunks: Sequence[Chunk], *, limit: int = MAX_QUIZZES_PER_NOTE) -> list[Chunk]:
     """짧은 조각(공백 뺀 80자 미만)을 빼고, 남은 게 limit보다 많으면 노트 전체에서 고르게 limit개.
 
@@ -118,7 +114,7 @@ def select_chunks(chunks: Sequence[Chunk], *, limit: int = MAX_QUIZZES_PER_NOTE)
     예) 30개 → 0, 3, 6, …, 27번째.
     """
     ordered = sorted(chunks, key=lambda chunk: chunk.position)
-    eligible = [chunk for chunk in ordered if _visible_chars(chunk.content) >= QUIZ_MIN_CHUNK_CHARS]
+    eligible = [chunk for chunk in ordered if visible_chars(chunk.content) >= QUIZ_MIN_CHUNK_CHARS]
     if len(eligible) <= limit:
         return eligible
     return [eligible[i * len(eligible) // limit] for i in range(limit)]
@@ -211,7 +207,7 @@ def _check_one(draft: QuizDraftIn, chunk: Chunk) -> CheckedQuiz | str:
 
     # 앞뒤 공백만 걷고 나머지는 그대로 비교한다(글자 그대로 있어야 근거로 인정, D-003).
     quote = draft.quote.strip()
-    if _visible_chars(quote) < QUIZ_MIN_QUOTE_CHARS:
+    if visible_chars(quote) < QUIZ_MIN_QUOTE_CHARS:
         return DROP_QUOTE_TOO_SHORT
     found_at = chunk.content.find(quote)
     if found_at < 0:
@@ -268,13 +264,13 @@ _CLAIM_RULES = ClaimRules(
 
 def _release_claim_statement(plan: "GenerationPlan"):  # noqa: ANN202
     return note_claim.release_statement(
-        _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at
+        _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at
     )
 
 
 def release_claim(db: Session, plan: "GenerationPlan") -> None:
     """내 선점을 지운다(다시 누를 수 있게). 실패해도 5분 뒤 풀리므로 오류를 올리지 않는다."""
-    note_claim.release_claim(db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at)
+    note_claim.release_claim(db, _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at)
 
 
 @dataclass(frozen=True)
@@ -304,8 +300,8 @@ def prepare_generation(db: Session, *, user_id: int, note_id: int, now: datetime
     if not chunks:
         raise NoEligibleChunks
     usage_before = ensure_within_daily_limit(db, user_id=user_id, now=now)
-    claimed_at = note_claim.claim_note(
-        db, _CLAIM_RULES, user_id=user_id, note_id=note.id, at=now if now is not None else now_utc()
+    claimed_at = note_claim.claim_target(
+        db, _CLAIM_RULES, user_id=user_id, target_id=note.id, at=now if now is not None else now_utc()
     )
     return GenerationPlan(
         user_id=user_id,
@@ -357,7 +353,7 @@ def save_generation(
     try:
         if checked.kept:
             note_claim.ensure_still_owned(
-                db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at
+                db, _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at
             )
         for item in checked.kept:
             quiz = Quiz(
@@ -459,7 +455,7 @@ def mock_quiz_responder(messages: Sequence[Message]) -> str:
     quizzes = []
     for chunk in payload.get("chunks", []):
         lines = [line.strip() for line in str(chunk.get("content", "")).splitlines()]
-        quotable = [line for line in lines if not line.startswith("#") and _visible_chars(line) >= QUIZ_MIN_QUOTE_CHARS]
+        quotable = [line for line in lines if not line.startswith("#") and visible_chars(line) >= QUIZ_MIN_QUOTE_CHARS]
         if not quotable:
             continue
         first = quotable[0]

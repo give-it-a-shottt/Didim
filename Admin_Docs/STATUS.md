@@ -1,13 +1,13 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 9 · 일부 1 · 다음 6 · 열린 질문 11개
-최종 수정: 2026-11-12
+됨 9 · 일부 2 · 다음 5 · 열린 질문 2개
+최종 수정: 2026-11-13
 
 ## 기능별 상태
 | 기능 | 상태 | 한 줄 설명 | 확인 방법 | 최근 리뷰 | 날짜 |
 |---|---|---|---|---|---|
-| [F-000](features/F-000-dev-setup/feature.md) 개발 환경 세팅 | [됨] | Next.js · FastAPI 뼈대와 `/api` 프록시 동작. 남은 것: 레포 구조(Q-013) · 배포 위치(Q-012), 제안 2건은 시점에 맞춰 고침 | 테스트 backend/tests/test_health.py 2개 통과, 화면 주소의 /api/health → FastAPI 응답 직접 실행(2026-11-08) | 1차 [통과] | 2026-11-08 |
+| [F-000](features/F-000-dev-setup/feature.md) 개발 환경 세팅 | [됨] | Next.js · FastAPI 뼈대와 `/api` 프록시 동작. 남은 것: 배포 위치(Q-012 — 8주차, 레포 구조는 D-023), 제안 2건은 시점에 맞춰 고침 | 테스트 backend/tests/test_health.py 2개 통과, 화면 주소의 /api/health → FastAPI 응답 직접 실행(2026-11-08) | 1차 [통과] | 2026-11-08 |
 | [F-013](features/F-013-screen-skeleton/feature.md) 화면 뼈대 | [됨] | 레이아웃 3종 + URL 19개 빈 화면 + SEO 기본(제목 · 설명, 회원 noindex, robots.txt · sitemap.xml) | tsc · eslint · next build 통과, 운영 서버에서 URL 19개 200 · 307 이동 · 404 · 메타데이터 · robots.txt · sitemap 직접 실행(2026-11-08 · 09), 테스트 frontend/tests/auth-and-routes.spec.ts 4개 통과(2026-11-09) | 4차 [통과] | 2026-11-09 |
 | [F-001](features/F-001-account-isolation/feature.md) 계정 · 데이터 분리 | [됨] | 1주차 기준 [됨](사용자 확인): 구글 OAuth 로그인 · 로그아웃, 회원 화면 16개 가드, users · notes · chunks user_id 격리 · CASCADE 삭제. fix-01: DB 구조는 Alembic 버전 파일로, 서버는 시작 때 버전만 확인(D-015). 남은 것: 2주차 사용량 기록 · 7주차 사용량 제한/삭제 버튼/사용량 화면 | 테스트 backend/tests 110개 통과(SQLite · PostgreSQL didim_test, test_auth_and_isolation.py 8개 · test_migrations.py 13개 포함), 개발 DB `alembic stamp 0001` 뒤 서버 시작 · /api/health 200 직접 실행(2026-11-10). frontend/tests/auth-and-routes.spec.ts 4개 통과, tsc · eslint · next build 통과(2026-11-09) | 5차 [통과] · fix-01-alembic 2차 [통과] | 2026-11-10 |
 | [F-014](features/F-014-llm-client/feature.md) LLM 연결 구조 | [됨] | mock · exaone · local 교체, JSON 검사 · 재시도, 사용량 집계, 전체 180초 상한. 남은 것: 하루 상한은 첫 AI 기능 때 | 테스트 backend/tests/test_llm.py 83개 포함 97개 통과, 실제 EXAONE에 "안녕"을 보내 답 받음 — scripts/llm_ping exaone 직접 실행(2.9초, 호출 1번, 2026-11-10) | 3차 [통과] | 2026-11-10 |
@@ -16,10 +16,10 @@
 | [F-004](features/F-004-quiz-review/feature.md) 퀴즈 · 복습 | [됨] | 3주차. 문제 만들기(근거 인용 검사) · 오늘 복습 · 오답노트 · 화면. 평가: 버려진 비율 2%(1/50), 정답 · 해설 일치 100%(49/49, 채점 AI — 사람 검수 전) | pytest SQLite 295 · PostgreSQL 304, Playwright 32 통과(2026-11-11), 직접 실행 mock(사용자 확인), EXAONE 평가 실행(2026-11-11) | 3차 [통과] | 2026-11-11 |
 | [F-005](features/F-005-notion-import/feature.md) 노션 연결 | [됨] | 4주차. OAuth 연결 · 토큰 암호화 · 갱신 · 끊김 · 회수 · 페이지 골라 가져오기(블록 → 마크다운 → F-002 저장) · 사용자당 가져오기 하나(D-021). 리뷰 1차 [주의] → 2차 [주의] → 3차 [통과] · 리뷰 끝. 남은 것: 미룬 구조 정리(feature.md) | pytest SQLite 394 · PostgreSQL 406(노션 49), Playwright 53(노션 11) · tsc · eslint 통과, 직접 실행(사용자 확인, 2026-11-12) — 실제 노션 연결 · 페이지 가져오기 · 노트 화면 · 끊기 뒤 다시 연결 | 3차 [통과] | 2026-11-12 |
 | [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [됨] | 4주차. 후보 찾기(칸별 원문 인용 · 노트당 AI 1번) · 후보 검토 · 카드 화면 · 평가 세트. 1차 [주의] → 2차 [통과] → 3차 [통과], 3차 제안 전부 반영. 평가: 찾은 비율 12/12 · 없는 경험 후보 0 · 인용 검사 빈칸 0(노트마다 성공한 회차를 합침, 사용자 확인) | pytest SQLite 343 · PostgreSQL 355, Playwright 42 · tsc · eslint 통과(2026-11-11), EXAONE 평가 2회 — `backend/eval/cards/results/cards-exaone-20261111-170327.json`(경험 노트 8개 모두 성공) · `cards-exaone-20261112-092305.json`(경험 없는 노트 10개 모두 성공, 경험 노트 5개는 180초 상한 실패), 사용자 화면 확인(2026-11-12) | 3차 [통과] | 2026-11-12 |
-| [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [다음] | 5주차 | - | - | - |
+| [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [일부] | 공고 추가 · 역량 뽑기 · 매칭 · 화면 · 평가까지. 빠진 것: 2차 리뷰 · 사용자 화면 확인(공고 지우기 · 상태 바꾸기 · 매칭 다시 · 근거 칩) | 테스트 test_applications.py · test_posting_evaluation.py · applications.spec.ts 통과(3차 반영 뒤 SQLite 451 · PostgreSQL 463 · Playwright 62 · tsc · eslint, 2026-11-13). 평가: EXAONE 성공한 공고 3개 매칭 적중 10/10 · 없는 근거 매칭 0(실패 3개는 한도 · 시간 초과, 사용자 결정으로 성공분 판정, 2026-11-13). 공고 추가 · 분석 화면 직접 실행(mock, 사용자 확인 2026-11-12) | 3차 [통과](신규 제안 4 반영, 리뷰 끝) | 2026-11-13 |
 | [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [다음] | 3~4주차(단순) · 6주차 | - | - | - |
-| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [다음] | 주차 미정(Q-005) | - | - | - |
+| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [다음] | 6주차(F-008과 같이) | - | - | - |
 | [F-010](features/F-010-eval-and-sample/feature.md) 평가 · 샘플 체험 | [다음] | 7주차 | - | - | - |
 | [F-011](features/F-011-landing/feature.md) 랜딩 | [다음] | 8주차 | - | - | - |
-| [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [다음] | 주차 미정(Q-006) | - | - | - |
+| [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [다음] | 8주차(랜딩과 같이) | - | - | - |
 | 디자인 적용 ([D-019](decisions/D-019-figma-is-design-source.md)) | [일부] | Figma 디딤 파일대로 화면 옮기기. ① 공통 부품 + 레이아웃 · ② 기록 · 복습(사용자 확인, 퀴즈 제목 위치는 사용자가 Figma 수정 후 반영) · ③ 기록 추가 모달(IMP_01_001 · 002 · 003 · 900) — 커밋 04c9900. ④ 로그인 · 설정(계정 칸만) 끝(사용자 확인). 이번 적용은 ④까지로 마무리. 데이터 · 기능 없는 Figma 칸은 그리지 않음. 남은 것: 홈(HOM_01_001 · 900)은 F-012 때 같이(사용자 결정 2026-11-11), REV_01_003 · CRD · APL · SET_02 · DEM · LND는 기능 만들 때 | Playwright 32 통과 · tsc · eslint 통과, 1440 · 375 화면 캡처로 Figma와 비교(2026-11-11) | 디자인은 사용자 평가(리뷰 없음) | 2026-11-11 |

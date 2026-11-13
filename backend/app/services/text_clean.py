@@ -21,3 +21,18 @@ def has_forbidden_control(text: str) -> bool:
 def strip_forbidden_control(text: str) -> str:
     """AI 출력 정리용 — 사용자가 고칠 수 없는 글이라 지우고 저장한다."""
     return "".join(char for char in text if not _is_forbidden(char))
+
+
+def visible_chars(text: str) -> int:
+    """공백을 뺀 글자 수 — 인용 길이 하한(낱말 하나로 근거 검사를 통과하지 않게)에 쓴다. 퀴즈 · 카드 · 공고 분석 공용."""
+    return sum(1 for char in text if not char.isspace())
+
+
+def clean_one_line(text: str) -> str:
+    """AI가 쓴 한 줄 글(이름 · 이유) 정리: 제어 문자를 지우고 공백을 하나로 모은다."""
+    return " ".join(strip_forbidden_control(text).split())
+
+
+def cut_text(text: str, max_chars: int) -> str:
+    """max_chars를 넘으면 잘라 끝에 '…'를 붙인다(전체 길이 max_chars)."""
+    return text if len(text) <= max_chars else text[: max_chars - 1] + "…"

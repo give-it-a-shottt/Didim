@@ -14,9 +14,9 @@ const MEMBER_SCREENS = [
   { path: "/cards", screenId: "CRD_01_001" },
   { path: "/cards/801", screenId: "CRD_01_002" }, // F-006부터 실제 카드를 불러온다(가짜 백엔드의 카드 801)
   { path: "/applications", screenId: "APL_01_001" },
-  { path: "/applications/a1/analysis", screenId: "APL_02_002" },
-  { path: "/applications/a1/draft", screenId: "APL_02_003" },
-  { path: "/applications/a1/interview", screenId: "APL_02_004" },
+  { path: "/applications/902/analysis", screenId: "APL_02_002" },
+  { path: "/applications/902/draft", screenId: "APL_02_003" },
+  { path: "/applications/902/interview", screenId: "APL_02_004" },
   { path: "/settings", screenId: "SET_01_001" },
   { path: "/settings/report", screenId: "SET_02_001" },
 ] as const;

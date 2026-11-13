@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 # 기능 이름(ai_usage_logs.feature). 사용량 화면(7주차)에서 기능별로 나눠 보여 준다.
 FEATURE_QUIZ_GENERATE = "quiz_generate"
 FEATURE_CARD_FIND = "card_find"  # 경험 카드 후보 찾기(F-006)
+FEATURE_POSTING_EXTRACT = "posting_extract"  # 공고 요구 역량 뽑기(F-007 ①)
+FEATURE_POSTING_MATCH = "posting_match"  # 요구 역량 ↔ 경험 카드 매칭(F-007 ②)
 
 OUTCOME_OK = "ok"
 OUTCOME_ERROR = "error"  # LLMError 공통 부모 · 예상 못 한 오류(요청 취소 등)

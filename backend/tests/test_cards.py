@@ -784,8 +784,8 @@ def test_quiz_in_progress_blocks_card_search_and_card_search_blocks_quiz(
     db_session.add(NoteCardClaim(user_id=user_id, note_id=note.id, claimed_at=datetime.now(timezone.utc)))
     db_session.commit()
     with pytest.raises(quiz_generation.OtherAIWorkInProgress):
-        note_claim.claim_note(
-            db_session, quiz_generation._CLAIM_RULES, user_id=user_id, note_id=other.id, at=datetime.now(timezone.utc)
+        note_claim.claim_target(
+            db_session, quiz_generation._CLAIM_RULES, user_id=user_id, target_id=other.id, at=datetime.now(timezone.utc)
         )
 
 

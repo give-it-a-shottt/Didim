@@ -22,7 +22,7 @@ PostgreSQL + pgvector (기록 · 조각 · 임베딩 · 카드 · 공고 · 문�
 
 ## 개발자 상세
 
-### 지금 폴더 구조 (2026-11-09, Q-013 임시)
+### 지금 폴더 구조 (2026-11-12, Q-013 임시)
 ```
 frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   next.config.ts          /api/* → BACKEND_URL 프록시(rewrites), /applications/[id] → 공고 분석 탭(redirects)
@@ -40,27 +40,30 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/lib/api-request.ts  브라우저 요청 한 곳(`apiRequest` · `ApiRequestError` — 네트워크 · 401 · 서버 문구 처리). quiz.ts · cards.ts가 같이 씀 (F-006 1차 리뷰 R1)
   src/lib/quiz.ts · cards.ts   퀴즈 · 경험 카드 응답 모양 확인 + 브라우저 요청, quiz-data.ts · cards-data.ts는 서버 컴포넌트용(server-only) (F-004 · F-006)
   src/components/card-*.tsx   경험 카드 화면(card-editor 상세 · card-review-sheet 후보 검토 · card-tile 목록 · note-card-panel 노트 상세 칸 · card-parts 원문 인용 부품) (F-006)
+  src/lib/applications.ts · applications-data.ts   지원 · 공고 분석(F-007) 응답 모양 + 브라우저 요청 / 서버 컴포넌트용(server-only, 상세는 React cache — 머리 · 탭이 같이 부름)
+  src/components/application-parts.tsx · add-application-dialog.tsx · application-header-actions.tsx · posting-analysis.tsx · posting-requirements.tsx · posting-aside.tsx   지원 화면(F-007): 상태 · D-day 배지 / 공고 추가 모달 / 상세 머리의 탭 · 상태 · 지우기 / 공고 분석 탭(① 뽑기 → ② 매칭, 실패 안내) · 왼쪽 요구 역량 표 · 오른쪽 칸(요약 · 선택한 근거 · 공고 원문)
   src/components/request-error.tsx   요청 실패 문구 + 로그인 링크(`RequestErrorText` 한 줄 · `RequestErrorBlock` 버튼 모양) — 퀴즈 · 카드 화면이 같이 씀 (F-006 2차 리뷰 R1)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
-  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes.spec.ts, import-records.spec.ts, record-search.spec.ts, mock-backend.mjs)
+  tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes · import-records · record-search · quiz-review · experience-cards · notion-import · applications.spec.ts, mock-backend.mjs — 가짜 FastAPI)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
-  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, deps.py) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, applications.py, deps.py) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
   app/importers/          가져오기 어댑터(D-001) — 파일 · 노션 페이지를 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py, notion.py — 블록 나무 → 마크다운 글, 노션을 부르지 않는 순수 함수). 노션도 입력 모양(파일 바이트 · 블록 나무)이 달라 Protocol 없이 함수 두 개로 둠(F-005)
   app/notion/             노션 REST API 클라이언트(F-005) — 토큰 교환 · 갱신 · 회수 · 검색 · 페이지 · 블록 읽기, 호출 간격 · 429 · 5xx 재시도(토큰 요청은 다시 보내지 않음), 시간 예산(호출 안에서도 마감을 지킴). HTTP만 맡고 DB는 모름
-  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py, notion_service.py — 노션 연결 저장 · 토큰 갱신(줄 잠금) · 페이지 목록 · 가져오기, token_crypto.py — 토큰 암호화) + note_claim.py(AI를 오래 부르는 기능의 노트 선점 규칙 한 곳 — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2)
-  app/db/                 SQLAlchemy 2.0 모델(User, Note, Chunk, SearchLog) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
+  app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py, notion_service.py — 노션 연결 저장 · 토큰 갱신(줄 잠금) · 페이지 목록 · 가져오기, token_crypto.py — 토큰 암호화, application_service.py — 공고 CRUD · D-day 순 목록, posting_analysis.py — 공고 분석 흐름(선점 · 저장 · 사용량) + posting_extraction.py(① 답 모양 · 검사) · posting_matching.py(② 키워드 후보 · 검사) · posting_checks.py(버린 이유 이름) · posting_mock.py(가짜 답) · posting_evaluation.py(평가 채점)) + note_claim.py(AI를 오래 부르는 기능의 선점 규칙 한 곳 — 대상은 노트 또는 공고(ClaimTable.key) — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2 / 공백 뺀 글자 수 · 한 줄 정리 · 자르기 — 퀴즈 · 카드 · 공고 분석 공용, F-007 1차 리뷰 R1)
+  app/db/                 SQLAlchemy 2.0 모델(사용자 · 노트 · 조각 · 검색 로그 · 퀴즈 · 카드 · 노션 연결 · 지원(Application 외 5개, F-007)) · 세션 · DB 버전 확인 (base.py, models.py, session.py, schema_version.py)
   alembic.ini, migrations/   DB 구조 버전 파일(Alembic, D-015)
   app/llm/                LLM 연결(D-014, F-014) — 인터페이스 · mock · OpenAI 호환 클라이언트 · JSON 검사(complete_json)
   app/search/             기록 검색(F-003, D-016) — 검색 약속(Searcher) · 키워드 방식(pg_trgm) · 낱말 뽑기 · 발췌 · 평가 채점(evaluation.py)
-  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py, search_eval.py — 로컬 평가 세트로 검색 채점, quiz_eval.py · card_eval.py — 가상 노트로 퀴즈 · 카드 평가, D-005)
-  eval/                   검색 평가 세트 예시(search_eval.example.json, 실제 세트 *.local.json · 결과 results/는 레포에 안 올림), quiz/ · cards/(지어낸 가상 노트 · 정답지 · 결과 — 레포에 올림)
-  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py, test_search.py, test_search_eval.py)
+  scripts/                손으로 돌리는 확인 스크립트 (llm_ping.py, search_eval.py — 로컬 평가 세트로 검색 채점, quiz_eval.py · card_eval.py — 가상 노트로 퀴즈 · 카드 평가, posting_eval.py — 가상 공고로 매칭 평가, D-005)
+  eval/                   검색 평가 세트 예시(search_eval.example.json, 실제 세트 *.local.json · 결과 results/는 레포에 안 올림), quiz/ · cards/ · postings/(지어낸 가상 노트 · 공고 · 정답지 · 결과 — 레포에 올림)
+  tests/                  pytest (test_health.py, test_auth_and_isolation.py, test_db_config.py, test_llm.py, test_migrations.py, test_import_markdown.py, test_search.py, test_search_eval.py, 퀴즈 · 카드 · 노션 테스트, test_applications.py · test_posting_evaluation.py)
 ```
 - 레이어(라우터 → 서비스 → DB)는 `app/api/`(라우터) → `app/services/`(비즈니스 로직) → `app/db/`(모델 · 세션) 한 방향으로만 흐른다. `app/llm/` · `app/importers/` · `app/notion/`은 서비스가 부르는 아래층이고 db · api를 가져다 쓰지 않는다. `app/search/`도 서비스가 부르는 아래층인데, 검색 방식 자체가 "DB에서 어떻게 찾나"라서 db 모델은 읽는다(api · services는 가져다 쓰지 않음).
 - 기록 검색(F-003): 라우터(`GET /api/search`)가 `Depends(get_searcher)`로 검색 방식을 받아 서비스에 넘기고 → 서비스가 낱말을 뽑아 검색 → 발췌를 만들고 → 검색 로그를 남긴다. 화면은 서버 컴포넌트가 주소의 `?q=`로 결과를 그리고, 결과를 누르면 노트 상세가 `?chunk=`의 조각 위치를 강조한다.
 - 노션 가져오기(F-005): 라우터가 `NotionSession`(토큰 꺼내기 · 미리 갱신 · 401 뒤 한 번 갱신)을 열고 사용자당 가져오기 하나를 선점(`claim_import`, 연결 줄의 `importing_since`)한 뒤 서비스에 넘기고 → 서비스가 페이지마다 블록 나무를 읽어(상한 · 시간 예산) 어댑터로 마크다운 글로 바꾼 뒤 F-002와 같은 나누기 · 저장 함수로 넣는다. 노션을 부르는 동안에는 DB 트랜잭션을 닫아 둔다(연결 풀을 붙잡지 않게). 노션 오류 → HTTP 응답은 라우터의 `_http_error` 한 곳. 연결은 OAuth(설정 화면 → 노션 동의 화면 → 콜백, 비로그인이면 /login), 토큰은 암호화 저장.
+- 공고 분석(F-007): 라우터가 ① `prepare_extract` → AI(`request_requirements`) → `save_extract`, ② `prepare_match` → AI(`request_matches`, 후보가 없으면 건너뜀) → `save_match` 순서로 부른다. 공고 선점(`application_claims`)은 퀴즈 · 카드와 같은 `note_claim` 규칙이라 사용자당 AI 작업 1개(D-020). 매칭 후보는 내 저장 카드만 읽어 파이썬에서 키워드 점수로 고른다(D-004). 화면은 ① 성공 뒤 ②를 이어 부르고 `router.refresh()`로 서버 컴포넌트를 새로 받는다.
 - 기록 가져오기(F-002): 라우터가 파일 앞부분(상한 + 1바이트)만 읽어 서비스에 넘기고 → 서비스가 파일마다 어댑터로 읽기 → 내 노트 안에서 중복 확인 → 나누기 → 저장(파일마다 커밋)한다. 조각은 노트 원문의 구간이고 제목 경로 · 원문 위치를 같이 저장한다(설계 원칙 1).
 
 ### 상태 관리 지도 (D-012)
@@ -89,6 +92,12 @@ backend/                  FastAPI (uv)
 | 노션 연결 상태(설정 '연결' 칸) · 연결 뒤 돌아온 안내(`?notion=connected` · `?notion_error=`) | 서버 컴포넌트(`settings/page.tsx`, `lib/notion-data.ts` · `lib/notion-status.ts`) + 주소 | 처음 화면을 그릴 때 필요한 서버 데이터라서. 연결 결과는 콜백이 주소로 넘긴다. [연결 끊기]는 `useState`(진행 중 · 오류, `notion-connection-row.tsx`) + 성공 뒤 `router.refresh()` | F-005 |
 | 기록 추가의 가져올 곳 탭 · 고른 노션 페이지 | 컴포넌트 안(`useState`, `import-records-dialog.tsx`) | 모달 하나에서만 쓰는 값이라서 | F-005 |
 | 가져올 노션 페이지 목록 | TanStack Query `useQuery`(`import-records-dialog.tsx` NotionPicker, 키 `["notion", "pages"]`) + 가져온 뒤 무효화 | 모달을 열고 노션 탭을 고를 때 브라우저가 받는 서버 데이터라서. 가져온 뒤 '이미 가져옴'을 새로 받는다. 자동 재시도 끔, 1분은 그대로 쓰고 창 포커스 때 다시 받지 않음(노션 호출 줄이기, 1차 리뷰 R2). 모달이 사이드바에도 있어 QueryProvider를 회원 레이아웃 전체(사이드바 포함)로 올림 | F-005 |
+| 지원 목록 · 지원 상세(공고 · 역량 · 매칭) | 서버 컴포넌트(`applications/page.tsx` · `applications/[id]/layout.tsx` · `[id]/analysis/page.tsx`, `lib/applications-data.ts`) | 처음 화면을 그릴 때 필요한 서버 데이터라서. 머리(layout)와 탭(page)이 같은 상세를 쓰므로 React `cache`로 요청 한 번에 한 번만 부른다 | F-007 |
+| 공고 추가 모달: 열림 · 입력 칸 · 문항 줄 | 컴포넌트 안(`useState`, `add-application-dialog.tsx`) | 모달 하나에서만 쓰는 입력값이라서. 저장은 `useMutation`, 성공하면 `?analyze=1`로 분석 탭으로 이동 | F-007 |
+| 분석 바로 시작 신호(`?analyze=1`) | 주소 | 모달 → 분석 탭으로 '방금 추가했음'을 넘기는 한 번짜리 신호. 시작한 뒤 주소에서 지워 새로 고쳐도 AI를 다시 부르지 않는다 | F-007 |
+| ① 역량 뽑기 · ② 매칭(진행 중 · 오류) | TanStack Query `useMutation`(`posting-analysis.tsx`) + 성공 뒤 `router.refresh()` | 서버 수정이라서. ① 성공(역량 1개 이상)이면 ②를 이어서 부른다. ②만 실패하면 ① 결과(서버 컴포넌트가 다시 받음)는 그대로. 자동 재시도 끔 | F-007 |
+| 고른 요구 역량(오른쪽 근거 칸) · 공고 원문 펼침 | 컴포넌트 안(`useState`, `posting-analysis.tsx` · `posting-aside.tsx`의 PostingText) | 이 화면 하나에서만 쓰는 표시 상태라서 | F-007 |
+| 지원 상태 바꾸기 · 공고 지우기 | TanStack Query `useMutation`(`application-header-actions.tsx`) + `router.refresh()` · 목록으로 이동 | 서버 수정이라서 | F-007 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.

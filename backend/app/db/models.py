@@ -18,12 +18,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config import (
+    APPLICATION_COMPANY_MAX_CHARS,
+    APPLICATION_ROLE_MAX_CHARS,
+    APPLICATION_URL_MAX_CHARS,
     CARD_TITLE_MAX_CHARS,
     DEFAULT_DAILY_LIMIT,
     NOTE_TITLE_MAX_CHARS,
     NOTION_PAGE_ID_LENGTH,
     NOTION_WORKSPACE_ID_MAX_CHARS,
     NOTION_WORKSPACE_NAME_MAX_CHARS,
+    REQUIREMENT_NAME_MAX_CHARS,
 )
 from app.db.base import Base
 
@@ -439,6 +443,149 @@ class NotionConnection(Base):
     importing_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class Application(Base):
+    """지원(공고 하나) (F-007, 버전 0007).
+
+    공고 본문은 사용자가 붙여 넣은 글이다(D-002 — 서버가 공고 사이트를 읽지 않는다). url은 링크로 저장만 한다.
+    본문은 만든 뒤 고칠 수 없다 — 요구 역량의 공고 인용 위치(posting_requirements.quote_start)가 본문 기준이라서.
+    - extracted_at: ① 요구 역량 뽑기를 끝낸 시각(남은 역량이 1개 이상일 때만). 있으면 다시 뽑지 않는다(409).
+    - matched_at: ② 매칭을 마지막으로 끝낸 시각. 없으면 '아직 매칭 안 함', 있는데 매칭 줄이 없는 역량은 '근거 없음'.
+    """
+
+    __tablename__ = "applications"
+    __table_args__ = (Index("ix_applications_user_deadline", "user_id", "deadline"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    company: Mapped[str] = mapped_column(String(APPLICATION_COMPANY_MAX_CHARS), nullable=False)
+    role: Mapped[str] = mapped_column(String(APPLICATION_ROLE_MAX_CHARS), nullable=False)
+    deadline: Mapped[date | None] = mapped_column(Date, nullable=True)  # 한국 날짜
+    url: Mapped[str | None] = mapped_column(String(APPLICATION_URL_MAX_CHARS), nullable=True)
+    posting_text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # ready · writing · submitted
+    extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    matched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class ApplicationQuestion(Base):
+    """자소서 문항 (F-007에서 공고와 같이 입력, F-008 자소서 초안이 쓴다, 버전 0007). char_limit 없음 = 글자 수 제한 없음."""
+
+    __tablename__ = "application_questions"
+    __table_args__ = (UniqueConstraint("application_id", "position", name="uq_application_questions_position"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)  # 0부터, 입력 순서
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    char_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class PostingRequirement(Base):
+    """공고에서 뽑은 요구 역량 (F-007 ①, 버전 0007).
+
+    name · kind는 AI가 붙인 이름표, quote는 공고 본문에 글자 그대로 있는 문장이다(서버가 확인한 것만 남김).
+    quote == applications.posting_text[quote_start:quote_end] (파이썬 문자 단위).
+    """
+
+    __tablename__ = "posting_requirements"
+    __table_args__ = (UniqueConstraint("application_id", "position", name="uq_posting_requirements_position"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)  # 0부터, 공고에 나온 순서
+    name: Mapped[str] = mapped_column(String(REQUIREMENT_NAME_MAX_CHARS), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # required · preferred
+    quote: Mapped[str] = mapped_column(Text, nullable=False)
+    quote_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    quote_end: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class RequirementMatch(Base):
+    """요구 역량 ↔ 내 경험 카드 (F-007 ②, 버전 0007).
+
+    카드는 AI에 보낸 후보 안의 내 저장 카드만, quote는 그 카드 칸(slot)의 원문 인용(quote_source="quote") 또는
+    내 답(quote_source="answer")에 글자 그대로 있는 글만 남긴다. quote_start · quote_end는 그 글 안의 위치(매칭한 때 기준).
+    reason은 AI가 쓴 '맞는 이유'(화면에 AI 글로 보여 줌 — 카드 내용으로 쓰지 않음, D-003).
+    카드를 지우면 매칭도 지워진다(CASCADE) — 그 역량은 '근거 없음'으로 돌아간다.
+    """
+
+    __tablename__ = "requirement_matches"
+    __table_args__ = (UniqueConstraint("requirement_id", "card_id", name="uq_requirement_matches_card"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    requirement_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("posting_requirements.id", ondelete="CASCADE"), nullable=False
+    )
+    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False, index=True)
+    slot: Mapped[str] = mapped_column(String(16), nullable=False)
+    quote: Mapped[str] = mapped_column(Text, nullable=False)
+    quote_source: Mapped[str] = mapped_column(String(16), nullable=False)  # quote · answer
+    quote_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    quote_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class ApplicationClaim(Base):
+    """공고 분석(① 역량 뽑기 · ② 매칭) 선점 (F-007, 버전 0007 — note_quiz_claims 구조, D-020).
+
+    AI를 부르기 전에 공고당 한 줄을 넣고 커밋한다(application_id 유니크). 끝나면 성공 · 실패 모두 지운다.
+    ①과 ②가 같은 줄을 쓰므로 같은 공고에서 둘이 동시에 돌지 않는다. 5분 지나면 새 요청이 가져간다.
+    """
+
+    __tablename__ = "application_claims"
+    __table_args__ = (UniqueConstraint("application_id", name="uq_application_claims_application_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+    )
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class PostingAnalysisLog(Base):
+    """공고 분석 평가 로그 (F-007 완료 기준 6, 설계 원칙 5, 버전 0007).
+
+    단계(extract · match)마다 보낸 양 · 남긴 수 · 버린 이유를 남긴다. 호출 · 토큰은 ai_usage_logs(D-018).
+    application_id는 외래키가 아니다(공고를 지워도 로그는 남김).
+    - extract: items_sent = 보낸 공고 글자 수, kept = 남긴 역량 수
+    - match: items_sent = 후보가 있어 보낸 역량 수, cards_sent = 보낸 카드 수, kept = 남긴 매칭 수
+    """
+
+    __tablename__ = "posting_analysis_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    step: Mapped[str] = mapped_column(String(16), nullable=False)
+    items_sent: Mapped[int] = mapped_column(Integer, nullable=False)
+    cards_sent: Mapped[int] = mapped_column(Integer, nullable=False)
+    kept: Mapped[int] = mapped_column(Integer, nullable=False)
+    drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
 
 # pg_trgm · btree_gin 확장은 테이블보다 먼저 있어야 검색 색인을 만들 수 있다. create_all(테스트)도 같은 순서를 따르게 한다.

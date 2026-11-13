@@ -696,7 +696,7 @@ def test_one_generation_per_user_at_a_time(client: TestClient, db_session: Sessi
     response = client.post(f"/api/notes/{other.id}/quizzes")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "다른 AI 작업(문제 만들기 · 카드 후보 찾기)이 진행 중이에요. 끝난 뒤 다시 시도해 주세요."
+    assert response.json()["detail"] == "다른 AI 작업(문제 만들기 · 카드 후보 찾기 · 공고 분석)이 진행 중이에요. 끝난 뒤 다시 시도해 주세요."
     assert mock.calls == [] and _claims(db_session) == [busy.id]
 
 

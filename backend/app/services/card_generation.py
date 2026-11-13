@@ -44,7 +44,7 @@ from app.llm.structured import StructuredReply, complete_json
 from app.services import note_claim
 from app.services.note_claim import ClaimLost, ClaimRules, OtherAIWorkInProgress  # noqa: F401 — 라우터 · 테스트가 여기서 가져감
 from app.services.note_service import get_note_for_user, list_chunks_for_note_for_user
-from app.services.text_clean import strip_forbidden_control
+from app.services.text_clean import strip_forbidden_control, visible_chars
 from app.services.usage_service import (
     FEATURE_CARD_FIND,
     OUTCOME_OK,
@@ -112,10 +112,6 @@ class CardBatchIn(BaseModel):
 
 
 # --- 1. 보낼 조각 고르기 ---
-
-
-def _visible_chars(text: str) -> int:
-    return sum(1 for char in text if not char.isspace())
 
 
 def select_chunks(
@@ -219,7 +215,7 @@ def _check_field(slot: str, draft: CardFieldDraftIn, by_id: dict[int, Chunk]) ->
     chunk = by_id.get(draft.chunk_id) if draft.chunk_id is not None else None
     if chunk is None:
         return blank, DROP_UNKNOWN_CHUNK
-    if _visible_chars(quote) < CARD_MIN_QUOTE_CHARS:
+    if visible_chars(quote) < CARD_MIN_QUOTE_CHARS:
         return blank, DROP_QUOTE_TOO_SHORT
     if len(quote) > CARD_MAX_QUOTE_CHARS:
         return blank, DROP_QUOTE_TOO_LONG
@@ -270,13 +266,13 @@ _CLAIM_RULES = ClaimRules(
 def _release_claim_statement(plan: "SearchPlan"):  # noqa: ANN202
     # 내가 잡은 진행 중 선점만 지운다 — 끝난 선점('이미 찾음')과 남이 가져간 선점은 남아야 한다
     return note_claim.release_statement(
-        _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at
+        _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at
     )
 
 
 def release_claim(db: Session, plan: "SearchPlan") -> None:
     """내 선점을 지운다(다시 누를 수 있게). 실패해도 5분 뒤 풀리므로 오류를 올리지 않는다."""
-    note_claim.release_claim(db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at)
+    note_claim.release_claim(db, _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at)
 
 
 @dataclass(frozen=True)
@@ -317,8 +313,8 @@ def prepare_search(db: Session, *, user_id: int, note_id: int, now: datetime | N
     if not chunks:
         raise NoChunks
     usage_before = ensure_within_daily_limit(db, user_id=user_id, now=now)
-    claimed_at = note_claim.claim_note(
-        db, _CLAIM_RULES, user_id=user_id, note_id=note.id, at=now if now is not None else now_utc()
+    claimed_at = note_claim.claim_target(
+        db, _CLAIM_RULES, user_id=user_id, target_id=note.id, at=now if now is not None else now_utc()
     )
     return SearchPlan(
         user_id=user_id,
@@ -404,7 +400,7 @@ def save_search(
         db.add(_log(plan, checked=checked, outcome=outcome, at=at))
         if cards:
             note_claim.ensure_still_owned(
-                db, _CLAIM_RULES, user_id=plan.user_id, note_id=plan.note.id, claimed_at=plan.claimed_at, finished_at=at
+                db, _CLAIM_RULES, user_id=plan.user_id, target_id=plan.note.id, claimed_at=plan.claimed_at, finished_at=at
             )
         else:
             db.execute(_release_claim_statement(plan))
@@ -492,7 +488,7 @@ def mock_card_responder(messages: Sequence[Message]) -> str:
     for chunk in payload.get("chunks", []):
         for line in str(chunk.get("content", "")).splitlines():
             text = line.strip()
-            if text and not text.startswith("#") and _visible_chars(text) >= CARD_MIN_QUOTE_CHARS:
+            if text and not text.startswith("#") and visible_chars(text) >= CARD_MIN_QUOTE_CHARS:
                 lines.append((chunk.get("chunk_id"), text[:CARD_MAX_QUOTE_CHARS].strip()))
                 break
     if not lines:
