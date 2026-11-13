@@ -41,7 +41,7 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/lib/quiz.ts · cards.ts   퀴즈 · 경험 카드 응답 모양 확인 + 브라우저 요청, quiz-data.ts · cards-data.ts는 서버 컴포넌트용(server-only) (F-004 · F-006)
   src/components/card-*.tsx   경험 카드 화면(card-editor 상세 · card-review-sheet 후보 검토 · card-tile 목록 · note-card-panel 노트 상세 칸 · card-parts 원문 인용 부품) (F-006)
   src/lib/applications.ts · applications-data.ts   지원 · 공고 분석(F-007) 응답 모양 + 브라우저 요청 / 서버 컴포넌트용(server-only, 상세는 React cache — 머리 · 탭이 같이 부름)
-  src/components/application-parts.tsx · add-application-dialog.tsx · application-header-actions.tsx · posting-analysis.tsx · posting-requirements.tsx · posting-aside.tsx   지원 화면(F-007): 상태 · D-day 배지 / 공고 추가 모달 / 상세 머리의 탭 · 상태 · 지우기 / 공고 분석 탭(① 뽑기 → ② 매칭, 실패 안내) · 왼쪽 요구 역량 표 · 오른쪽 칸(요약 · 선택한 근거 · 공고 원문)
+  src/components/application-parts.tsx · add-application-dialog.tsx · application-header-actions.tsx · posting-analysis.tsx · posting-requirements.tsx · posting-aside.tsx   지원 화면(F-007): 상태 · D-day 배지 / 공고 추가 모달 / 상세 머리의 탭 · 상태 선택(제목 줄 끝) · 공고 지우기(탭 줄 끝) / 공고 분석 탭(① 뽑기 → ② 매칭, 실패 안내) · 왼쪽 요구 역량 표 · 오른쪽 칸(요약 · 선택한 근거 · 공고 원문)
   src/components/request-error.tsx   요청 실패 문구 + 로그인 링크(`RequestErrorText` 한 줄 · `RequestErrorBlock` 버튼 모양) — 퀴즈 · 카드 화면이 같이 씀 (F-006 2차 리뷰 R1)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes · import-records · record-search · quiz-review · experience-cards · notion-import · applications.spec.ts, mock-backend.mjs — 가짜 FastAPI)
@@ -97,7 +97,7 @@ backend/                  FastAPI (uv)
 | 분석 바로 시작 신호(`?analyze=1`) | 주소 | 모달 → 분석 탭으로 '방금 추가했음'을 넘기는 한 번짜리 신호. 시작한 뒤 주소에서 지워 새로 고쳐도 AI를 다시 부르지 않는다 | F-007 |
 | ① 역량 뽑기 · ② 매칭(진행 중 · 오류) | TanStack Query `useMutation`(`posting-analysis.tsx`) + 성공 뒤 `router.refresh()` | 서버 수정이라서. ① 성공(역량 1개 이상)이면 ②를 이어서 부른다. ②만 실패하면 ① 결과(서버 컴포넌트가 다시 받음)는 그대로. 자동 재시도 끔 | F-007 |
 | 고른 요구 역량(오른쪽 근거 칸) · 공고 원문 펼침 | 컴포넌트 안(`useState`, `posting-analysis.tsx` · `posting-aside.tsx`의 PostingText) | 이 화면 하나에서만 쓰는 표시 상태라서 | F-007 |
-| 지원 상태 바꾸기 · 공고 지우기 | TanStack Query `useMutation`(`application-header-actions.tsx`) + `router.refresh()` · 목록으로 이동 | 서버 수정이라서 | F-007 |
+| 지원 상태 바꾸기 · 공고 지우기 | TanStack Query `useMutation`(`application-header-actions.tsx`의 `ApplicationStatusSelect` · `DeleteApplicationButton` — 자리가 달라 따로, 오류도 각자 옆에) + `router.refresh()` · 목록으로 이동 | 서버 수정이라서 | F-007 |
 
 ### DB (D-008)
 - 운영 · 개발 DB는 PostgreSQL(+ pgvector). 로컬은 레포 루트 `docker-compose.yml`의 `db` — PostgreSQL 17(pgvector/pgvector:pg17), `127.0.0.1:5432`(내 컴퓨터에서만), 계정은 루트 `.env`(커밋 안 함). 배포 DB 버전은 Q-012와 함께 맞춘다.

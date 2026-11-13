@@ -687,6 +687,22 @@ def test_mock_responder_runs_the_whole_flow(
     assert match["matches"] >= 1 and match["drop_reasons"] == {}
 
 
+def test_mock_requirement_names_do_not_pull_in_mock_cards(
+    client: TestClient, db_session: Session, test_settings: Settings, use_mock: typing.Callable[[MockLLMClient], MockLLMClient]
+) -> None:
+    """가짜 카드 제목의 '(mock)'과 가짜 역량 이름이 키워드로 겹쳐 엉뚱한 카드가 매칭되지 않는다(F-007 4차 R3 — 2026-11-13 화면 확인)."""
+    user_id = _login(client, db_session, test_settings, "mock-names")
+    application_id = _application(db_session, user_id)
+    _card(db_session, user_id, "(mock) 디자인 시안 정리", action_quote="피그마로 화면 시안을 정리했다")  # 공고와 겹치는 낱말 없음
+    use_mock(MockLLMClient(responder=mock_analysis_responder))
+
+    client.post(f"/api/applications/{application_id}/requirements")
+    names = [row.name for row in db_session.scalars(select(PostingRequirement)).all()]
+    assert names and not any("mock" in name.casefold() for name in names)
+    match = client.post(f"/api/applications/{application_id}/matches").json()
+    assert match["cards_sent"] == 0 and match["matches"] == 0  # 후보 없음 → AI 안 부르고 모두 '근거 없음'
+
+
 def test_claim_rules_cover_application_claims() -> None:
     assert note_claim.APPLICATION_CLAIMS in note_claim.ALL_TABLES
     assert posting_analysis._CLAIM_RULES.table is note_claim.APPLICATION_CLAIMS

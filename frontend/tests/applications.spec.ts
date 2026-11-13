@@ -1,7 +1,7 @@
 import { type BrowserContext, expect, test } from "@playwright/test";
 
 // 지원 · 공고 분석(F-007) 화면: 목록(D-day 순 · 상태 배지) · 공고 추가 모달 · 공고 분석 탭(뽑기 → 매칭 · 근거 · 실패) · 상태 · 지우기.
-// 가짜 백엔드(tests/mock-backend.mjs)의 공고 901~905를 쓴다(테스트마다 다른 공고 — 병렬로 돌아도 서로 안 건드림).
+// 가짜 백엔드(tests/mock-backend.mjs)의 공고 901~907을 쓴다(테스트마다 다른 공고 — 병렬로 돌아도 서로 안 건드림).
 const VALID_SESSION_TOKEN = "playwright-valid-session-token";
 
 async function logIn(context: BrowserContext) {
@@ -139,6 +139,23 @@ test("지원 상세: 상태를 바꾸고, 공고를 지우면 목록으로 돌�
   await page.getByRole("button", { name: "공고 지우기" }).click();
   await expect(page).toHaveURL(/\/applications$/);
   await expect(page.getByRole("list", { name: "지원 목록" })).not.toContainText("지울회사");
+});
+
+test("지원 상세: 상태 바꾸기 · 지우기가 실패하면 그 자리에 이유를 보여 주고 값 · 화면은 그대로 둔다", async ({ context, page }) => {
+  await logIn(context);
+  await page.goto("/applications/907/analysis");
+
+  const status = page.getByLabel("상태");
+  await expect(status).toHaveValue("ready");
+  await status.selectOption("writing");
+  await expect(page.getByRole("alert").filter({ hasText: "상태를 바꾸지 못했어요" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("상태")).toHaveValue("ready"); // 서버 값은 그대로
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "공고 지우기" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "공고를 지우지 못했어요" })).toBeVisible();
+  await expect(page).toHaveURL(/\/applications\/907\/analysis$/);
 });
 
 test("없는 공고 · 이상한 공고 주소는 찾을 수 없다고 나온다", async ({ context, page }) => {

@@ -16,5 +16,7 @@
 | [T-006](T-006-exaone-free-api-limits-in-eval.md) | EXAONE 무료 API로 평가를 돌리면 500 · 429 · 하루 한도 · 180초 상한에 걸림 | [통과] | 2026-11-12 |
 | [T-007](T-007-base-exception-stops-testclient.md) | BaseException을 흉내 낸 테스트가 TestClient의 이벤트 루프를 멈춤 | [통과] | 2026-11-11 |
 | [T-008](T-008-postgres17-planner-search-index.md) | PostgreSQL 17에서 검색 쿼리 최적화가 의도대로 안 됨 (OFFSET 0 · 색인 선택) | [통과] | 2026-11-10 |
+| [T-009](T-009-pretendard-badge-text-sits-high.md) | 배지 안의 한글이 가운데가 아니라 위로 치우쳐 보임(Pretendard) | [통과] | 2026-11-13 |
+| [T-010](T-010-postgres-tests-fail-when-docker-is-off.md) | Docker가 꺼져 있으면 PostgreSQL 테스트가 대부분 오류(연결 시간 초과) | [통과] | 2026-11-13 |
 
-최종 수정: 2026-11-12
+최종 수정: 2026-11-13

@@ -34,7 +34,11 @@ export const CARD_LABEL = "text-body-2 font-semibold text-text-sub";
 export const LIST_ROW = "flex items-center gap-4 border-b border-line-light py-4";
 
 // 배지 S 20(Figma Badge Black): Soft = 회색 바탕, Line = 흰 바탕 + 테두리. 글자 12 Medium
-const BADGE_BASE = "inline-flex h-5 shrink-0 items-center justify-center whitespace-nowrap rounded-tag px-1.5 text-body-4 font-medium text-badge-black-text";
+// 모양만(색 없음) — 지원 화면의 상태 · D-day 배지도 같이 쓴다. pt-0.75: Pretendard 한글이 글자 상자 위쪽에 그려져
+// 가운데 정렬만으로는 위로 약 1.5px 치우쳐 보인다(2026-11-13 6배 확대 실측, 사용자 지적) — 위 여백으로 내려 맞춘다.
+export const BADGE_SHAPE =
+  "inline-flex h-5 shrink-0 items-center justify-center whitespace-nowrap rounded-tag px-1.5 pt-0.75 text-body-4 font-medium";
+const BADGE_BASE = `${BADGE_SHAPE} text-badge-black-text`;
 export const BADGE_SOFT = `${BADGE_BASE} bg-badge-black-soft`;
 export const BADGE_LINE = `${BADGE_BASE} border border-badge-black-line bg-bg-default`;
 

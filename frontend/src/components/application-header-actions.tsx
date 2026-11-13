@@ -1,6 +1,6 @@
 "use client";
 
-// APL_02_001 지원 상세 머리의 클라이언트 부품: 탭(지금 탭 표시) · 상태 바꾸기 · 지우기.
+// APL_02_001 지원 상세 머리의 클라이언트 부품: 탭(지금 탭 표시) · 상태 바꾸기(제목 줄 끝) · 지우기(탭 줄 끝 — 사용자 확인 2026-11-13).
 // 상태 · 지우기는 서버 수정이라 useMutation(D-012), 끝나면 router.refresh()로 서버 컴포넌트가 새로 그린다.
 
 import { useMutation } from "@tanstack/react-query";
@@ -27,7 +27,7 @@ const TABS = [
 export function ApplicationTabs({ applicationId }: { applicationId: number }) {
   const segment = useSelectedLayoutSegment();
   return (
-    <nav aria-label="지원 상세 탭" className="flex px-5 lg:px-12">
+    <nav aria-label="지원 상세 탭" className="flex">
       {TABS.map((tab) => {
         const selected = segment === tab.segment;
         return (
@@ -49,23 +49,22 @@ export function ApplicationTabs({ applicationId }: { applicationId: number }) {
   );
 }
 
-export function ApplicationActions({ applicationId, status }: { applicationId: number; status: ApplicationStatus }) {
+export function ApplicationStatusSelect({
+  applicationId,
+  status,
+}: {
+  applicationId: number;
+  status: ApplicationStatus;
+}) {
   const router = useRouter();
   const change = useMutation({
     mutationFn: (next: ApplicationStatus) => updateApplicationStatus(applicationId, next),
     onSuccess: () => router.refresh(),
   });
-  const remove = useMutation({
-    mutationFn: () => deleteApplication(applicationId),
-    onSuccess: () => {
-      router.push("/applications");
-      router.refresh();
-    },
-  });
-  const error = change.error ?? remove.error;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {change.error ? <RequestErrorText error={change.error} /> : null}
       <label className="flex items-center gap-2 text-body-3 text-text-sub">
         상태
         <select
@@ -81,6 +80,23 @@ export function ApplicationActions({ applicationId, status }: { applicationId: n
           ))}
         </select>
       </label>
+    </div>
+  );
+}
+
+export function DeleteApplicationButton({ applicationId }: { applicationId: number }) {
+  const router = useRouter();
+  const remove = useMutation({
+    mutationFn: () => deleteApplication(applicationId),
+    onSuccess: () => {
+      router.push("/applications");
+      router.refresh();
+    },
+  });
+
+  return (
+    <div className="flex items-center gap-3">
+      {remove.error ? <RequestErrorText error={remove.error} /> : null}
       <button
         type="button"
         disabled={remove.isPending}
@@ -91,7 +107,6 @@ export function ApplicationActions({ applicationId, status }: { applicationId: n
       >
         공고 지우기
       </button>
-      {error ? <RequestErrorText error={error} /> : null}
     </div>
   );
 }

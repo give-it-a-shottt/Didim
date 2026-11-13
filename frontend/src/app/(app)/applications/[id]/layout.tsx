@@ -1,12 +1,17 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ApplicationActions, ApplicationTabs } from "@/components/application-header-actions";
+import {
+  ApplicationStatusSelect,
+  ApplicationTabs,
+  DeleteApplicationButton,
+} from "@/components/application-header-actions";
 import { DDay } from "@/components/application-parts";
 import { formatDeadline } from "@/lib/applications";
 import { getApplication } from "@/lib/applications-data";
 import { parseDbId } from "@/lib/ids";
 
-// APL_02_001 지원 상세(Figma 27:1458 헤더): '회사 · 직무'(h1) + D-day + 마감일 + 상태 · 지우기, 아래에 탭 3개.
+// APL_02_001 지원 상세(Figma 27:1458 헤더): '회사 · 직무'(h1) + D-day + 마감일 + 상태(줄 끝), 아래 탭 3개 + 공고 지우기(줄 끝).
+// 상태 · 지우기 자리는 사용자 확인(2026-11-13) — Figma 머리에는 없는 동작이라 Figma와 다르다.
 // 탭마다 URL이 달라서 새로고침하거나 링크를 보내도 같은 탭이 열린다. 탭 화면의 제목은 h2(화면마다 h1 하나).
 export default function ApplicationLayout({ children, params }: LayoutProps<"/applications/[id]">) {
   return (
@@ -50,13 +55,17 @@ async function ApplicationHeader({ params }: { params: Promise<{ id: string }> }
               </a>
             ) : null}
             <div className="flex-1" />
-            <ApplicationActions applicationId={id} status={outcome.application.status} />
+            <ApplicationStatusSelect applicationId={id} status={outcome.application.status} />
           </>
         ) : (
           <h1 className="text-title-3 font-semibold text-text-main">지원 상세</h1>
         )}
       </div>
-      <ApplicationTabs applicationId={id} />
+      <div className="flex items-center gap-3 px-5 lg:px-12">
+        <ApplicationTabs applicationId={id} />
+        <div className="flex-1" />
+        {outcome.status === "ok" ? <DeleteApplicationButton applicationId={id} /> : null}
+      </div>
     </header>
   );
 }

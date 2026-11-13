@@ -21,6 +21,8 @@ def mock_analysis_responder(messages: Sequence[Message]) -> str:
     """① · ② 공통 가짜 답(보낸 내용 모양으로 단계를 가린다). 화면 흐름 확인용이라 품질은 보지 않는다.
 
     ①: 공고 본문에서 글머리 기호가 붙은 줄을 앞에서부터 5개까지 역량으로(인용은 실제 그 줄).
+       이름에 '(mock)'을 붙이지 않는다 — 가짜 카드 제목의 '(mock)'과 키워드가 겹쳐 엉뚱한 카드가 후보가 됐다
+       (2026-11-13 화면 확인 때 Kubernetes 역량에 docker 카드). 가짜 표시는 ②의 이유 글에 남긴다.
     ②: 역량마다 첫 후보 카드의 첫 글 앞부분을 인용으로.
     """
     payload = _user_payload(messages)
@@ -32,7 +34,7 @@ def mock_analysis_responder(messages: Sequence[Message]) -> str:
                 continue
             text = text[:POSTING_MAX_QUOTE_CHARS].strip()
             requirements.append(
-                {"name": f"(mock) {text[:15]}", "kind": "preferred" if "우대" in text else "required", "quote": text}
+                {"name": text[:15], "kind": "preferred" if "우대" in text else "required", "quote": text}
             )
             if len(requirements) >= 5:
                 break

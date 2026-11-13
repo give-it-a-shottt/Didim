@@ -211,6 +211,8 @@ const MOCK_APPLICATIONS = new Map(
     mockApplication(905, "지울회사", "개발자", { status: "submitted", deadline: "2026-11-01", days_left: -11 }),
     // 906: 뽑기는 2개라고 답하지만 상세는 늦게 바뀌고(새로 받기 전 상태), 매칭은 3초 걸림 — ① 직후 화면 확인용
     mockApplication(906, "늦은회사", "개발자"),
+    // 907: 상태 바꾸기 · 지우기가 서버 오류(500, 글자)로 실패 — 머리의 오류 표시 확인용(F-007 4차 R3)
+    mockApplication(907, "실패회사", "개발자", { status: "ready" }),
   ].map((item) => [item.id, item]),
 );
 let nextApplicationId = 950;
@@ -260,6 +262,11 @@ function handleApplications(req, res, url, rawBody) {
   const action = match[2];
   if (!action && req.method === "GET") {
     sendJson(res, 200, item);
+    return;
+  }
+  if (!action && (req.method === "PATCH" || req.method === "DELETE") && item.id === 907) {
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Internal Server Error");
     return;
   }
   if (!action && req.method === "PATCH") {
@@ -572,7 +579,7 @@ const server = http.createServer((req, res) => {
   // "-notion-disconnectfail" 끊기 500 · "-notion-importfail" 가져오기 502
   // --- 지원 · 공고 분석(F-007) ---
   // 901: 분석 · 매칭 끝(역량 2개 — 하나는 카드 801, 하나는 근거 없음) / 902: 분석 전 → 뽑기 · 매칭 성공
-  // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 950~: [공고 추가]로 만든 공고(902처럼)
+  // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 907: 상태 · 지우기 500 / 950~: [공고 추가]로 만든 공고(902처럼)
   if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/")) {
     if (!isLoggedIn(req)) {
       sendJson(res, 401, { detail: "로그인이 필요해요." });

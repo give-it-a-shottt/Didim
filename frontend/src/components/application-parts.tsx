@@ -1,5 +1,5 @@
 import { type ApplicationStatus, D_DAY_URGENT_DAYS, STATUS_LABELS, dDayLabel } from "@/lib/applications";
-import { BADGE_LINE, BADGE_SOFT } from "@/lib/ui-classes";
+import { BADGE_LINE, BADGE_SHAPE, BADGE_SOFT } from "@/lib/ui-classes";
 
 // 지원 화면(APL_01_001 목록 · APL_02_001 머리)이 같이 쓰는 배지.
 
@@ -8,8 +8,7 @@ import { BADGE_LINE, BADGE_SOFT } from "@/lib/ui-classes";
 const STATUS_BADGE: Record<ApplicationStatus, string> = {
   ready: BADGE_SOFT,
   writing: BADGE_LINE,
-  submitted:
-    "inline-flex h-5 shrink-0 items-center justify-center whitespace-nowrap rounded-tag bg-badge-black-text px-1.5 text-body-4 font-medium text-text-on-primary",
+  submitted: `${BADGE_SHAPE} bg-badge-black-text text-text-on-primary`,
 };
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
@@ -22,7 +21,7 @@ export function DDay({ daysLeft }: { daysLeft: number | null }) {
   if (label === null || daysLeft === null) return null;
   if (daysLeft >= 0 && daysLeft <= D_DAY_URGENT_DAYS) {
     return (
-      <span className="inline-flex h-5 shrink-0 items-center justify-center whitespace-nowrap rounded-tag bg-sub1-soft px-1.5 text-body-4 font-medium text-sub1-text">
+      <span className={`${BADGE_SHAPE} bg-sub1-soft text-sub1-text`}>
         {label}
       </span>
     );

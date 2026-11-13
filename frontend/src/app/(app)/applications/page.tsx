@@ -5,7 +5,6 @@ import { DDay, StatusBadge } from "@/components/application-parts";
 import { EmptyState, PageBody, PageHeader } from "@/components/page-parts";
 import { type ApplicationSummary, applicationHref, formatDeadline } from "@/lib/applications";
 import { getApplicationList } from "@/lib/applications-data";
-import { CARD, FOCUS_RING } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "지원",
@@ -46,7 +45,8 @@ export default async function Apl01001Page() {
             action={<AddApplicationButton variant="empty" />}
           />
         ) : (
-          <div className={`${CARD} py-2`}>
+          // hover 바탕이 카드 가장자리까지 닿게 여백을 줄 안으로 옮김(사용자 확인 2026-11-13), 모서리는 카드가 자른다
+          <div className="overflow-hidden rounded-card border border-line-regular bg-bg-default">
             <ul aria-label="지원 목록">
               {outcome.applications.map((item) => (
                 <ApplicationRow key={item.id} item={item} />
@@ -71,7 +71,8 @@ function ApplicationRow({ item }: { item: ApplicationSummary }) {
     <li className="border-b border-line-light last:border-b-0">
       <Link
         href={applicationHref(item.id)}
-        className={`flex items-center gap-4 rounded-button py-4 hover:bg-bg-hover ${FOCUS_RING}`}
+        // 초점 테두리는 안쪽에(카드가 overflow-hidden이라 바깥 테두리는 잘린다)
+        className="flex items-center gap-4 px-6 py-4 hover:bg-bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-default"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate text-body-1 font-medium text-text-main">
