@@ -588,6 +588,95 @@ class PostingAnalysisLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
 
+class Draft(Base):
+    """자소서 문항 하나의 초안 (F-008, 버전 0008). 문항당 하나(question_id 유니크) — 다시 쓰면 덮어쓴다.
+
+    - ai_text: AI가 처음 쓴 문장을 이어 붙인 원문. '내가 고친 비율'을 지금 글과 비교해 계산한다(고쳐도 바뀌지 않음).
+    - version: 저장할 때마다 1씩 오른다. 화면이 보낸 version이 다르면 다른 탭이 먼저 저장한 것 → 409(덮어쓰기 방지).
+    - completed_at: [이 문항 완료]를 누른 시각. 문장을 고치면 비운다(다시 '작성 중').
+    문장 · 근거는 draft_sentences. 근거가 맞는지는 저장하지 않고 읽을 때마다 지금 카드 칸과 비교해 계산한다(사용자 확인 2026-11-14).
+    """
+
+    __tablename__ = "drafts"
+    __table_args__ = (UniqueConstraint("question_id", name="uq_drafts_question_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    question_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("application_questions.id", ondelete="CASCADE"), nullable=False
+    )
+    ai_text: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class DraftSentence(Base):
+    """초안의 문장 하나 + 그 문장의 근거 (F-008, 버전 0008).
+
+    - origin: ai(AI가 쓴 그대로) · edited(AI 문장을 내가 고침 — 근거 칩 유지, '내가 고침') · user(내가 새로 넣은 문장).
+    - original_text: AI가 쓴 원래 문장(origin=user면 비움). 고치기 화면의 '원래 문장'.
+    - 근거(card_id · slot · quote · quote_source): 카드 칸의 원문 인용(quote) 또는 내 답(answer)에 글자 그대로 있는 글.
+      없으면 모두 비움 = '근거 없음'. evidence_origin은 누가 붙였는지(ai · user — [카드 연결]), 평가에서 나눠 센다.
+      quote_start · quote_end는 붙일 때 그 칸 글 안의 위치. 카드를 지우면 card_id만 비고(SET NULL) 인용은 남아
+      '카드 없음'으로 보인다.
+    """
+
+    __tablename__ = "draft_sentences"
+    __table_args__ = (UniqueConstraint("draft_id", "position", name="uq_draft_sentences_position"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    draft_id: Mapped[int] = mapped_column(Integer, ForeignKey("drafts.id", ondelete="CASCADE"), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)  # 0부터
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    origin: Mapped[str] = mapped_column(String(16), nullable=False)  # ai · edited · user
+    original_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    card_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("cards.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    quote: Mapped[str | None] = mapped_column(Text, nullable=True)
+    quote_source: Mapped[str | None] = mapped_column(String(16), nullable=True)  # quote · answer
+    quote_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quote_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    evidence_origin: Mapped[str | None] = mapped_column(String(16), nullable=True)  # ai · user
+
+
+class DraftLog(Base):
+    """자소서 초안 쓰기 평가 로그 (F-008 완료 기준 4, 설계 원칙 5, 버전 0008).
+
+    [초안 쓰기] 한 번마다 보낸 카드 수 · AI 문장 수 · 근거 검사를 넘은 문장 수 · 못 넘은 이유 · 글자 수를 남긴다.
+    호출 · 토큰은 ai_usage_logs(D-018). application_id · question_id는 외래키가 아니다(지워도 로그는 남김).
+    """
+
+    __tablename__ = "draft_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    application_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    question_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    cards_sent: Mapped[int] = mapped_column(Integer, nullable=False)
+    sentences: Mapped[int] = mapped_column(Integer, nullable=False)  # AI가 쓴 문장 수(빈 문장 뺌)
+    supported: Mapped[int] = mapped_column(Integer, nullable=False)  # 근거 검사를 넘은 문장 수
+    # 근거를 못 붙인 이유별 개수. 예) {"quote_not_found": 2, "card_not_sent": 1, "no_evidence": 1}
+    drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    chars: Mapped[int] = mapped_column(Integer, nullable=False)  # 초안 글자 수
+    char_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
 # pg_trgm · btree_gin 확장은 테이블보다 먼저 있어야 검색 색인을 만들 수 있다. create_all(테스트)도 같은 순서를 따르게 한다.
 # 실제 DB는 버전 파일 0003이 확장을 설치한다.
 for _extension in ("pg_trgm", "btree_gin"):

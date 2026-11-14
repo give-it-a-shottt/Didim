@@ -13,6 +13,9 @@ const SIZE_S = "h-8 min-w-15 gap-1 px-3 text-body-2 font-medium";
 // Primary(채움): 저장 · 시작 같은 주 행동. Disabled는 bg/regular + text/disabled
 export const PRIMARY_BUTTON = `${BUTTON_BASE} ${SIZE_M} bg-primary-default text-text-on-primary hover:bg-primary-hover active:bg-primary-pressed disabled:bg-bg-regular disabled:text-text-disabled`;
 
+// Primary S 32: 카드 안 한 줄에 숫자와 나란히 놓는 주 행동(기록 · 복습의 [복습 시작] — 사용자 화면 확인 2026-11-14)
+export const PRIMARY_BUTTON_S = `${BUTTON_BASE} ${SIZE_S} bg-primary-default text-text-on-primary hover:bg-primary-hover active:bg-primary-pressed disabled:bg-bg-regular disabled:text-text-disabled`;
+
 // Primary L 48: 집중 모드(퀴즈)의 [다음 문제]처럼 화면의 단 하나뿐인 행동
 export const PRIMARY_BUTTON_L = `${BUTTON_BASE} h-12 min-w-20 gap-1.5 px-5 text-title-4 font-semibold bg-primary-default text-text-on-primary hover:bg-primary-hover active:bg-primary-pressed disabled:bg-bg-regular disabled:text-text-disabled`;
 
@@ -28,6 +31,8 @@ export const GHOST_BUTTON_S = `${BUTTON_BASE} ${SIZE_S} ${GHOST_COLORS}`;
 
 // 카드(화면 bg/light 위의 흰 패널) — 1px line/regular, 그림자 없음, radius/card, 안쪽 24
 export const CARD = "rounded-card border border-line-regular bg-bg-default p-6";
+// 자소서 탭 칸 제목('문항' · '경험 카드' · '검사 · 근거') — 칸 안 항목(14)보다 한 단계 크게 16(사용자 화면 확인 2026-11-14)
+export const SECTION_TITLE = "text-title-4 font-semibold text-text-sub";
 // 카드 안 작은 제목("오늘 복습" · "해설" · "복습 상태")
 export const CARD_LABEL = "text-body-2 font-semibold text-text-sub";
 // 목록 한 줄(카드 안) — 위아래 16, 아래 1px line/light

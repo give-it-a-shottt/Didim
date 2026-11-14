@@ -158,6 +158,32 @@
   --font-serif: var(--font-noto-serif-kr);
 }
 
+/*
+ * 사이드바 펼침 = 화면이 넓고(lg 이상) '사이드바 접힘' 화면이 아닐 때. 사이드바 부품은 lg: 대신 이 변형을 쓴다.
+ * 자소서 탭(APL_02_003, F-008)은 세 칸이 필요해 넓은 화면에서도 접는다(Figma Didim/사이드바 설명 "자소서 에디터는 접힘(56)이 기본").
+ * 그 화면이 data-collapse-sidebar를 그리면 :has()로 접힌다 — CSS만으로 바꿔 상태가 없다(D-012, Zustand가 필요 없음).
+ * 숨겨진 표시는 뺀다: Next 16은 탭을 옮겨도 앞 화면을 React Activity로 style="display: none !important"를 붙여 남겨 둔다
+ * (2026-11-14 확인 — 자소서 → 공고 분석으로 옮겨도 접힌 채였음).
+ */
+@custom-variant sidebar-open {
+  @media (width >= 64rem) {
+    body:not(:has([data-collapse-sidebar]:not([style*="display: none"], [style*="display: none"] *))) & {
+      @slot;
+    }
+  }
+}
+
+/*
+ * 누를 수 있는 버튼은 손가락 커서(사용자 결정 2026-11-14). Tailwind v4 기본은 버튼을 화살표 커서로 둬서,
+ * 링크(<a>)로 만든 버튼만 손가락이 되고 <button>은 화살표라 섞여 보였다. 비활성 버튼은 그대로(ui-classes의 disabled:cursor-not-allowed).
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 body {
   background: var(--color-bg-default);
   color: var(--color-text-main);

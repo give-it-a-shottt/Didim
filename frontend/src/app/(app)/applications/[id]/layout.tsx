@@ -4,6 +4,7 @@ import {
   ApplicationStatusSelect,
   ApplicationTabs,
   DeleteApplicationButton,
+  DraftHeaderActions,
 } from "@/components/application-header-actions";
 import { DDay } from "@/components/application-parts";
 import { formatDeadline } from "@/lib/applications";
@@ -55,6 +56,7 @@ async function ApplicationHeader({ params }: { params: Promise<{ id: string }> }
               </a>
             ) : null}
             <div className="flex-1" />
+            <DraftHeaderActions applicationId={id} status={outcome.application.status} />
             <ApplicationStatusSelect applicationId={id} status={outcome.application.status} />
           </>
         ) : (

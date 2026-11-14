@@ -89,6 +89,14 @@ export function formatCardDate(iso: string): string {
   return month && day ? `${month}.${day}` : "";
 }
 
+/** 제목에 검색어가 든 카드만(대소문자 무시). 자소서 탭의 카드 목록 · [카드 연결] 창이 같이 쓴다.
+ *  검색어가 비어도 항상 새 배열을 돌려준다 — 부르는 쪽이 바로 .sort()를 거는데, 받은 props 배열을 바꾸면
+ *  같은 카드 목록을 받은 다른 부품의 순서까지 바뀐다(3차 리뷰 R1). */
+export function filterCardsByTitle<T extends { title: string }>(cards: readonly T[], search: string): T[] {
+  const term = search.trim().toLocaleLowerCase("ko-KR");
+  return term ? cards.filter((card) => card.title.toLocaleLowerCase("ko-KR").includes(term)) : [...cards];
+}
+
 // --- 응답 확인 ---
 
 const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";

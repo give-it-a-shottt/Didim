@@ -9,7 +9,7 @@ import { EmptyState, PageBody, PageHeader } from "@/components/page-parts";
 import { noteKindLabel } from "@/lib/import-records";
 import { getTodayReviews, getWrongAnswers } from "@/lib/quiz-data";
 import { listNotes, MAX_SEARCH_QUERY_CHARS, searchRecords } from "@/lib/records";
-import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, LIST_ROW, PRIMARY_BUTTON, TEXT_BUTTON } from "@/lib/ui-classes";
+import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, LIST_ROW, PRIMARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "기록 · 복습",
@@ -58,6 +58,11 @@ export default async function Rev01001Page(props: PageProps<"/records">) {
   );
 }
 
+// '오늘 복습' · '오답노트' 카드: 제목을 크게(18), 아래 한 줄에 문제 수(15 · 약한 색) + 행동(버튼 S)을 가로로(사용자 화면 확인 2026-11-14)
+const SUMMARY_TITLE = "text-title-3 font-semibold text-text-main";
+const SUMMARY_ROW = "flex min-h-10 flex-wrap items-center justify-between gap-3";
+const SUMMARY_COUNT = "text-body-1 font-medium text-text-sub";
+
 function LoadingCard({ label, message }: { label: string; message: string }) {
   return (
     <div className={`${CARD} flex flex-col gap-3`}>
@@ -72,8 +77,8 @@ function LoadingCard({ label, message }: { label: string; message: string }) {
 async function TodayReviewCard() {
   const outcome = await getTodayReviews();
   return (
-    <section aria-labelledby="today-review-title" className={`${CARD} flex flex-col items-start gap-3`}>
-      <h2 id="today-review-title" className={CARD_LABEL}>
+    <section aria-labelledby="today-review-title" className={`${CARD} flex flex-col gap-3`}>
+      <h2 id="today-review-title" className={SUMMARY_TITLE}>
         오늘 복습
       </h2>
       {outcome.status !== "ok" ? (
@@ -82,16 +87,19 @@ async function TodayReviewCard() {
         </p>
       ) : (
         <>
-          <p className="text-title-2 font-semibold text-text-main">{outcome.total}문제</p>
-          {outcome.total > 0 ? (
-            <Link href="/quiz/today" className={PRIMARY_BUTTON}>
-              복습 시작
-            </Link>
-          ) : (
+          <div className={SUMMARY_ROW}>
+            <p className={SUMMARY_COUNT}>{outcome.total}문제</p>
+            {outcome.total > 0 ? (
+              <Link href="/quiz/today" className={PRIMARY_BUTTON_S}>
+                복습 시작
+              </Link>
+            ) : null}
+          </div>
+          {outcome.total === 0 ? (
             <p className="text-body-3 text-text-sub">
               오늘 복습할 문제가 없어요. 노트에서 [문제 만들기]로 문제를 만들 수 있어요.
             </p>
-          )}
+          ) : null}
         </>
       )}
     </section>
@@ -101,20 +109,21 @@ async function TodayReviewCard() {
 async function WrongAnswersCard() {
   const outcome = await getWrongAnswers();
   return (
-    <section aria-labelledby="wrong-card-title" className={`${CARD} flex flex-col items-start gap-3`}>
-      <h2 id="wrong-card-title" className={CARD_LABEL}>
+    <section aria-labelledby="wrong-card-title" className={`${CARD} flex flex-col gap-3`}>
+      <h2 id="wrong-card-title" className={SUMMARY_TITLE}>
         오답노트
       </h2>
       {outcome.status !== "ok" ? (
         <p role="alert" className="text-body-2 font-medium text-error-text">
           오답노트를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.
         </p>
-      ) : (
-        <p className="text-title-2 font-semibold text-text-main">{outcome.total}문제</p>
-      )}
-      <Link href="/records/wrong-answers" className={TEXT_BUTTON}>
-        오답노트 보기
-      </Link>
+      ) : null}
+      <div className={SUMMARY_ROW}>
+        {outcome.status === "ok" ? <p className={SUMMARY_COUNT}>{outcome.total}문제</p> : <span />}
+        <Link href="/records/wrong-answers" className={TEXT_BUTTON}>
+          오답노트 보기 <span aria-hidden="true">→</span>
+        </Link>
+      </div>
     </section>
   );
 }

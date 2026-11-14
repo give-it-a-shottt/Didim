@@ -63,7 +63,7 @@ const NOTION_PAGES_KEY = ["notion", "pages"] as const;
 // - page: 페이지 머리 오른쪽(REV_01_001) — 검정 Outline + 아이콘.
 // - primary: 빈 화면(REV_01_900)의 다음 행동 — Primary.
 const TRIGGER_CLASS = {
-  sidebar: `flex h-10 w-full items-center justify-center gap-1.5 rounded-button border border-line-strong bg-bg-default text-body-1 font-semibold text-text-sub hover:bg-bg-hover lg:px-4 ${FOCUS_RING}`,
+  sidebar: `flex h-10 w-full items-center justify-center gap-1.5 rounded-button border border-line-strong bg-bg-default text-body-1 font-semibold text-text-sub hover:bg-bg-hover sidebar-open:px-4 ${FOCUS_RING}`,
   page: SECONDARY_BUTTON,
   primary: PRIMARY_BUTTON,
 } as const;
@@ -105,7 +105,7 @@ export function AddRecordButton({ variant = "sidebar" }: { variant?: keyof typeo
         {variant === "sidebar" ? (
           <>
             <Icon name="plus" size={20} className="text-icon-sub" />
-            <span className="sr-only lg:not-sr-only lg:whitespace-nowrap">기록 추가</span>
+            <span className="sr-only sidebar-open:not-sr-only sidebar-open:whitespace-nowrap">기록 추가</span>
           </>
         ) : variant === "page" ? (
           <>

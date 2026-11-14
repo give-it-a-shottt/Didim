@@ -17,11 +17,12 @@ from typing import Literal
 
 import anyio.from_thread
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.errors import OTHER_AI_WORK_DETAIL, daily_limit_detail, llm_client_or_500, llm_error_status
+from app.api.schemas import RAW_INPUT_SLACK, ServiceOut
 from app.config import (
     APPLICATION_COMPANY_MAX_CHARS,
     APPLICATION_MAX_QUESTIONS,
@@ -44,6 +45,7 @@ from app.services.application_service import (
     list_applications,
     update_application,
 )
+from app.services.draft_evidence import unsupported_counts
 from app.services.posting_analysis import (
     AnalysisInProgress,
     OtherAIWorkInProgress,
@@ -96,11 +98,6 @@ def _invalid(exc: InvalidApplicationInput) -> HTTPException:
 # --- 만들기 ---
 
 
-# 본문 크기 상한: 길이 검사는 공백을 정리한 뒤 서비스에서 하지만, 터무니없이 큰 본문은 서비스까지 가기 전에 422로 막는다.
-# 정리 전 글(앞뒤 · 안쪽 공백, 빈 문항 줄)이 서비스 상한보다 길 수 있어 RAW_INPUT_SLACK배까지 받는다(카드 API와 같은 생각).
-RAW_INPUT_SLACK = 5
-
-
 class QuestionIn(BaseModel):
     text: str = Field(max_length=APPLICATION_QUESTION_MAX_CHARS * RAW_INPUT_SLACK)
     char_limit: int | None = None
@@ -113,15 +110,6 @@ class CreateApplicationIn(BaseModel):
     url: str | None = Field(default=None, max_length=APPLICATION_URL_MAX_CHARS * RAW_INPUT_SLACK)
     posting_text: str = Field(max_length=POSTING_TEXT_MAX_CHARS * RAW_INPUT_SLACK)
     questions: list[QuestionIn] = Field(default_factory=list, max_length=APPLICATION_MAX_QUESTIONS * RAW_INPUT_SLACK)
-
-
-class ServiceOut(BaseModel):
-    """서비스가 돌려준 dataclass를 속성 이름 그대로 읽는 응답 모델(`model_validate(dataclass)` 한 줄로 옮김).
-
-    필드를 하나 더하면 서비스 dataclass와 이 모델 두 곳만 고친다(F-007 2차 R1).
-    """
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class QuestionOut(ServiceOut):
@@ -169,6 +157,15 @@ class ApplicationDetailOut(ServiceOut):
     updated_at: datetime
     questions: list[QuestionOut]
     requirements: list[RequirementOut]
+    # 자소서 초안 전체에서 근거 없는 문장 수(F-008 — '제출'로 바꿀 때 확인창). 공고 서비스가 초안을 몰라도 되게 라우터가 채운다(_detail_out)
+    unsupported_sentence_count: int = 0
+
+
+def _detail_out(db: Session, *, user_id: int, application_id: int) -> ApplicationDetailOut:
+    """공고 상세 + 자소서의 근거 없는 문장 수. 두 서비스를 라우터가 조합한다(공고 서비스 → 초안 의존을 없앰, F-008 3차 리뷰 R1)."""
+    detail = ApplicationDetailOut.model_validate(get_application_detail(db, user_id=user_id, application_id=application_id))
+    unsupported = sum(unsupported_counts(db, user_id=user_id, application_id=application_id).values())
+    return detail.model_copy(update={"unsupported_sentence_count": unsupported})
 
 
 @router.post("/applications", response_model=ApplicationDetailOut, status_code=status.HTTP_201_CREATED)
@@ -191,7 +188,7 @@ def create_application_endpoint(
         )
     except InvalidApplicationInput as exc:
         raise _invalid(exc) from exc
-    return ApplicationDetailOut.model_validate(get_application_detail(db, user_id=current_user.id, application_id=application_id))
+    return _detail_out(db, user_id=current_user.id, application_id=application_id)
 
 
 # --- 목록 · 상세 ---
@@ -240,7 +237,7 @@ def get_application_endpoint(
     """401 / 404 내 공고 아님."""
     _check_id(application_id)
     try:
-        return ApplicationDetailOut.model_validate(get_application_detail(db, user_id=current_user.id, application_id=application_id))
+        return _detail_out(db, user_id=current_user.id, application_id=application_id)
     except ApplicationNotFound as exc:
         raise _not_found() from exc
 
@@ -273,7 +270,7 @@ def update_application_endpoint(
         raise _not_found() from exc
     except InvalidApplicationInput as exc:
         raise _invalid(exc) from exc
-    return ApplicationDetailOut.model_validate(get_application_detail(db, user_id=current_user.id, application_id=application_id))
+    return _detail_out(db, user_id=current_user.id, application_id=application_id)
 
 
 @router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)

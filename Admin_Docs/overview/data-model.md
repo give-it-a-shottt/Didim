@@ -30,9 +30,9 @@
 | requirement_matches | 역량 ↔ 내 카드 | `user_id` · `requirement_id`(FK `ON DELETE CASCADE`), `card_id`(FK `ON DELETE CASCADE` — 카드를 지우면 매칭도 지워져 '근거 없음'으로 돌아감, 역량+카드 유니크), `slot`, 카드 칸 인용 `quote` + `quote_source`(quote · answer) + 그 글 안의 위치, `reason`(AI가 쓴 맞는 이유 — 카드 내용 아님, D-003), `created_at`. [매칭 다시]면 그 공고의 매칭을 모두 지우고 새로 넣음 (F-007, 버전 0007) |
 | application_claims | 공고 분석 선점 | `note_quiz_claims` 구조인데 대상이 공고(`application_id` 유니크, FK `ON DELETE CASCADE`), `claimed_at`. ① · ②가 같은 줄을 써서 같은 공고에서 동시에 돌지 않고, 사용자당 AI 작업 1개(D-020)에 같이 셈. 성공 · 실패 모두 끝나면 지움, 5분 지나면 새 요청이 가져감 (F-007, 버전 0007) |
 | posting_analysis_logs | 공고 분석 평가 로그 | `user_id`(FK `ON DELETE CASCADE`), `application_id`(외래키 아님 — 공고를 지워도 남김), `step`(extract · match), `items_sent`(① 보낸 글자 수 / ② 보낸 역량 수), `cards_sent`, `kept`, `drop_reasons`(JSON), `outcome`(ok · none_found · no_candidates · AI 오류 종류), `created_at`. 평가 세트 채점은 `scripts/posting_eval.py`(D-005) (F-007, 버전 0007) |
-| drafts | 자소서 | posting_id, 문항, 상태, 내가 고친 비율 |
-| sentences | 문장 | draft_id, 순서, 본문, AI 작성 여부 · 사용자 수정 여부 |
-| sentence_evidence | 문장 근거 | sentence_id ↔ card · note, 없으면 경고 |
+| drafts | 자소서 초안 | `user_id` · `application_id` · `question_id`(FK `ON DELETE CASCADE`, 문항당 하나 — `question_id` 유니크), `ai_text`(AI가 쓴 원문 — '내가 고친 비율' 계산용, 고쳐도 안 바뀜), `version`(저장마다 +1 — '화면이 읽은 값일 때만' 올리는 조건부 갱신이라 두 탭이 동시에 저장해도 한쪽은 409, F-008 1차 리뷰), `completed_at`([이 문항 완료], 고치면 비움), `created_at` · `updated_at`. 다시 쓰면 지우고 새로 넣음(version은 이어서 +1) (F-008, 버전 0008) |
+| draft_sentences | 초안 문장 + 근거 | `user_id` · `draft_id`(FK `ON DELETE CASCADE`), `position`(초안+순서 유니크), `text`, `origin`(ai · edited · user), `original_text`(AI 원래 문장), 근거 `card_id`(FK `ON DELETE SET NULL` — 카드를 지워도 인용은 남아 '카드 없음'), `slot` · `quote` · `quote_source` · `quote_start` · `quote_end`, `evidence_origin`(ai · user — [카드 연결]). 근거 상태는 저장하지 않고 읽을 때 지금 카드 칸과 비교 (F-008, 버전 0008) |
+| draft_logs | 초안 쓰기 평가 로그 | `user_id`(FK `ON DELETE CASCADE`), `application_id` · `question_id`(외래키 아님 — 지워도 남김), `cards_sent`, `sentences`, `supported`, `drop_reasons`(JSON — no_evidence · card_not_sent · quote_not_found 등), `chars` · `char_limit`, `outcome`(ok · no_sentences · AI 오류 종류), `created_at`. 선점은 `application_claims`를 같이 씀(분석과 초안 쓰기가 같은 공고에서 동시에 돌지 않음) (F-008, 버전 0008) |
 | interview_questions | 면접 질문 | card_id 근거, 내 답 메모 |
 | eval_runs | 평가 실행 기록 | 데이터 세트 버전, 지표 3개, 날짜 |
 

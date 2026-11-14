@@ -39,7 +39,7 @@
 | APL_01_001 지원 목록 | `/applications` | 사이드바 | (app)/applications/page.tsx | F-007 |
 | APL_02_001 지원 상세 | `/applications/[id]` → `/analysis`로 이동 | 사이드바 | (app)/applications/[id]/layout.tsx (탭 틀), 이동은 next.config.ts redirects | F-007 |
 | APL_02_002 공고 분석 | `/applications/[id]/analysis` | 사이드바 | …/[id]/analysis/page.tsx | F-007 |
-| APL_02_003 자소서 | `/applications/[id]/draft` | 사이드바(접힘) | …/[id]/draft/page.tsx | F-008 |
+| APL_02_003 자소서 | `/applications/[id]/draft` | 사이드바(접힘 — CSS `data-collapse-sidebar`) | …/[id]/draft/page.tsx + components/draft-workspace.tsx(빈 상태 19:383 · 쓰는 중 19:407 · 문장 고치기 23:959 · [카드 연결] 창 포함) | F-008 |
 | APL_02_004 면접 연습 | `/applications/[id]/interview` | 사이드바 | …/[id]/interview/page.tsx | F-009 |
 | SET_01_001 설정 | `/settings` | 사이드바 | (app)/settings/page.tsx | F-001(계정) · F-005(연결 — 노션, 연결을 마치면 `?notion=connected` · 실패면 `?notion_error=`로 돌아옴) |
 | SET_02_001 평가 리포트 | `/settings/report` | 사이드바 | (app)/settings/report/page.tsx | F-010 |

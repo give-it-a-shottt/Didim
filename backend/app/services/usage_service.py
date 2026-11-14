@@ -35,6 +35,7 @@ FEATURE_QUIZ_GENERATE = "quiz_generate"
 FEATURE_CARD_FIND = "card_find"  # 경험 카드 후보 찾기(F-006)
 FEATURE_POSTING_EXTRACT = "posting_extract"  # 공고 요구 역량 뽑기(F-007 ①)
 FEATURE_POSTING_MATCH = "posting_match"  # 요구 역량 ↔ 경험 카드 매칭(F-007 ②)
+FEATURE_DRAFT_WRITE = "draft_write"  # 자소서 문항 초안 쓰기(F-008)
 
 OUTCOME_OK = "ok"
 OUTCOME_ERROR = "error"  # LLMError 공통 부모 · 예상 못 한 오류(요청 취소 등)

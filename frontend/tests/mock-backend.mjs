@@ -213,8 +213,209 @@ const MOCK_APPLICATIONS = new Map(
     mockApplication(906, "늦은회사", "개발자"),
     // 907: 상태 바꾸기 · 지우기가 서버 오류(500, 글자)로 실패 — 머리의 오류 표시 확인용(F-007 4차 R3)
     mockApplication(907, "실패회사", "개발자", { status: "ready" }),
+    // --- 자소서(F-008) 전용 공고. 모두 카드 801과 매칭됨(912만 매칭 없음). 테스트마다 다른 공고 ---
+    ...[
+      [910, "초안회사"], [911, "쓰기회사"], [913, "실패쓰기회사"], [914, "제출회사"], [915, "고치기회사"], [916, "연결회사"], [917, "문항회사"], [918, "충돌회사"], [919, "목록실패회사"], [920, "완료실패회사"], [921, "다시받기실패회사"], [922, "문항충돌회사"],
+    ].map(([id, company]) => mockApplication(id, company, "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z", requirements: matchedRequirements(id) })),
+    mockApplication(912, "카드없는회사", "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z" }),
   ].map((item) => [item.id, item]),
 );
+
+// --- 자소서 초안(F-008) 가짜 데이터: 문항 번호(공고 번호 × 10) → 초안 ---
+const EVIDENCE_801 = {
+  card_id: 801, card_title: "useEffect로 구독 정리", note_title: "React 정리", slot: "situation",
+  quote: "useEffect는 그려진 뒤 부수 효과를 실행해요.", quote_source: "quote", added_by: "ai",
+};
+const draftSentence = (id, position, text, evidence) => ({
+  id, position, text, origin: "ai", original_text: text, evidence_status: evidence ? "ok" : "none", evidence,
+});
+const withCounts = (draft) => {
+  const text = draft.sentences.map((item) => item.text).join(" ");
+  const changed = draft.sentences.filter((item) => item.origin !== "ai").length;
+  return {
+    ...draft, chars: Array.from(text).length, sentence_count: draft.sentences.length,
+    unsupported_count: draft.sentences.filter((item) => item.evidence_status !== "ok").length,
+    edited_percent: draft.sentences.length ? Math.round((changed / draft.sentences.length) * 100) : 0,
+  };
+};
+const mockDraft = (applicationId, sentences) => withCounts({
+  id: applicationId, question_id: applicationId * 10, version: 1, completed_at: null, updated_at: "2026-11-14T06:24:00Z",
+  char_limit: 700, sentences,
+});
+const MOCK_DRAFTS = new Map(
+  [910, 914, 915, 916, 917, 918, 920].map((id) => [
+    id * 10,
+    mockDraft(id, [
+      draftSentence(id * 100 + 1, 0, "React 화면에서 구독을 정리하는 일을 맡았습니다.", EVIDENCE_801),
+      draftSentence(id * 100 + 2, 1, "그 결과 페이지 이탈률이 30% 줄었습니다.", null),
+      draftSentence(id * 100 + 3, 2, "이 경험을 살려 팀에 기여하겠습니다.", EVIDENCE_801),
+    ]),
+  ]),
+);
+let nextSentenceId = 990_000;
+const draftsCalls = new Map(); // 921: 공고별 자소서 목록 요청 수(첫 번째만 성공)
+const unsupportedOf = (item) => item.questions.reduce((sum, question) => sum + (MOCK_DRAFTS.get(question.id)?.unsupported_count ?? 0), 0);
+const draftsView = (item) => ({
+  application_id: item.id, analysis_done: item.matched_at !== null,
+  matched_card_ids: [...new Set(item.requirements.flatMap((requirement) => requirement.matches.map((m) => m.card_id)))],
+  checked_at: "2026-11-14T06:22:00Z",
+  questions: item.questions.map((question) => ({ ...question, draft: MOCK_DRAFTS.get(question.id) ?? null })),
+});
+
+// 공고 분석이 끝난 자소서 공고의 역량(카드 801과 매칭)
+function matchedRequirements(id) {
+  return [
+    appRequirement(id * 10 + 1, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [
+      { id: id * 10 + 1, card_id: 801, card_title: "useEffect로 구독 정리", slot: "situation", quote: "useEffect는 그려진 뒤 부수 효과를 실행해요.",
+        quote_source: "quote", quote_start: 0, quote_end: 27, reason: "React 훅으로 화면을 다룬 경험이에요." },
+    ]),
+  ];
+}
+
+/** 자소서 API(F-008). 처리했으면 true. */
+function handleDrafts(req, res, url, body) {
+  const draftMatch = url.pathname.match(/^\/api\/drafts\/(\d+)$/);
+  if (draftMatch) {
+    const draft = [...MOCK_DRAFTS.values()].find((item) => item.id === Number(draftMatch[1]));
+    if (!draft) {
+      sendJson(res, 404, { detail: "초안을 찾을 수 없어요." });
+      return true;
+    }
+    if (req.method === "PATCH" && draft.question_id === 9200) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Internal Server Error");
+      return true;
+    }
+    if (req.method === "PATCH") {
+      const saved = { ...draft, completed_at: body.completed ? "2026-11-14T06:30:00Z" : null };
+      MOCK_DRAFTS.set(draft.question_id, saved);
+      sendJson(res, 200, saved);
+      return true;
+    }
+    if (req.method === "PUT") {
+      // 918용: 글에 "[422]"가 있으면 입력 오류, "[409]"가 있으면 다른 탭이 먼저 저장한 것처럼 바꾸고 409
+      const texts = (body.sentences ?? []).map((edit) => String(edit.text ?? ""));
+      if (texts.some((text) => text.includes("[422]"))) {
+        sendJson(res, 422, { detail: "문장 하나는 500자까지 쓸 수 있어요." });
+        return true;
+      }
+      if (texts.some((text) => text.includes("[409]"))) {
+        const [first, ...rest] = draft.sentences;
+        MOCK_DRAFTS.set(draft.question_id, withCounts({
+          ...draft, version: draft.version + 1,
+          sentences: [{ ...first, id: nextSentenceId++, text: "다른 탭에서 고친 문장입니다.", origin: "edited" }, ...rest],
+        }));
+        sendJson(res, 409, { detail: "다른 곳에서 이 초안이 먼저 바뀌었어요. 새로고침한 뒤 다시 고쳐 주세요." });
+        return true;
+      }
+      if (body.version !== draft.version) {
+        sendJson(res, 409, { detail: "다른 곳에서 이 초안이 먼저 바뀌었어요. 새로고침한 뒤 다시 고쳐 주세요." });
+        return true;
+      }
+      const sentences = (body.sentences ?? []).map((edit, position) => {
+        const old = draft.sentences.find((item) => item.id === edit.id);
+        const text = String(edit.text ?? "").trim();
+        let sentence = old
+          ? { ...old, id: nextSentenceId++, position, text, origin: old.origin === "user" ? "user" : text === old.original_text ? "ai" : "edited" }
+          : { id: nextSentenceId++, position, text, origin: "user", original_text: null, evidence_status: "none", evidence: null };
+        if (edit.unlink) sentence = { ...sentence, evidence_status: "none", evidence: null };
+        if (edit.link) {
+          const card = MOCK_CARDS.get(edit.link.card_id);
+          const field = card?.fields.find((item) => item.slot === edit.link.slot);
+          const quote = field?.[edit.link.quote_source];
+          if (!card || card.status !== "saved" || !quote) return null;
+          sentence = {
+            ...sentence, evidence_status: "ok",
+            evidence: { card_id: card.id, card_title: card.title, note_title: card.note_title, slot: field.slot, quote, quote_source: edit.link.quote_source, added_by: "user" },
+          };
+        }
+        return sentence;
+      });
+      if (sentences.some((item) => item === null)) {
+        sendJson(res, 422, { detail: "근거로 고른 카드를 찾을 수 없어요. 저장한 내 카드만 연결할 수 있어요." });
+        return true;
+      }
+      const saved = withCounts({ ...draft, sentences, version: draft.version + 1, completed_at: null, updated_at: "2026-11-14T06:31:00Z" });
+      MOCK_DRAFTS.set(draft.question_id, saved);
+      sendJson(res, 200, saved);
+      return true;
+    }
+    return false;
+  }
+
+  const appMatch = url.pathname.match(/^\/api\/applications\/(\d+)\/(drafts|questions|questions\/(\d+)\/draft)$/);
+  if (!appMatch) return false;
+  const item = MOCK_APPLICATIONS.get(Number(appMatch[1]));
+  if (!item) {
+    sendJson(res, 404, { detail: "공고를 찾을 수 없어요." });
+    return true;
+  }
+  if (appMatch[2] === "drafts" && req.method === "GET") {
+    const calls = (draftsCalls.get(item.id) ?? 0) + 1;
+    draftsCalls.set(item.id, calls);
+    if (item.id === 919 || (item.id === 921 && calls > 1)) {
+      sendJson(res, 500, { detail: "서버 오류" });
+      return true;
+    }
+    sendJson(res, 200, draftsView(item));
+    return true;
+  }
+  if (appMatch[2] === "questions" && req.method === "PUT") {
+    if ((body.questions ?? []).some((edit) => String(edit.text ?? "").includes("[422]"))) {
+      sendJson(res, 422, { detail: "자소서 문항은 500자까지 쓸 수 있어요." });
+      return true;
+    }
+    if ((body.questions ?? []).some((edit) => String(edit.text ?? "").includes("[409]"))) {
+      // 922: 다른 탭이 문항을 먼저 넣은 것처럼 바꾸고 409
+      item.questions = [...item.questions, { id: item.id * 10 + 99, position: item.questions.length, text: "다른 탭에서 넣은 문항", char_limit: null }];
+      sendJson(res, 409, { detail: "다른 곳에서 문항이 먼저 바뀌었어요. 새로 불러온 목록을 확인하고 다시 고쳐 주세요." });
+      return true;
+    }
+    const given = new Set((body.questions ?? []).map((edit) => edit.id).filter((id) => id != null));
+    const removed = new Set(body.removed_ids ?? []);
+    if (item.questions.some((question) => !given.has(question.id) && !removed.has(question.id))) {
+      sendJson(res, 409, { detail: "다른 곳에서 문항이 먼저 바뀌었어요. 새로 불러온 목록을 확인하고 다시 고쳐 주세요." });
+      return true;
+    }
+    const next = (body.questions ?? []).map((edit, position) => ({
+      id: edit.id ?? item.id * 10 + 100 + position, position, text: String(edit.text ?? "").trim(), char_limit: edit.char_limit ?? null,
+    }));
+    if (next.some((question) => !question.text)) {
+      sendJson(res, 422, { detail: "빈 문항이 있어요. 문항을 적거나 지워 주세요." });
+      return true;
+    }
+    for (const question of item.questions) if (!next.some((other) => other.id === question.id)) MOCK_DRAFTS.delete(question.id);
+    item.questions = next;
+    sendJson(res, 200, draftsView(item));
+    return true;
+  }
+  if (appMatch[3] && req.method === "POST") {
+    const questionId = Number(appMatch[3]);
+    if (item.id === 921) {
+      sendJson(res, 404, { detail: "자소서 문항을 찾을 수 없어요." });
+      return true;
+    }
+    if (item.id === 913) {
+      sendJson(res, 503, { detail: "지금은 AI에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요." });
+      return true;
+    }
+    if (MOCK_DRAFTS.has(questionId) && !body.overwrite) {
+      sendJson(res, 409, { detail: "이 문항에는 이미 초안이 있어요. 다시 쓰면 지금 초안을 덮어써요." });
+      return true;
+    }
+    // 1.5초 걸림 — 쓰는 중 화면 확인용
+    setTimeout(() => {
+      MOCK_DRAFTS.set(questionId, mockDraft(item.id, [
+        draftSentence(nextSentenceId++, 0, "useEffect로 구독을 정리한 경험이 있습니다.", EVIDENCE_801),
+        draftSentence(nextSentenceId++, 1, "팀의 배포 속도를 두 배로 올렸습니다.", null),
+      ]));
+      sendJson(res, 201, { question_id: questionId, written: true, sentences: 2, supported: 1, cards_sent: 1, drop_reasons: { quote_not_found: 1 }, remaining_today: 28 });
+    }, 1500);
+    return true;
+  }
+  sendJson(res, 405, { detail: "Method Not Allowed" });
+  return true;
+}
 let nextApplicationId = 950;
 const appSummary = (item) => ({
   id: item.id, company: item.company, role: item.role, deadline: item.deadline, days_left: item.days_left,
@@ -231,6 +432,7 @@ function handleApplications(req, res, url, rawBody) {
   } catch {
     body = {};
   }
+  if (handleDrafts(req, res, url, body)) return;
   if (req.method === "GET" && url.pathname === "/api/applications") {
     const list = [...MOCK_APPLICATIONS.values()].sort((a, b) => {
       const [ga, va] = dDayOrder(a);
@@ -261,7 +463,7 @@ function handleApplications(req, res, url, rawBody) {
   }
   const action = match[2];
   if (!action && req.method === "GET") {
-    sendJson(res, 200, item);
+    sendJson(res, 200, { ...item, unsupported_sentence_count: unsupportedOf(item) });
     return;
   }
   if (!action && (req.method === "PATCH" || req.method === "DELETE") && item.id === 907) {
@@ -580,7 +782,8 @@ const server = http.createServer((req, res) => {
   // --- 지원 · 공고 분석(F-007) ---
   // 901: 분석 · 매칭 끝(역량 2개 — 하나는 카드 801, 하나는 근거 없음) / 902: 분석 전 → 뽑기 · 매칭 성공
   // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 907: 상태 · 지우기 500 / 950~: [공고 추가]로 만든 공고(902처럼)
-  if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/")) {
+  // 자소서(F-008): 910 초안 있음 · 911 [초안 쓰기] 1.5초 · 912 매칭 카드 없음 · 913 쓰기 503 · 914 제출 확인 · 915 고치기 · 916 카드 연결 · 917 문항 고치기 · 918 저장 409 · 422 · 919 목록 500 · 920 완료 500 · 921 쓰기 404 뒤 다시 받기 500 · 922 문항 409 · 422
+  if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/") || url.pathname.startsWith("/api/drafts/")) {
     if (!isLoggedIn(req)) {
       sendJson(res, 401, { detail: "로그인이 필요해요." });
       return;

@@ -50,14 +50,14 @@ function SidebarMenu({ pathname }: { pathname: string | null }) {
               <Link
                 href={item.href}
                 aria-current={current ? "page" : undefined}
-                className={`flex h-10 w-full items-center justify-center gap-3 rounded-button text-body-1 lg:justify-start lg:px-3 ${
+                className={`flex h-10 w-full items-center justify-center gap-3 rounded-button text-body-1 sidebar-open:justify-start sidebar-open:px-3 ${
                   current
                     ? "border-l-2 border-line-black bg-bg-regular font-semibold text-text-main"
                     : "font-medium text-text-sub hover:bg-bg-hover"
                 } ${FOCUS_RING}`}
               >
                 <Icon name={item.icon} className={current ? "text-text-main" : "text-icon-sub"} />
-                <span className="sr-only lg:not-sr-only lg:whitespace-nowrap">{item.label}</span>
+                <span className="sr-only sidebar-open:not-sr-only sidebar-open:whitespace-nowrap">{item.label}</span>
               </Link>
               <SidebarTooltip label={item.label} />
             </li>
@@ -73,7 +73,7 @@ export function SidebarTooltip({ label }: { label: string }) {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute top-1/2 left-full z-10 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-tag bg-bg-inverse px-2 py-1 text-body-3 text-text-inverse group-hover:block group-has-focus-visible:block lg:group-hover:hidden lg:group-has-focus-visible:hidden"
+      className="pointer-events-none absolute top-1/2 left-full z-10 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-tag bg-bg-inverse px-2 py-1 text-body-3 text-text-inverse group-hover:block group-has-focus-visible:block sidebar-open:group-hover:hidden sidebar-open:group-has-focus-visible:hidden"
     >
       {label}
     </span>

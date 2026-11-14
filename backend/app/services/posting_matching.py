@@ -82,14 +82,20 @@ class CardText:
         return "\n".join(parts).casefold()
 
 
-def load_saved_cards(db: Session, *, user_id: int) -> list[CardText]:
-    """내 저장 카드 전부(사용자 조건, D-004). 후보 카드는 아직 검토 전이라 매칭에 쓰지 않는다."""
-    rows = db.execute(
+def load_saved_cards(db: Session, *, user_id: int, card_ids: Sequence[int] | None = None) -> list[CardText]:
+    """내 저장 카드(사용자 조건, D-004). 후보 카드는 아직 검토 전이라 매칭에 쓰지 않는다.
+
+    card_ids를 주면 그 카드만 읽는다 — 자소서 초안은 매칭된 카드만 쓰므로 칸 글 전부를 읽지 않게(F-008 1차 리뷰 R2).
+    """
+    statement = (
         select(Card.id, Card.title, CardField.slot, CardField.quote, CardField.answer)
         .join(CardField, (CardField.card_id == Card.id) & (CardField.user_id == user_id))
         .where(Card.user_id == user_id, Card.status == CARD_STATUS_SAVED)
         .order_by(Card.updated_at.desc(), Card.id.desc())
-    ).all()
+    )
+    if card_ids is not None:
+        statement = statement.where(Card.id.in_(card_ids))
+    rows = db.execute(statement).all()
     cards: dict[int, CardText] = {}
     for card_id, title, slot, quote, answer in rows:
         card = cards.setdefault(card_id, CardText(id=card_id, title=title, fields={}))
@@ -219,8 +225,11 @@ class MatchCheckResult:
     drop_reasons: Counter[str] = field(default_factory=Counter)
 
 
-def _find_in_field(quote: str, texts: tuple[str | None, str | None]) -> tuple[str, int] | None:
-    """인용을 그 칸의 원문 인용 → 내 답 순서로 찾는다. (출처, 시작 위치)."""
+def find_in_field(quote: str, texts: tuple[str | None, str | None]) -> tuple[str, int] | None:
+    """인용을 그 칸의 원문 인용 → 내 답 순서로 찾는다. (출처, 시작 위치).
+
+    매칭(F-007)과 자소서 초안 근거(F-008 draft_writing)가 같이 쓴다 — '칸에 글자 그대로'의 기준이 하나여야 해서.
+    """
     for source, text in zip((QUOTE_SOURCE_QUOTE, QUOTE_SOURCE_ANSWER), texts, strict=True):
         if text:
             start = text.find(quote)
@@ -255,7 +264,7 @@ def check_matches(
         if len(quote) > MATCH_MAX_QUOTE_CHARS:
             result.drop_reasons[DROP_QUOTE_TOO_LONG] += 1
             continue
-        found = _find_in_field(quote, card.fields[slot])
+        found = find_in_field(quote, card.fields[slot])
         if found is None:
             result.drop_reasons[DROP_QUOTE_NOT_FOUND] += 1
             continue

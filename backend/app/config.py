@@ -134,6 +134,21 @@ MATCH_STOP_TERMS = frozenset(
 # 선점이 이보다 오래되면 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초). 문제 만들기와 같은 이유 · 같은 값
 APPLICATION_CLAIM_STALE_SECONDS = QUIZ_CLAIM_STALE_SECONDS
 
+# 근거 달린 자소서 초안 (F-008 설계 의도, 사용자 확인 2026-11-13 · 14). 숫자 상한은 임시값 — 리뷰 · 평가 때 확인
+# 화면(frontend/src/lib/drafts.ts)에도 DRAFT_MAX_CARDS_SENT · DRAFT_SENTENCE_MAX_CHARS · DRAFT_DEFAULT_TARGET_CHARS가 있다 — 바꾸면 같이 고친다
+# AI에 보내는 카드: 이 공고에 매칭된 내 저장 카드만, 매칭 수가 많은 순으로 최대 N장(원칙 6)
+DRAFT_MAX_CARDS_SENT = 10
+DRAFT_FIELD_SEND_CHARS = MATCH_FIELD_SEND_CHARS  # 카드 칸 하나에서 보내는 글자 수(인용 · 내 답 각각, 앞에서부터)
+DRAFT_DEFAULT_TARGET_CHARS = 700  # 문항에 글자 수 제한이 없을 때 AI에 주는 목표 글자 수
+DRAFT_MAX_AI_SENTENCES = 30  # AI 답에서 받는 문장 수. 넘는 문장은 버린다
+DRAFT_SENTENCE_MAX_CHARS = 500  # 문장 하나 길이(AI · 내가 고친 문장 모두). AI 문장은 자르고, 내가 쓴 문장은 422
+DRAFT_MAX_SENTENCES = 100  # 초안 하나에 저장하는 문장 수(내가 사이에 넣은 문장 포함)
+# 근거 인용 길이(공백 뺀 최소 · 전체 최대) — 매칭과 같은 기준(카드 칸 글을 인용하는 것이 같아서)
+DRAFT_MIN_QUOTE_CHARS = MATCH_MIN_QUOTE_CHARS
+DRAFT_MAX_QUOTE_CHARS = MATCH_MAX_QUOTE_CHARS
+# '내가 고친 비율'을 정확히(순서까지) 재는 크기 상한: AI 원문 낱말 수 × 지금 낱말 수. 넘으면 빠른 근사(F-008 1차 리뷰 R2)
+EDITED_PERCENT_EXACT_LIMIT = 50_000  # 약 220 × 220 낱말(1,000자쯤 초안)까지 정확히. 같은 낱말 반복 최악 약 0.11초(F-008 2차 리뷰 R2 실측)
+
 
 # 노션 연결 (F-005 설계 의도, 사용자 확인 2026-11-12)
 NOTION_API_BASE = "https://api.notion.com/v1"

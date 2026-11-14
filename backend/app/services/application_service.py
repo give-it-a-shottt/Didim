@@ -11,7 +11,9 @@ from datetime import date, datetime
 from urllib.parse import urlsplit
 
 from sqlalchemy import and_, case, delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from app.config import (
     APPLICATION_COMPANY_MAX_CHARS,
@@ -41,6 +43,10 @@ BAD_URL_MESSAGE = "공고 링크 형식이 틀렸어요."
 
 class ApplicationNotFound(Exception):
     """내 공고가 아니거나 없는 공고."""
+
+
+class QuestionsConflict(Exception):
+    """화면이 본 문항 목록이 지금과 다르다(다른 탭이 먼저 넣거나 지움) — 저장하지 않는다(F-008 2차 리뷰 R2 · R3)."""
 
 
 class InvalidApplicationInput(Exception):
@@ -103,24 +109,25 @@ class QuestionInput:
     char_limit: int | None = None
 
 
+def _clean_question(item: QuestionInput) -> QuestionInput | None:
+    """문항 하나를 정리한다. 빈 문항은 None(부르는 쪽이 건너뛰거나 막음)."""
+    text = item.text.strip()
+    if has_forbidden_control(text):
+        raise InvalidApplicationInput(CONTROL_CHAR_MESSAGE)
+    if not text:
+        return None
+    if len(text) > APPLICATION_QUESTION_MAX_CHARS:
+        raise InvalidApplicationInput(f"자소서 문항은 {APPLICATION_QUESTION_MAX_CHARS}자까지 쓸 수 있어요.")
+    if item.char_limit is not None and not 1 <= item.char_limit <= APPLICATION_QUESTION_CHAR_LIMIT_MAX:
+        raise InvalidApplicationInput(f"글자 수 제한은 1~{APPLICATION_QUESTION_CHAR_LIMIT_MAX:,}자로 적어 주세요.")
+    return QuestionInput(text=text, char_limit=item.char_limit)
+
+
 def _clean_questions(questions: list[QuestionInput]) -> list[QuestionInput]:
     if len(questions) > APPLICATION_MAX_QUESTIONS:
         raise InvalidApplicationInput(f"자소서 문항은 {APPLICATION_MAX_QUESTIONS}개까지 넣을 수 있어요.")
-    cleaned: list[QuestionInput] = []
-    for item in questions:
-        text = item.text.strip()
-        if has_forbidden_control(text):
-            raise InvalidApplicationInput(CONTROL_CHAR_MESSAGE)
-        if not text:
-            continue  # 빈 문항 줄은 건너뛴다(화면의 빈 입력칸)
-        if len(text) > APPLICATION_QUESTION_MAX_CHARS:
-            raise InvalidApplicationInput(f"자소서 문항은 {APPLICATION_QUESTION_MAX_CHARS}자까지 쓸 수 있어요.")
-        if item.char_limit is not None and not 1 <= item.char_limit <= APPLICATION_QUESTION_CHAR_LIMIT_MAX:
-            raise InvalidApplicationInput(
-                f"글자 수 제한은 1~{APPLICATION_QUESTION_CHAR_LIMIT_MAX:,}자로 적어 주세요."
-            )
-        cleaned.append(QuestionInput(text=text, char_limit=item.char_limit))
-    return cleaned
+    # 빈 문항 줄은 건너뛴다(화면의 빈 입력칸)
+    return [cleaned for item in questions if (cleaned := _clean_question(item)) is not None]
 
 
 # --- 만들기 · 바꾸기 · 지우기 ---
@@ -194,6 +201,95 @@ def update_application(
         application.deadline = deadline  # type: ignore[assignment]
     application.updated_at = now if now is not None else now_utc()
     db.commit()
+
+
+@dataclass(frozen=True)
+class QuestionEdit:
+    """자소서 탭에서 고친 문항 하나. id가 있으면 기존 문항(초안 유지), 없으면 새 문항."""
+
+    id: int | None
+    text: str
+    char_limit: int | None = None
+
+
+def replace_questions(
+    db: Session,
+    *,
+    user_id: int,
+    application_id: int,
+    questions: list[QuestionEdit],
+    removed_ids: list[int] | None = None,
+    now: datetime | None = None,
+) -> None:
+    """문항 목록을 통째로 저장한다(F-008 — 자소서 탭에서 추가 · 수정 · 삭제, 사용자 확인 2026-11-13).
+
+    순서 = 목록 순서. 지울 문항은 화면이 removed_ids로 직접 보낸다 — 그 문항의 초안도 같이 지워진다(CASCADE, 화면이 확인창을 먼저 띄움).
+    '보낸 문항 + 지울 문항'이 지금 공고의 문항과 정확히 같아야 저장한다. 다르면 다른 탭이 먼저 바꾼 것이라 QuestionsConflict —
+    옛 목록을 가진 탭이 다른 탭에서 넣은 문항 · 초안을 모르고 지우지 않게(F-008 2차 리뷰 R2).
+    공고 줄을 잠그고(PostgreSQL FOR UPDATE) 확인 · 저장해 두 요청이 사이에 끼어들지 않게 하고, 그래도 커밋에서 제약에 걸리면 409로 바꾼다.
+    만들 때와 달리 빈 문항은 건너뛰지 않고 막는다 — 실수로 지운 글 때문에 초안이 사라지지 않게.
+    ApplicationNotFound / QuestionsConflict / InvalidApplicationInput(저장 안 함).
+    """
+    application = db.scalar(
+        select(Application).where(Application.id == application_id, Application.user_id == user_id).with_for_update()
+    )
+    if application is None:
+        raise ApplicationNotFound
+    if len(questions) > APPLICATION_MAX_QUESTIONS:
+        raise InvalidApplicationInput(f"자소서 문항은 {APPLICATION_MAX_QUESTIONS}개까지 넣을 수 있어요.")
+    cleaned: list[tuple[int | None, QuestionInput]] = []
+    for item in questions:
+        question = _clean_question(QuestionInput(text=item.text, char_limit=item.char_limit))
+        if question is None:
+            raise InvalidApplicationInput("빈 문항이 있어요. 문항을 적거나 지워 주세요.")
+        cleaned.append((item.id, question))
+    existing = {
+        row.id: row
+        for row in db.scalars(
+            select(ApplicationQuestion).where(
+                ApplicationQuestion.user_id == user_id, ApplicationQuestion.application_id == application.id
+            )
+        ).all()
+    }
+    given_ids = [question_id for question_id, _ in cleaned if question_id is not None]
+    removed = set(removed_ids or [])
+    if len(given_ids) != len(set(given_ids)) or removed & set(given_ids):
+        raise InvalidApplicationInput("같은 문항이 두 번 들어 있어요. 새로고침한 뒤 다시 시도해 주세요.")
+    if set(existing) != set(given_ids) | removed:
+        db.rollback()  # 잠금을 바로 푼다
+        raise QuestionsConflict
+    if removed:
+        db.execute(
+            delete(ApplicationQuestion).where(
+                ApplicationQuestion.user_id == user_id, ApplicationQuestion.id.in_(removed)
+            )
+        )
+    # 순서 유니크(application_id, position)와 부딪히지 않게 남는 문항을 먼저 음수 자리로 옮긴 뒤 제자리에 놓는다
+    for index, question_id in enumerate(given_ids):
+        existing[question_id].position = -(index + 1)
+    db.flush()
+    for position, (question_id, question) in enumerate(cleaned):
+        if question_id is None:
+            db.add(
+                ApplicationQuestion(
+                    user_id=user_id,
+                    application_id=application.id,
+                    position=position,
+                    text=question.text,
+                    char_limit=question.char_limit,
+                )
+            )
+        else:
+            row = existing[question_id]
+            row.position = position
+            row.text = question.text
+            row.char_limit = question.char_limit
+    application.updated_at = now if now is not None else now_utc()
+    try:
+        db.commit()
+    except (IntegrityError, StaleDataError) as exc:  # 잠금이 없는 DB(SQLite)에서 두 요청이 겹친 경우 등
+        db.rollback()
+        raise QuestionsConflict from exc
 
 
 def delete_application(db: Session, *, user_id: int, application_id: int) -> None:
