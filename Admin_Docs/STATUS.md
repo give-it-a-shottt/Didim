@@ -1,7 +1,7 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 10 · 일부 1 · 다음 5 · 열린 질문 2개
+됨 10 · 일부 3 · 다음 3 · 열린 질문 2개
 최종 수정: 2026-11-13
 
 ## 기능별 상태
@@ -17,8 +17,8 @@
 | [F-005](features/F-005-notion-import/feature.md) 노션 연결 | [됨] | 4주차. OAuth 연결 · 토큰 암호화 · 갱신 · 끊김 · 회수 · 페이지 골라 가져오기(블록 → 마크다운 → F-002 저장) · 사용자당 가져오기 하나(D-021). 리뷰 1차 [주의] → 2차 [주의] → 3차 [통과] · 리뷰 끝. 남은 것: 미룬 구조 정리(feature.md) | pytest SQLite 394 · PostgreSQL 406(노션 49), Playwright 53(노션 11) · tsc · eslint 통과, 직접 실행(사용자 확인, 2026-11-12) — 실제 노션 연결 · 페이지 가져오기 · 노트 화면 · 끊기 뒤 다시 연결 | 3차 [통과] | 2026-11-12 |
 | [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [됨] | 4주차. 후보 찾기(칸별 원문 인용 · 노트당 AI 1번) · 후보 검토 · 카드 화면 · 평가 세트. 1차 [주의] → 2차 [통과] → 3차 [통과], 3차 제안 전부 반영. 평가: 찾은 비율 12/12 · 없는 경험 후보 0 · 인용 검사 빈칸 0(노트마다 성공한 회차를 합침, 사용자 확인) | pytest SQLite 343 · PostgreSQL 355, Playwright 42 · tsc · eslint 통과(2026-11-11), EXAONE 평가 2회 — `backend/eval/cards/results/cards-exaone-20261111-170327.json`(경험 노트 8개 모두 성공) · `cards-exaone-20261112-092305.json`(경험 없는 노트 10개 모두 성공, 경험 노트 5개는 180초 상한 실패), 사용자 화면 확인(2026-11-12) | 3차 [통과] | 2026-11-12 |
 | [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [됨] | 공고 추가 · D-day 목록 · 상태 · 지우기 · 역량 뽑기(공고 인용 검사) · 카드 매칭(카드 칸 인용 검사) · 근거 없는 역량 → 기록 검색 · 평가. 남은 것: 마감일을 나중에 넣는 화면(미룸) | 테스트 test_applications.py 48 · test_posting_evaluation.py 10 · applications.spec.ts 10 통과(전체 SQLite 452 · PostgreSQL 465 · Playwright 63 · tsc · eslint, 2026-11-13). 평가: EXAONE 성공 공고 3개 매칭 적중 10/10 · 없는 근거 매칭 0(실패 3개는 한도 · 시간 초과, 사용자 결정으로 성공분 판정). 직접 실행(사용자 확인 2026-11-13, 개발 DB · 가짜 AI): 공고 추가 → 분석 → 근거 칩 · 근거 없음, 상태 바꾸기, 매칭 다시, 공고 지우기 | 4차 [통과] | 2026-11-13 |
-| [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [다음] | 3~4주차(단순) · 6주차 | - | - | - |
-| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [다음] | 6주차(F-008과 같이) | - | - | - |
+| [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [일부] | 6주차. 설계 의도 받음(문제 · 완료 기준 4 · 고치기는 사용자 · 화면 · API · 데이터, 2026-11-13). 빠진 것: 구현 전부 | - | - | 2026-11-13 |
+| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [일부] | 6주차. 설계 의도 받음(문제 · 완료 기준 4 · 칸별 꼬리 질문 3~5개, 2026-11-13). 빠진 것: 구현 전부 | - | - | 2026-11-13 |
 | [F-010](features/F-010-eval-and-sample/feature.md) 평가 · 샘플 체험 | [다음] | 7주차 | - | - | - |
 | [F-011](features/F-011-landing/feature.md) 랜딩 | [다음] | 8주차 | - | - | - |
 | [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [다음] | 8주차(랜딩과 같이) | - | - | - |

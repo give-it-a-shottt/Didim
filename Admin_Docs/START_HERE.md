@@ -9,7 +9,7 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 10 · 일부 1 · 다음 5 · 열린 질문 2개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 10 · 일부 3 · 다음 3 · 열린 질문 2개
 
 - 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-018, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인), 마크다운 가져오기 1주차(F-002, 4차 리뷰 [통과], SQLite · PostgreSQL 테스트 통과), 기록 검색(F-003, 키워드 검색 D-016, 2차 리뷰 [통과], 평가 기준선 낱말 겹침 1.00 · 다른낱말 0.60)
 - 다음(이 순서로):
@@ -127,8 +127,8 @@ Admin_Docs/
 | [F-005](features/F-005-notion-import/feature.md) | 노션 연결 | 4 | [됨] 3차 [통과] · 실제 노션 연결 확인(사용자) |
 | [F-006](features/F-006-experience-cards/feature.md) | 경험 카드 | 4 | [됨] 3차 [통과] · 평가 찾은 비율 12/12 · 없는 경험 후보 0 |
 | [F-007](features/F-007-posting-analysis/feature.md) | 공고 분석 · 매칭 | 5 | [됨] 4차 [통과] · 평가 성공 공고 3개 적중 10/10 · 없는 근거 매칭 0 · 화면 확인(사용자) |
-| [F-008](features/F-008-evidence-draft/feature.md) | 근거 달린 자소서 + 근거 검사 | 3~4(단순) · 6 | 설계 의도 전 |
-| [F-009](features/F-009-interview-practice/feature.md) | 면접 연습 | 6 | 설계 의도 전 |
+| [F-008](features/F-008-evidence-draft/feature.md) | 근거 달린 자소서 + 근거 검사 | 6 | [일부] 설계 의도 받음 |
+| [F-009](features/F-009-interview-practice/feature.md) | 면접 연습 | 6 | [일부] 설계 의도 받음 |
 | [F-010](features/F-010-eval-and-sample/feature.md) | 평가 세트 · 리포트 · 샘플 체험 | 7 | 설계 의도 전 |
 | [F-011](features/F-011-landing/feature.md) | 랜딩 | 8 | 설계 의도 전 |
 | [F-012](features/F-012-home-onboarding/feature.md) | 홈 · 첫 방문 안내 | 8 | 설계 의도 전 |
