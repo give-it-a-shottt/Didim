@@ -26,8 +26,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import Chunk, Note, Quiz
-from app.llm.base import LLMClient, LLMError, LLMRateLimited, LLMReply, LLMUnavailable, LLMUsage, Message
+from app.llm.base import LLMClient, LLMError, LLMRateLimited, LLMReply, LLMUsage, Message
 from app.llm.structured import complete_json
+from app.services.eval_retry import RETRYABLE_ERRORS
 from app.services.quiz_generation import (
     NoEligibleChunks,
     abandon_generation,
@@ -51,8 +52,6 @@ JUDGE_SYSTEM_PROMPT = """너는 복습 문제 검수자다. 문제마다 함께 
 
 DEFAULT_RATE_LIMIT_WAIT_SECONDS = 30.0  # 429에 대기 시간(Retry-After)이 없을 때
 MAX_RATE_LIMIT_WAITS = 3
-# 평가 중 AI 서버 오류(500 · 연결 안 됨 · 한도)면 노트 단위로 쉬었다가 다시 해 본다(서비스 코드에는 없음)
-RETRYABLE_ERRORS = (LLMUnavailable, LLMRateLimited)
 
 
 class PatientClient:

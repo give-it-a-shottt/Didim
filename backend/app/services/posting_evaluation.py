@@ -18,22 +18,22 @@
 
 import asyncio
 import dataclasses
-import time
 from collections import Counter
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TypeVar
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.config import APPLICATION_COMPANY_MAX_CHARS, CARD_STATUS_SAVED
 from app.db.models import Card, CardField
-from app.llm.base import LLMClient, LLMError, LLMUsage, Message
+from app.llm.base import LLMClient, LLMUsage, Message
 from app.llm.structured import StructuredReply
 from app.services.application_service import create_application, get_application_detail
 from app.services.card_evaluation import NoteKey, section_spans
 from app.services.chunking import split_markdown
+from app.services.eval_retry import RetryPolicy, Sleep, run_ai_step
 from app.services.note_service import create_note_for_user
 from app.services.posting_analysis import (
     AnalysisPlan,
@@ -46,7 +46,6 @@ from app.services.posting_analysis import (
 )
 from app.services.posting_extraction import request_requirements
 from app.services.posting_matching import request_matches
-from app.services.quiz_evaluation import RETRYABLE_ERRORS
 
 # --- 정답지 ---
 
@@ -274,21 +273,7 @@ class PostingEvalResult:
     retries: int = 0
 
 
-Sleep = Callable[[float], Awaitable[None]]
-PlanT = TypeVar("PlanT", bound=AnalysisPlan)
-ReplyT = TypeVar("ReplyT")
-
-
-@dataclass(frozen=True)
-class RetryPolicy:
-    """AI 서버 오류(500 · 429)면 단계마다 몇 번 더 해 볼지 · 얼마나 쉴지(T-006). sleep은 테스트에서 바꿔 끼운다."""
-
-    retries: int = 0
-    wait: float = 60.0
-    sleep: Sleep = asyncio.sleep
-
-
-async def _run_step(
+async def _run_step[PlanT: AnalysisPlan, ReplyT: BaseModel](
     db: Session,
     client: LLMClient,
     result: PostingEvalResult,
@@ -302,33 +287,24 @@ async def _run_step(
     """한 단계(① 또는 ②): 선점 → AI → (다시 해 볼 오류면 쉬고 처음부터). (마지막 계획, 답 또는 None)을 돌려준다.
 
     답이 None이면 AI를 안 불렀거나(needs_ai가 False) 실패한 것 — 실패면 result.error · error_step이 채워진다.
-    실패는 서비스와 똑같이 save_failed로, 예상 못 한 오류 · 중단은 abandon으로 정리한다(선점 · 사용량).
+    실패는 서비스와 똑같이 save_failed로, 예상 못 한 오류 · 중단은 abandon으로 정리한다(eval_retry.run_ai_step).
     """
-    left = max(0, policy.retries)
-    while True:
-        plan = prepare()
-        if not needs_ai(plan):
-            return plan, None
-        started = time.perf_counter()
-        try:
-            reply = await request(client, plan.messages)
-        except LLMError as exc:
-            result.seconds[step] = time.perf_counter() - started
-            result.usage = result.usage + exc.usage
-            save_failed(db, plan, exc)
-            if isinstance(exc, RETRYABLE_ERRORS) and left > 0:
-                left -= 1
-                result.retries += 1
-                await policy.sleep(policy.wait)
-                continue
-            result.error, result.error_step = type(exc).__name__, step
-            return plan, None
-        except BaseException:
-            abandon(db, plan)
-            raise
-        result.seconds[step] = time.perf_counter() - started
-        result.usage = result.usage + reply.usage
-        return plan, reply
+    outcome = await run_ai_step(
+        prepare=prepare,
+        request=lambda plan: request(client, plan.messages),
+        save_failed=lambda plan, exc: save_failed(db, plan, exc),
+        abandon=lambda plan: abandon(db, plan),
+        policy=policy,
+        needs_ai=needs_ai,
+        usage_of=lambda reply: reply.usage,
+    )
+    if outcome.seconds is not None:
+        result.seconds[step] = outcome.seconds
+    result.usage = result.usage + outcome.usage
+    result.retries += outcome.retries
+    if outcome.error is not None:
+        result.error, result.error_step = type(outcome.error).__name__, step
+    return outcome.plan, outcome.reply
 
 
 async def evaluate_posting(

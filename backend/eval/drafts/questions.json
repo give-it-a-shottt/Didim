@@ -1,0 +1,30 @@
+{
+  "_설명": "F-008 자소서 초안 평가 문항(D-005, 2026-11-15). 공고는 F-007 가상 공고, 매칭은 F-007 정답지 카드로 고정한다. answerable = 매칭 카드로 답할 수 있는 문항, trap = 카드에 없는 경험을 묻는 함정 문항(AI가 지어내기 쉬운 상황).",
+  "postings_from": "eval/postings/answers.json",
+  "questions": {
+    "p01-backend.md": [
+      {"kind": "answerable", "text": "서비스의 성능이나 안정성 문제를 찾아 해결한 경험을 구체적으로 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "Kubernetes 환경에서 서비스를 운영하며 겪은 문제와 해결 과정을 써 주세요.", "char_limit": 500}
+    ],
+    "p02-frontend.md": [
+      {"kind": "answerable", "text": "외부 API 연동이나 네트워크 오류 같은 예외 상황을 처리하며 화면을 개선한 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "TypeScript로 타입을 설계해 코드 품질을 높인 경험과 그 성과를 써 주세요.", "char_limit": 500}
+    ],
+    "p03-fullstack.md": [
+      {"kind": "answerable", "text": "문서화나 자동화로 함께 일하는 방식을 개선한 경험을 써 주세요.", "char_limit": 600},
+      {"kind": "trap", "text": "결제 시스템을 개발하며 데이터 정합성을 지킨 경험을 써 주세요.", "char_limit": 500}
+    ],
+    "p04-devops.md": [
+      {"kind": "answerable", "text": "배포 과정의 시간이나 비용을 줄인 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "AWS 클라우드 인프라를 운영하며 장애를 감지하고 대응한 경험을 써 주세요.", "char_limit": 500}
+    ],
+    "p05-data.md": [
+      {"kind": "answerable", "text": "반복되는 데이터 작업을 자동화하거나 쿼리 성능을 개선한 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "Spark 등으로 대용량 데이터를 분산 처리해 본 경험과 성과를 써 주세요.", "char_limit": 500}
+    ],
+    "p06-ai-service.md": [
+      {"kind": "answerable", "text": "Python으로 문제를 해결한 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "LLM API를 활용한 서비스를 만들고 프롬프트를 평가해 본 경험을 써 주세요.", "char_limit": 600}
+    ]
+  }
+}

@@ -38,7 +38,7 @@ from app.services.card_generation import (
     save_failed_search,
     save_search,
 )
-from app.services.quiz_evaluation import RETRYABLE_ERRORS
+from app.services.eval_retry import RETRYABLE_ERRORS
 
 KIND_EXPERIENCE = "experience"
 KIND_TRAP = "trap"
