@@ -123,7 +123,7 @@
   --text-caption-3: 11px;
   --text-caption-3--line-height: 1.45;
   --text-caption-3--letter-spacing: -0.025em;
-  /* 원문 인용(명조) — didim-design.md 4장 "명조 원문 Noto Serif KR Body 14 / 155%", Figma Didim/원문 인용 */
+  /* 원문 인용 크기 — Figma Didim/원문 인용 14 / 155%. 글꼴은 다른 글과 같은 Pretendard(D-026, 명조 없앰) */
   --text-quote: 14px;
   --text-quote--line-height: 1.55;
 
@@ -153,9 +153,8 @@
 }
 
 @theme inline {
-  /* 글꼴(Q-018): 고딕 = AI와 화면(Pretendard), 명조 = 내 기록 원문(Noto Serif KR). app/layout.tsx의 next/font가 변수를 채운다 */
+  /* 글꼴(Q-018 · D-026): 모든 글이 Pretendard 하나. app/layout.tsx의 next/font가 변수를 채운다 */
   --font-sans: var(--font-pretendard);
-  --font-serif: var(--font-noto-serif-kr);
 }
 
 /*

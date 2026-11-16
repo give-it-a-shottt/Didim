@@ -95,7 +95,7 @@ export function SelectedEvidence({ requirement, matched }: { requirement: Requir
       {requirement.matches.length > 0 ? (
         requirement.matches.map((item) => (
           <div key={item.id} className="flex flex-col gap-2">
-            {/* 근거 = 내 카드 칸 글(명조, 설계 원칙 7). 이유는 AI 글(고딕)이라 따로 표시한다 */}
+            {/* 근거 = 내 카드 칸 글(인용 모양). 이유는 AI 글이라 따로 표시한다 */}
             <SourceQuote
               quote={item.quote}
               source={
@@ -129,7 +129,7 @@ export function SelectedEvidence({ requirement, matched }: { requirement: Requir
   );
 }
 
-/** 공고 원문 — 고른 역량의 공고 인용 자리를 표시한다(근거 우선, 원칙 1). 공고는 내 기록이 아니라 고딕. */
+/** 공고 원문 — 고른 역량의 공고 인용 자리를 표시한다(근거 우선, 원칙 1). 공고는 내 기록이 아니라 인용 모양을 쓰지 않는다. */
 export function PostingText({ text, highlight }: { text: string; highlight: Requirement | null }) {
   const [expanded, setExpanded] = useState(false);
   const canMark =

@@ -21,7 +21,7 @@ export type Evidence = {
   cardTitle: string | null;
   noteTitle: string | null;
   slot: CardSlot;
-  quote: string; // 카드 칸 글(내 기록 원문 — 명조로 보여 준다)
+  quote: string; // 카드 칸 글(내 기록 원문 — 인용 모양으로 보여 준다)
   quoteSource: QuoteSource;
   addedBy: "ai" | "user"; // user = [카드 연결]
 };

@@ -114,6 +114,7 @@ Admin_Docs/
 | [D-023](decisions/D-023-two-folder-repo.md) | 레포는 frontend/(npm) + backend/(uv) 두 폴더 | [통과] |
 | [D-024](decisions/D-024-signed-cookie-session-kept.md) | 로그인 세션은 서명 쿠키 그대로, 서버 무효화 없음(공개 배포 때 다시) | [통과] |
 | [D-025](decisions/D-025-sample-data-in-sample-account.md) | 샘플 체험 데이터는 샘플 전용 계정 하나에 | [통과] |
+| [D-026](decisions/D-026-pretendard-only.md) | 글꼴은 Pretendard 하나(내 기록 원문의 명조를 없앰 — 인용은 줄 · 낫표 · 출처로 표시) | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |

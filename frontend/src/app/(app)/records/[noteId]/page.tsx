@@ -92,8 +92,8 @@ export default async function Rev01002Page(props: PageProps<"/records/[noteId]">
             {selected ? (
               <p className="text-body-2 text-primary-text">고른 부분: {selected.headingPath || "첫 제목 앞"}</p>
             ) : null}
-            {/* 내 기록 원문 → 명조(설계 원칙 7). 코드 블록은 note-markdown.tsx에서 고정폭 글꼴 */}
-            <div className="font-serif wrap-break-word text-text-main">
+            {/* 내 기록 원문(글꼴은 Pretendard, D-026). 코드 블록은 note-markdown.tsx에서 고정폭 글꼴 */}
+            <div className="wrap-break-word text-text-main">
               <NoteMarkdown content={note.content} chunks={note.chunks} highlightChunkId={selected?.id ?? null} />
             </div>
           </section>

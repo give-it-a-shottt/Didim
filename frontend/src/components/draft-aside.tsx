@@ -1,7 +1,7 @@
 "use client";
 
 // APL_02_003 오른쪽 칸(Figma 18:258 '검사 · 근거', 너비 304): 요약("문장 9개 중 7개에 근거가 있어요") +
-// 고른 문장의 근거(Didim/검사 항목 — 카드 칸 글은 내 기록 원문이라 명조) + 근거 없는 문장마다 [카드 연결] · [직접 고치기] · [지우기].
+// 고른 문장의 근거(Didim/검사 항목 — 카드 칸 글은 내 기록 원문이라 인용 모양) + 근거 없는 문장마다 [카드 연결] · [직접 고치기] · [지우기].
 // 근거 없음 설명은 AI 글이 아니라 근거 상태(서버가 다시 검사한 값)마다 정해 둔 문구다.
 
 import { Icon } from "@/components/icon";
@@ -115,7 +115,7 @@ export function DraftAside({
   );
 }
 
-/** 고른 문장의 근거(Figma 18:410): 성공 아이콘 + "선택한 문장 3 · 카드 제목", 아래 카드 칸 글(명조, 왼쪽 2px 줄) + 출처. */
+/** 고른 문장의 근거(Figma 18:410): 성공 아이콘 + "선택한 문장 3 · 카드 제목", 아래 카드 칸 글(왼쪽 2px 줄) + 출처. */
 function SelectedEvidence({
   sentence,
   number,
@@ -149,7 +149,7 @@ function SelectedEvidence({
         선택한 문장 {number} · {evidence.cardTitle ?? "카드"}
       </p>
       <blockquote className="flex flex-col gap-2 border-l-2 border-line-strong px-3 text-text-sub">
-        <p className="font-serif text-quote whitespace-pre-wrap">「{evidence.quote}」</p>
+        <p className="text-quote whitespace-pre-wrap">「{evidence.quote}」</p>
         <footer className="text-body-4">{source}</footer>
       </blockquote>
       {sentence.origin === "edited" && sentence.originalText ? (

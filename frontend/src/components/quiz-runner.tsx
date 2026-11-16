@@ -273,7 +273,7 @@ type ResultPanelProps = {
   headingRef: RefObject<HTMLHeadingElement | null>;
 };
 
-// 해설 칸(Figma 26:863): 해설 → 내 기록 원문 인용(명조) + 출처 링크 → 다음 복습 · 오답노트 안내.
+// 해설 칸(Figma 26:863): 해설 → 내 기록 원문 인용 + 출처 링크 → 다음 복습 · 오답노트 안내.
 // 맞았는지는 보기 칸이 보여 주고, 제목에는 화면 읽기 프로그램용으로만 붙인다(채점 뒤 초점이 이 제목으로 온다).
 function ResultPanel({ quiz, result, headingRef }: ResultPanelProps) {
   return (

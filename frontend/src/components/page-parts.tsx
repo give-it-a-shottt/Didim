@@ -64,13 +64,13 @@ export function EmptyState({
 }
 
 /**
- * 내 기록 원문 인용(Figma Didim/원문 인용 16:186). 이 블록만 명조(설계 원칙 7 — 명조 = 내 기록).
+ * 내 기록 원문 인용(Figma Didim/원문 인용 16:186). 왼쪽 줄 · 낫표로 내 기록임을 보인다(글꼴은 다른 글과 같은 Pretendard, D-026).
  * 왼쪽 2px line/strong은 장식. 아래 줄에 출처(근거 우선, 원칙 1) — source는 링크여도 된다.
  */
 export function SourceQuote({ quote, source }: { quote: string; source: ReactNode }) {
   return (
     <figure className="flex flex-col gap-2 border-l-2 border-line-strong px-3 text-text-sub">
-      <blockquote className="font-serif text-quote whitespace-pre-wrap before:content-['「'] after:content-['」']">
+      <blockquote className="text-quote whitespace-pre-wrap before:content-['「'] after:content-['」']">
         {quote}
       </blockquote>
       <figcaption className="text-body-4">{source}</figcaption>

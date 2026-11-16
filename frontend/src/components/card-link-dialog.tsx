@@ -3,7 +3,7 @@
 // [카드 연결](F-008 — D-006 'MVP는 [카드 연결] 버튼 + 카드 검색 팝오버', 사용자 확인 2026-11-14):
 // 근거 없는 문장에 내 저장 카드의 칸 하나(원문 인용 또는 내 답)를 통째로 근거로 붙인다.
 // ① 카드 고르기(이 공고에 매칭된 카드 먼저, 제목 검색) → ② 칸 고르기. 서버가 그 칸 글이 지금 카드에 있는지 확인한다.
-// 카드 칸 글은 내 기록 원문이라 명조. 카드 상세는 useQuery(카드 후보 검토 시트와 같은 키 — 캐시를 같이 씀).
+// 카드 칸 글은 내 기록 원문이라 인용 모양. 카드 상세는 useQuery(카드 후보 검토 시트와 같은 키 — 캐시를 같이 씀).
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -211,7 +211,7 @@ function FieldPicker({
                 <span className="text-body-4 font-medium text-text-sub">
                   {SLOT_LABELS[option.slot]} · {option.source === "quote" ? "원문 인용" : "내 답"}
                 </span>
-                <span className="border-l-2 border-line-strong px-3 font-serif text-quote whitespace-pre-wrap text-text-sub">
+                <span className="border-l-2 border-line-strong px-3 text-quote whitespace-pre-wrap text-text-sub">
                   {option.text}
                 </span>
               </button>

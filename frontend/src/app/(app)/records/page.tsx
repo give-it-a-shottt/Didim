@@ -270,8 +270,8 @@ async function SearchResults({ query }: { query: string }) {
             >
               <span className="text-body-1 font-medium text-text-main group-hover:underline">{result.noteTitle}</span>
               {result.headingPath ? <span className="text-body-4 text-text-sub">{result.headingPath}</span> : null}
-              {/* 내 기록 원문 발췌 → 명조(설계 원칙 7) */}
-              <span className="font-serif text-quote text-text-sub">
+              {/* 내 기록 원문 발췌(인용 크기 — 글꼴은 Pretendard, D-026) */}
+              <span className="text-quote text-text-sub">
                 <HighlightedText text={result.excerpt} terms={result.matchedTerms} />
               </span>
             </Link>

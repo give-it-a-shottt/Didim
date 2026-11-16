@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SourceQuote } from "@/components/page-parts";
 import { evidenceHref } from "@/lib/quiz";
 
-/** 원문 인용(명조) + 근거 링크. 노트나 조각이 지워졌으면 '원문 없음'(인용 글은 카드에 남아 있음). */
+/** 원문 인용 + 근거 링크. 노트나 조각이 지워졌으면 '원문 없음'(인용 글은 카드에 남아 있음). */
 export function CardQuote({ quote, noteId, chunkId }: { quote: string; noteId: number | null; chunkId: number | null }) {
   return (
     <SourceQuote

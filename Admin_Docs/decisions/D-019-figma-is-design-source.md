@@ -16,7 +16,7 @@
 ### 결정 (사용자 확인, 2026-11-11)
 - **A. Figma 우선.** 다른 곳을 찾으면 `didim-design.md`를 고치고 고친 목록을 사용자에게 보여 준다.
 - **토큰**: Figma 변수에 있고 `globals.css`에 없는 값은 Figma 변수 이름 그대로 `@theme`에 추가한다(사용자 확인 — icon/main · icon/sub, badge/black/soft · text · line, line/input-hover, bg/dim · bg/elevated, 사이드바 그림자 `shadow-sidebar`). 이름 없는 Figma 값은 먼저 묻는다(설계 원칙 7 그대로).
-- **글꼴(Q-018)**: `next/font`. Pretendard는 `next/font/local`로 레포에 둔 가변 글꼴 한 파일(`frontend/src/app/fonts/PretendardStdVariable.woff2`, 약 290KB, SIL OFL 1.1), Noto Serif KR은 `next/font/google`(굵기 400만, 한글은 조각으로 나뉘어 미리 받지 않음). 패키지 추가 없음.
+- **글꼴(Q-018)**: (2026-11-16 바뀜 — D-026: Pretendard 하나, Noto Serif KR 없앰. 아래 명조 설명은 당시 기록) `next/font`. Pretendard는 `next/font/local`로 레포에 둔 가변 글꼴 한 파일(`frontend/src/app/fonts/PretendardStdVariable.woff2`, 약 290KB, SIL OFL 1.1), Noto Serif KR은 `next/font/google`(굵기 400만, 한글은 조각으로 나뉘어 미리 받지 않음). 패키지 추가 없음.
   - Pretendard **Std**(자주 쓰는 한글 2,780자 + 라틴)를 고른 이유: 전체 글자판은 크기가 몇 배라 첫 화면이 느려짐. 드문 글자는 시스템 글꼴로 보인다.
 - **모바일**: PC(1440) 기준. 좁은 화면(lg 1024 미만)은 사이드바를 접힘(56)으로 바꾸고, 가로 스크롤 · 겹침이 없을 만큼만 맞춘다. 모바일 전용 화면(MO 375)은 만들지 않는다.
 - **순서**: 기능이 있는 화면부터 묶음으로 — ① 공통 부품 + 레이아웃 ② 기록 · 복습 ③ 기록 추가 ④ 로그인 · 설정 · 홈. 묶음마다 사용자가 화면을 확인한다. 기능이 없는 화면(CRD · APL · SET_02 · DEM · LND)은 그 기능을 만들 때 같이 옮긴다(데이터 없이 그림만 두면 가짜 화면이 되어서).
