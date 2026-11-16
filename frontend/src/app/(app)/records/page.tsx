@@ -30,7 +30,6 @@ export default async function Rev01001Page(props: PageProps<"/records">) {
         titleId="records-title"
         title="기록 · 복습"
         description="오늘 차례인 문제를 풀고, 내 기록을 찾아봐요."
-        actions={<AddRecordButton variant="page" />}
       />
       <PageBody>
         <div className="grid gap-6 sm:grid-cols-2">

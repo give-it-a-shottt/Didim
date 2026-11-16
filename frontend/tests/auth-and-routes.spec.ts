@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
+import { VALID_SESSION_TOKEN } from "./helpers";
 
 const MEMBER_SCREENS = [
   { path: "/home", screenId: "HOM_01_001" },

@@ -46,6 +46,7 @@ import {
   GHOST_BUTTON,
   PRIMARY_BUTTON,
   SECONDARY_BUTTON,
+  SOURCE_LINK,
   TEXT_BUTTON,
 } from "@/lib/ui-classes";
 
@@ -318,7 +319,7 @@ function EvidenceSource({ field, noteId, noteTitle }: { field: CardField; noteId
   const label = `${SLOT_LABELS[field.slot]} · ${noteTitle ?? "원문 없음"}`;
   if (noteId === null || field.chunkId === null) return <>{label}</>;
   return (
-    <Link href={evidenceHref(noteId, field.chunkId)} className="underline">
+    <Link href={evidenceHref(noteId, field.chunkId)} className={SOURCE_LINK}>
       {label}
     </Link>
   );

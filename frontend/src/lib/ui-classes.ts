@@ -50,6 +50,9 @@ export const BADGE_LINE = `${BADGE_BASE} border border-badge-black-line bg-bg-de
 // 글자 버튼(Figma Button Text · Main · S 13): 밑줄은 Hover에만. 주 색은 쓰지 않는다(콘텐츠 링크와 헷갈리지 않게)
 export const TEXT_BUTTON = `inline-flex items-center gap-1 rounded-tag text-body-3 font-medium text-text-main hover:underline ${FOCUS_RING}`;
 
+// 원문 인용 밑의 출처 링크('원문에서 보기' · '행동 · 노트 제목' 등) — 평소엔 밑줄 없이, Hover에만(가독성 — 사용자 화면 확인 2026-11-16)
+export const SOURCE_LINK = `underline-offset-2 hover:underline ${FOCUS_RING}`;
+
 // 근거 칩(didim-design.md: Badge Line Strong 모양 + 누를 수 있음, 누르는 영역 32, Hover bg/hover, 포커스 링)
 // Figma 근거 칩(16:142) 모양은 기록 · 복습 묶음에서 옮긴다.
 export const EVIDENCE_CHIP = `inline-flex min-h-8 items-center gap-1 rounded-tag border border-line-black bg-bg-default px-2 text-body-3 font-medium text-text-main hover:bg-bg-hover ${FOCUS_RING}`;

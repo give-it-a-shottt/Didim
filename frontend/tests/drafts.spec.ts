@@ -1,15 +1,9 @@
-import { type BrowserContext, type Page, expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
+import { logIn } from "./helpers";
 
 // 근거 달린 자소서(F-008) 화면: 자소서 탭(사이드바 접힘) · 근거 칩 · 근거 없음 · 고른 문장의 근거(명조) · 고치기 · 카드 연결 ·
 // 초안 쓰기(쓰는 중 · 빈 상태 · 실패) · 이 문항 완료 · 문항 고치기 · 제출 확인창.
 // 가짜 백엔드(tests/mock-backend.mjs)의 공고 910~917을 쓴다(테스트마다 다른 공고 — 병렬로 돌아도 서로 안 건드림).
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
-
-async function logIn(context: BrowserContext) {
-  await context.addCookies([
-    { name: "didim_session", value: VALID_SESSION_TOKEN, domain: "localhost", path: "/", httpOnly: true },
-  ]);
-}
 
 const editor = (page: Page) => page.getByRole("region", { name: "1번 문항" });
 const sentence = (page: Page, number: number) => editor(page).getByRole("button", { name: new RegExp(`^문장 ${number}( |:)`) });

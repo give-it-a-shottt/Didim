@@ -22,7 +22,7 @@ import {
   interviewRows,
   updateInterviewMemo,
 } from "@/lib/interview";
-import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, TEXT_BUTTON } from "@/lib/ui-classes";
+import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, SOURCE_LINK, TEXT_BUTTON } from "@/lib/ui-classes";
 
 export function InterviewWorkspace({ initial }: { initial: ApplicationInterview }) {
   const [data, setData] = useState(initial);
@@ -232,7 +232,7 @@ function EvidencePanel({ row }: { row: InterviewRow }) {
       <h2 id="interview-evidence" className={CARD_LABEL}>
         선택한 질문의 근거
       </h2>
-      <SourceQuote quote={question.quote} source={<Link href={cardHref(card.cardId)} className="underline">{source}</Link>} />
+      <SourceQuote quote={question.quote} source={<Link href={cardHref(card.cardId)} className={SOURCE_LINK}>{source}</Link>} />
       {question.evidenceStatus !== "ok" ? (
         <p role="note" className="text-body-3 font-medium text-warning-text">
           {question.evidenceStatus === "changed"

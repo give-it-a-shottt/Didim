@@ -13,7 +13,7 @@ import {
   applicationHref,
 } from "@/lib/applications";
 import { SLOT_LABELS, cardHref } from "@/lib/cards";
-import { CARD_LABEL, PRIMARY_BUTTON, PRIMARY_BUTTON_L, SECONDARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
+import { CARD_LABEL, PRIMARY_BUTTON, PRIMARY_BUTTON_L, SECONDARY_BUTTON_S, SOURCE_LINK, TEXT_BUTTON } from "@/lib/ui-classes";
 
 const PANEL = "flex flex-col gap-3 rounded-card border border-line-regular bg-bg-default p-5";
 
@@ -99,7 +99,7 @@ export function SelectedEvidence({ requirement, matched }: { requirement: Requir
             <SourceQuote
               quote={item.quote}
               source={
-                <Link href={cardHref(item.cardId)} className="underline">
+                <Link href={cardHref(item.cardId)} className={SOURCE_LINK}>
                   카드 · {item.cardTitle} · {SLOT_LABELS[item.slot]}
                   {item.quoteSource === "answer" ? "(내 답)" : ""}
                 </Link>
@@ -119,7 +119,7 @@ export function SelectedEvidence({ requirement, matched }: { requirement: Requir
             <Link href={`/records?q=${encodeURIComponent(requirement.name)}`} className={SECONDARY_BUTTON_S}>
               내 기록에서 찾기
             </Link>
-            <AddRecordButton variant="page" />
+            <AddRecordButton variant="outline" />
           </div>
         </div>
       ) : (

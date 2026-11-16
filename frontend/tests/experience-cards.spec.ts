@@ -1,14 +1,8 @@
-import { type BrowserContext, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { logIn } from "./helpers";
 
 // 경험 카드(F-006) 화면: 카드 목록(탭) · 노트 상세 [카드 후보 찾기] · 후보 검토 시트 · 카드 상세 고치기.
 // 가짜 백엔드(tests/mock-backend.mjs)의 카드 801 · 802 · 803 · 811 · 812와 노트 4 · 6 · 7을 쓴다(테스트마다 다른 카드).
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
-
-async function logIn(context: BrowserContext) {
-  await context.addCookies([
-    { name: "didim_session", value: VALID_SESSION_TOKEN, domain: "localhost", path: "/", httpOnly: true },
-  ]);
-}
 
 test("카드 목록: 내 카드 탭에 근거 · 빈칸 수가 보이고, 후보 탭으로 바꾸면 후보가 보인다", async ({ context, page }) => {
   await logIn(context);

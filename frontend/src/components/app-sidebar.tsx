@@ -1,21 +1,25 @@
 import Link from "next/link";
 import { AddRecordButton } from "@/components/import-records-dialog";
 import { SidebarNav, SidebarTooltip } from "@/components/sidebar-nav";
+import { SidebarToggle } from "@/components/sidebar-toggle";
 import { FOCUS_RING } from "@/lib/ui-classes";
 
 // 회원 화면 공통 왼쪽 메뉴(Figma Didim/사이드바 17:324).
-// 펼침 240 / 접힘 56. PC(lg 이상)는 펼침, 좁은 화면은 접힘 — CSS만으로 바꿔 상태가 없다(모바일 = PC 기준 + 안 깨지게, 사용자 2026-11-11).
+// 펼침 240 / 접힘 56. PC(lg 이상)는 펼침, 좁은 화면은 접힘(모바일 = PC 기준 + 안 깨지게, 사용자 2026-11-11).
+// PC에서는 [사이드바 접기]로 접을 수 있다 — 상태는 <html> 속성 하나(sidebar-toggle.tsx · lib/sidebar-state.ts, 사용자 요청 2026-11-16).
 // 자소서 탭(F-008)처럼 data-collapse-sidebar를 그린 화면은 넓어도 접힌다 — 그래서 lg: 대신 sidebar-open: 변형(globals.css)을 쓴다.
 // 스크롤해도 왼쪽에 붙어 있다(sticky). 로고 마크만 primary/accent(큰 장식 면).
 export function AppSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-14 shrink-0 flex-col rounded-r-sheet border-r border-line-regular bg-bg-light shadow-sidebar sidebar-open:w-60">
-      <div className="flex h-16 shrink-0 items-center justify-center sidebar-open:justify-start sidebar-open:pl-5">
+      {/* 펼침: 로고 왼쪽 · [사이드바 접기] 오른쪽 한 줄 / 접힘: 로고 아래에 [사이드바 펼치기](버튼이 보일 때만) */}
+      <div className="flex min-h-16 shrink-0 flex-col items-center justify-center gap-2 py-4 sidebar-open:flex-row sidebar-open:justify-between sidebar-open:py-0 sidebar-open:pr-3 sidebar-open:pl-5">
         <Link href="/home" className={`flex items-center gap-2 rounded-button ${FOCUS_RING}`}>
           {/* 로고 마크: 모서리가 왼쪽 위 · 오른쪽 아래 8, 나머지 6 */}
           <span aria-hidden="true" className="size-6 rounded-tl-button rounded-tr-tag rounded-br-button rounded-bl-tag bg-primary-accent" />
           <span className="sr-only text-title-1 font-semibold text-text-main sidebar-open:not-sr-only">디딤</span>
         </Link>
+        <SidebarToggle />
       </div>
 
       <div className="flex flex-col gap-1 px-2 sidebar-open:px-4">

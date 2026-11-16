@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { SIDEBAR_INIT_SCRIPT } from "@/lib/sidebar-state";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -31,10 +32,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: 아래 스크립트가 React보다 먼저 <html>에 사이드바 접힘 속성을 붙일 수 있어서(그 속성만 다름)
     <html
       lang="ko"
       className={`${pretendard.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* 사이드바를 접어 두었으면 첫 화면 전에 접는다(깜빡임 없음 — lib/sidebar-state.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: SIDEBAR_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

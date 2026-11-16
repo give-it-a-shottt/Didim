@@ -72,7 +72,7 @@ export function ApplicationStatusSelect({
           value={status}
           disabled={change.isPending}
           onChange={(event) => change.mutate(event.target.value as ApplicationStatus)}
-          className={`h-8 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+          className={`select-picker h-8 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
         >
           {APPLICATION_STATUSES.map((value) => (
             <option key={value} value={value}>

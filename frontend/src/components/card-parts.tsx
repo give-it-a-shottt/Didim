@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { SourceQuote } from "@/components/page-parts";
 import { evidenceHref } from "@/lib/quiz";
+import { SOURCE_LINK } from "@/lib/ui-classes";
 
 /** 원문 인용 + 근거 링크. 노트나 조각이 지워졌으면 '원문 없음'(인용 글은 카드에 남아 있음). */
 export function CardQuote({ quote, noteId, chunkId }: { quote: string; noteId: number | null; chunkId: number | null }) {
@@ -10,7 +11,7 @@ export function CardQuote({ quote, noteId, chunkId }: { quote: string; noteId: n
       quote={quote}
       source={
         noteId !== null && chunkId !== null ? (
-          <Link href={evidenceHref(noteId, chunkId)} className="underline">
+          <Link href={evidenceHref(noteId, chunkId)} className={SOURCE_LINK}>
             원문에서 보기
           </Link>
         ) : (

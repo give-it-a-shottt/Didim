@@ -1,16 +1,15 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
+import { VALID_SESSION_TOKEN, logIn } from "./helpers";
 
 // 노션 연결(F-005): 설정 '연결' 칸(SET_01_001) · 기록 추가 모달의 노션 탭.
 // 서버는 가짜 백엔드(tests/mock-backend.mjs)다. 상황은 세션 토큰 뒤 이름으로 고른다(목록은 mock-backend.mjs 노션 구간 주석).
 // 토큰 교환 · 갱신 · 블록 변환 · 저장은 backend/tests/test_notion.py가 확인한다.
 
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
-
 type NotionCase = "none" | "broken" | "midbreak" | "empty" | "many" | "flaky" | "disconnectfail" | "importfail";
 
 async function signIn(context: BrowserContext, notionCase?: NotionCase) {
   const value = notionCase ? `${VALID_SESSION_TOKEN}-notion-${notionCase}` : VALID_SESSION_TOKEN;
-  await context.addCookies([{ name: "didim_session", value, domain: "localhost", path: "/", httpOnly: true }]);
+  await logIn(context, value);
 }
 
 test("설정: 연결됨이면 워크스페이스와 [연결 끊기], 연결 뒤 돌아오면 안내가 보인다", async ({ context, page }) => {

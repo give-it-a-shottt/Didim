@@ -1,18 +1,12 @@
-import { type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+import { logIn } from "./helpers";
 
 // 기록 검색(F-003) 화면: 기록 · 복습 홈(REV_01_001) 검색창 → 결과 줄 → 노트 상세(REV_01_002) 위치 강조.
 // 가짜 백엔드(tests/mock-backend.mjs)의 노트 1을 쓴다.
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
 
 // 검색 결과 영역("‘…’ 검색 결과 N개" 제목의 section). 홈의 노트 목록 링크와 섞이지 않게 범위를 좁힌다.
 function searchResults(page: Page) {
   return page.getByRole("region", { name: /검색 결과/ });
-}
-
-async function logIn(context: BrowserContext) {
-  await context.addCookies([
-    { name: "didim_session", value: VALID_SESSION_TOKEN, domain: "localhost", path: "/", httpOnly: true },
-  ]);
 }
 
 test("검색어를 넣으면 결과 줄이 나오고, 누르면 노트 상세에서 그 조각 위치가 강조된다", async ({ context, page }) => {

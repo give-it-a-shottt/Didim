@@ -1,16 +1,9 @@
-import { type BrowserContext, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { logIn } from "./helpers";
 
 // 면접 연습(F-009) 화면: 카드 상세의 [면접 질문 만들기] · '이 카드의 면접 질문', 지원 상세 [면접 연습] 탭(질문 목록 · 카드 태그 ·
 // 메모 · 선택한 질문의 근거 · 맞는 역량 · 질문 없는 카드 · 분석 전 안내).
 // 가짜 백엔드(tests/mock-backend.mjs)의 카드 831~834 · 공고 930 · 931을 쓴다(테스트마다 다른 카드 · 공고 — 병렬로 돌아도 안 건드림).
-
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
-
-async function logIn(context: BrowserContext) {
-  await context.addCookies([
-    { name: "didim_session", value: VALID_SESSION_TOKEN, domain: "localhost", path: "/", httpOnly: true },
-  ]);
-}
 
 test("카드 상세: [면접 질문 만들기]를 누르면 질문이 생기고 버튼이 사라진다", async ({ context, page }) => {
   await logIn(context);

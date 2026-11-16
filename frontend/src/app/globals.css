@@ -163,8 +163,21 @@
  * 그 화면이 data-collapse-sidebar를 그리면 :has()로 접힌다 — CSS만으로 바꿔 상태가 없다(D-012, Zustand가 필요 없음).
  * 숨겨진 표시는 뺀다: Next 16은 탭을 옮겨도 앞 화면을 React Activity로 style="display: none !important"를 붙여 남겨 둔다
  * (2026-11-14 확인 — 자소서 → 공고 분석으로 옮겨도 접힌 채였음).
+ * 사용자가 [사이드바 접기]를 누르면 <html data-sidebar-collapsed>가 붙어 접힌다(lib/sidebar-state.ts, 사용자 요청 2026-11-16).
+ * sidebar-togglable = 그 버튼이 보이는 때(넓은 화면이고 늘 접히는 화면이 아님 — 자소서 탭은 항상 접힘, 사용자 선택).
+ * ⚠️ 두 변형은 '늘 접히는 화면' 조건(body:not(:has(...)))을 똑같이 쓴다 — 한쪽만 고치면 버튼과 사이드바 폭이 어긋나니 함께 고친다
+ *    (F-013 5차 리뷰 R1. 같은 조건을 쓰는 세 번째 변형이 생기면 공통으로 뺀다).
+ * sidebar-collapsed = 사용자가 접어 둔 때 — 버튼 화살표 방향을 첫 화면부터 맞추려고 JS 상태 대신 속성을 본다(5차 리뷰 R2).
  */
 @custom-variant sidebar-open {
+  @media (width >= 64rem) {
+    html:not([data-sidebar-collapsed]) body:not(:has([data-collapse-sidebar]:not([style*="display: none"], [style*="display: none"] *))) & {
+      @slot;
+    }
+  }
+}
+@custom-variant sidebar-collapsed (html[data-sidebar-collapsed] &);
+@custom-variant sidebar-togglable {
   @media (width >= 64rem) {
     body:not(:has([data-collapse-sidebar]:not([style*="display: none"], [style*="display: none"] *))) & {
       @slot;
@@ -180,6 +193,58 @@
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
+  }
+}
+
+/*
+ * 펼친 목록을 꾸밀 수 있는 select(사용자 요청 2026-11-16 — 지원 상태 선택). appearance: base-select를 아는 브라우저
+ * (Chrome · Edge 135+)만 바뀌고, 나머지는 기본 select 그대로다. 항목 간격을 넓히고 목록은 글자 폭에 맞추며,
+ * 호버 · 키보드 이동은 브랜드 색. 목록 박스와 항목 모서리는 select 칸과 같은 radius-input.
+ */
+@supports (appearance: base-select) {
+  @layer components {
+    .select-picker,
+    .select-picker::picker(select) {
+      appearance: base-select;
+    }
+    /* 칸: base-select가 되면 기본 ▼가 크고 검게 나와서 글자와 가운데 맞추고 작은 icon/sub로 */
+    .select-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: calc(var(--spacing) * 1.5);
+    }
+    .select-picker::picker-icon {
+      color: var(--color-icon-sub);
+      font-size: var(--text-body-4);
+    }
+    .select-picker::picker(select) {
+      margin-block: calc(var(--spacing) * 1);
+      padding: calc(var(--spacing) * 1);
+      border: 1px solid var(--color-line-regular);
+      border-radius: var(--radius-input);
+      background: var(--color-bg-elevated);
+    }
+    .select-picker option {
+      padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3);
+      border-radius: var(--radius-input);
+      color: var(--color-text-main);
+    }
+    .select-picker option + option {
+      margin-top: calc(var(--spacing) * 1);
+    }
+    .select-picker option::checkmark {
+      display: none;
+    }
+    .select-picker option:checked {
+      color: var(--color-primary-text);
+      font-weight: 500;
+    }
+    .select-picker option:hover,
+    .select-picker option:focus-visible {
+      background: var(--color-primary-default);
+      color: var(--color-text-on-primary);
+      outline: none;
+    }
   }
 }
 

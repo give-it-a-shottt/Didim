@@ -32,6 +32,7 @@ import {
   FOCUS_RING,
   GHOST_BUTTON_S,
   PRIMARY_BUTTON,
+  PRIMARY_BUTTON_S,
   SECONDARY_BUTTON,
   SECONDARY_BUTTON_S,
 } from "@/lib/ui-classes";
@@ -123,7 +124,7 @@ export function DraftEditor({
               type="button"
               disabled={complete.pending}
               onClick={() => complete.run(draft.id, draft.completedAt === null)}
-              className={draft.completedAt === null ? PRIMARY_BUTTON : SECONDARY_BUTTON}
+              className={draft.completedAt === null ? PRIMARY_BUTTON_S : SECONDARY_BUTTON_S}
             >
               {draft.completedAt === null ? "이 문항 완료" : "완료 풀기"}
             </button>

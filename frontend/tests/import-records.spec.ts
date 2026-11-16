@@ -1,22 +1,15 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { logIn } from "./helpers";
 
 // 기록 추가 모달(F-002): 사이드바 버튼 → 올리기(IMP_01_001) → 결과 요약(003) · 오류(900).
 // 서버는 가짜 백엔드(tests/mock-backend.mjs)다. 실제 저장 · 나누기는 backend/tests/test_import_markdown.py가 확인한다.
-
-const VALID_SESSION_TOKEN = "playwright-valid-session-token";
-
-async function signIn(context: BrowserContext) {
-  await context.addCookies([
-    { name: "didim_session", value: VALID_SESSION_TOKEN, domain: "localhost", path: "/", httpOnly: true },
-  ]);
-}
 
 function markdownFile(name: string, text: string) {
   return { name, mimeType: "text/markdown", buffer: Buffer.from(text, "utf8") };
 }
 
 test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인다", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
   await page.goto("/home");
 
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
@@ -45,7 +38,7 @@ test("기록 추가 → 마크다운 2개 올리기 → 결과 요약이 보인�
 });
 
 test("파일을 끌어다 놓아도 고른 것과 같이 올라가고, 끄는 동안 파일 칸이 강조된다", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
@@ -75,7 +68,7 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
   context,
   page,
 }) => {
-  await signIn(context);
+  await logIn(context);
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
@@ -112,7 +105,7 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
 });
 
 test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 이유를 보여 준다", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
   const dialog = page.getByRole("dialog", { name: "기록 추가" });
@@ -142,7 +135,7 @@ async function openAndSubmit(page: Page) {
 }
 
 test("서버 응답별로 맞는 화면이 나온다: 401 · 413 · 네트워크 끊김 · 200인데 JSON 아님", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
 
   await page.route("**/api/notes/import", (route) =>
     route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ detail: "로그인이 필요해요." }) }),
@@ -177,7 +170,7 @@ test("서버 응답별로 맞는 화면이 나온다: 401 · 413 · 네트워크
 });
 
 test("처리 중에는 Esc를 눌러도 모달이 닫히지 않고, 다시 열면 올리기 단계부터 시작한다", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
   let release: () => void = () => {};
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -217,7 +210,7 @@ test("처리 중에는 Esc를 눌러도 모달이 닫히지 않고, 다시 열�
 });
 
 test("중복 · 실패가 섞인 결과는 요약과 함께 목록으로 보인다", async ({ context, page }) => {
-  await signIn(context);
+  await logIn(context);
   await page.route("**/api/notes/import", (route) =>
     route.fulfill({
       status: 200,
@@ -241,7 +234,7 @@ test("하나도 읽지 못하면 오류(IMP_01_900)와 이유가 보이고, 다�
   context,
   page,
 }) => {
-  await signIn(context);
+  await logIn(context);
   await page.goto("/home");
 
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
