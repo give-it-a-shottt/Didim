@@ -1,6 +1,6 @@
-"""OpenAI 호환 채팅 API 클라이언트 — exaone · local 공통 (D-014).
+"""OpenAI 호환 채팅 API 클라이언트 — exaone · local · nvidia 공통 (D-014 · D-027).
 
-EXAONE · Ollama · LM Studio는 모두 `POST {base_url}/chat/completions` 같은 모양이라,
+EXAONE · NVIDIA · Ollama · LM Studio는 모두 `POST {base_url}/chat/completions` 같은 모양이라,
 주소(base_url) · 모델 이름 · 키만 바꿔서 이 클래스 하나로 부른다.
 
 재시도 규칙(이 파일은 "연결" 문제만 다룬다. 답 형식 검사 · 전체 시간 상한은 structured.py):
@@ -77,8 +77,8 @@ class OpenAICompatibleClient:
         sleep: SleepFn = asyncio.sleep,
     ) -> None:
         """transport · sleep은 테스트에서 가짜 서버 · 기다리지 않는 sleep을 넣을 때만 쓴다."""
-        if settings.provider not in ("exaone", "local") or not settings.base_url or not settings.model:
-            raise LLMConfigError("OpenAI 호환 클라이언트에는 exaone 또는 local 설정(주소 · 모델)이 필요해요.")
+        if settings.provider not in ("exaone", "local", "nvidia") or not settings.base_url or not settings.model:
+            raise LLMConfigError("OpenAI 호환 클라이언트에는 exaone · local · nvidia 설정(주소 · 모델)이 필요해요.")
         self._settings = settings
         self._url = f"{settings.base_url}/chat/completions"
         self._transport = transport
@@ -132,7 +132,17 @@ class OpenAICompatibleClient:
     def _auth_hint(self) -> str:
         if self._settings.provider == "exaone":
             return "EXAONE_API_KEY를 확인해 주세요."
+        if self._settings.provider == "nvidia":
+            return "NVIDIA_API_KEY와, 그 모델이 'Free Endpoint'인지 확인해 주세요."
         return "local AI 서버의 인증 설정을 확인해 주세요."
+
+    def _model_hint(self) -> str:
+        """모델을 못 찾거나(404) 종료됐을 때(410) 고칠 설정 — 제공자마다 읽는 변수가 다르다(F-009 4차 리뷰 R3)."""
+        if self._settings.provider == "nvidia":
+            return "NVIDIA_MODEL을 확인해 주세요(무료 목록에서 빠졌거나 종료된 모델일 수 있어요)."
+        if self._settings.provider == "exaone":
+            return "LLM_MODEL을 확인해 주세요(비우면 기본 EXAONE 모델)."
+        return "LLM_BASE_URL · LLM_MODEL을 확인해 주세요."
 
     async def _send_once(
         self,
@@ -159,7 +169,9 @@ class OpenAICompatibleClient:
         if status == 402:  # 유료 전환 · 잔액 부족 등(D-014 "유료 전환 가능"). 보내는 내용 문제가 아니다
             raise LLMConfigError("AI 서버가 결제 · 사용 권한 문제로 거절했어요(402). 계정 상태를 확인해 주세요.")
         if status == 404:
-            raise LLMConfigError("AI 서버 주소나 모델을 찾지 못했어요(404). LLM_BASE_URL · LLM_MODEL을 확인해 주세요.")
+            raise LLMConfigError(f"AI 서버 주소나 모델을 찾지 못했어요(404). {self._model_hint()}")
+        if status == 410:  # 모델 종료(NVIDIA 무료 목록 등 — D-027). 보낸 내용이 아니라 설정(모델 이름) 문제
+            raise LLMConfigError(f"이 모델은 서비스가 끝났어요(410). {self._model_hint()}")
         if 300 <= status < 400:
             raise LLMConfigError(f"AI 서버가 다른 주소로 넘기려 해요({status}). LLM_BASE_URL을 확인해 주세요.")
         if status == 408 or status >= 500:

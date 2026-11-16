@@ -22,29 +22,6 @@ NOTE = "# 노트\n\n## 화면 만들기\n상품 목록이 느렸다.\n\nReact.me
 QUESTION = QuestionKey(kind="answerable", text="성능을 개선한 경험을 써 주세요.", char_limit=300)
 
 
-def test_write_json_keeps_the_old_file_when_replacing_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    out = tmp_path / "result.json"
-    out.write_text('{"human": "직접 적은 판정"}', encoding="utf-8")
-
-    def broken_replace(self: Path, target: Path) -> Path:
-        raise OSError("디스크 오류")
-
-    monkeypatch.setattr(Path, "replace", broken_replace)
-    with pytest.raises(OSError):
-        draft_eval._write_json(out, {"new": True})
-    assert out.read_text(encoding="utf-8") == '{"human": "직접 적은 판정"}'
-    assert list(tmp_path.iterdir()) == [out]  # 임시 파일을 남기지 않는다
-
-
-def test_write_json_does_not_touch_the_file_when_the_payload_cannot_be_written(tmp_path: Path) -> None:
-    out = tmp_path / "result.json"
-    out.write_text("원본", encoding="utf-8")
-    with pytest.raises(TypeError):
-        draft_eval._write_json(out, {"bad": object()})
-    assert out.read_text(encoding="utf-8") == "원본"
-    assert list(tmp_path.iterdir()) == [out]
-
-
 def test_rescore_reports_broken_files(tmp_path: Path) -> None:
     broken = tmp_path / "broken.json"
     broken.write_text("{not json", encoding="utf-8")

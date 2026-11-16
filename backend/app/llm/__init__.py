@@ -1,6 +1,6 @@
 """LLM 연결 (D-014). 기능 코드는 이 패키지에서 가져다 쓴다.
 
-    client = get_llm_client()                       # LLM_PROVIDER로 mock · exaone · local 중 하나
+    client = get_llm_client()                       # LLM_PROVIDER로 mock · exaone · local · nvidia 중 하나
     result = await complete_json(client, messages, QuizSchema)
     result.value                                    # 스키마 검사를 통과한 결과
     result.usage                                    # 호출 수 · 토큰(하루 상한용)

@@ -36,12 +36,15 @@ from app.llm.settings import (
     LOCAL_LLM_DEFAULT_BASE_URL,
     MAX_JSON_CANDIDATES,
     MAX_REPLY_CHARS,
+    NVIDIA_BASE_URL,
 )
 
 FAKE_KEY = "test-key-should-never-appear-in-errors"
 LLM_ENV_NAMES = (
     "LLM_PROVIDER",
     "EXAONE_API_KEY",
+    "NVIDIA_API_KEY",
+    "NVIDIA_MODEL",
     "LLM_BASE_URL",
     "LLM_MODEL",
     "LLM_REASONING_EFFORT",
@@ -162,11 +165,17 @@ def test_exaone_rejects_unknown_reasoning_effort(monkeypatch: pytest.MonkeyPatch
     _raises(LLMConfigError, load_llm_settings)
 
 
-def test_key_is_never_sent_over_plain_http(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LLM_PROVIDER", "exaone")
+def test_keyed_providers_ignore_llm_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """키를 보내는 exaone · nvidia는 LLM_BASE_URL을 읽지 않는다 — local용 주소를 적어 둔 채 provider를 넘겨 불러도
+    키가 그 주소로 가지 않게(F-009 4차 리뷰 R2, 사용자 선택)."""
+    monkeypatch.setenv("LLM_BASE_URL", "http://192.168.0.10:11434/v1")
     monkeypatch.setenv("EXAONE_API_KEY", FAKE_KEY)
-    monkeypatch.setenv("LLM_BASE_URL", "http://example.com/v1")
-    _raises(LLMConfigError, load_llm_settings)
+    monkeypatch.setenv("NVIDIA_API_KEY", FAKE_KEY)
+    monkeypatch.setenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-bolt-e4b")
+    assert load_llm_settings("exaone").base_url == EXAONE_BASE_URL
+    assert load_llm_settings("nvidia").base_url == NVIDIA_BASE_URL
+    monkeypatch.setenv("LLM_MODEL", "m")
+    assert load_llm_settings("local").base_url == "http://192.168.0.10:11434/v1"  # local만 읽는다
 
 
 def test_local_requires_model_and_uses_ollama_address(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -178,6 +187,29 @@ def test_local_requires_model_and_uses_ollama_address(monkeypatch: pytest.Monkey
     assert settings.base_url == LOCAL_LLM_DEFAULT_BASE_URL
     assert settings.api_key == ""
     assert settings.reasoning_effort == ""  # 넣지 않으면 요청에 보내지 않음
+
+
+def test_nvidia_needs_key_and_free_model_and_uses_official_address(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "nvidia")
+    _raises(LLMConfigError, load_llm_settings)  # 키 없음
+    monkeypatch.setenv("NVIDIA_API_KEY", FAKE_KEY)
+    _raises(LLMConfigError, load_llm_settings)  # 모델 없음 — 무료 모델은 사용자가 고른다(D-027)
+
+    monkeypatch.setenv("NVIDIA_MODEL", "deepseek-ai/deepseek-v4.1-flash")
+    settings = load_llm_settings()
+    assert (settings.base_url, settings.model, settings.reasoning_effort) == (
+        NVIDIA_BASE_URL, "deepseek-ai/deepseek-v4.1-flash", ""
+    )
+    assert isinstance(get_llm_client(settings), OpenAICompatibleClient)
+    assert FAKE_KEY not in repr(settings)
+
+
+def test_nvidia_model_does_not_leak_into_exaone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """메인이 nvidia여도 exaone 평가(provider를 넘겨 부름)는 EXAONE 모델 그대로 — 모델 변수를 따로 둔 이유(D-027)."""
+    monkeypatch.setenv("LLM_PROVIDER", "nvidia")
+    monkeypatch.setenv("NVIDIA_MODEL", "google/gemma-4-31b-it")
+    monkeypatch.setenv("EXAONE_API_KEY", FAKE_KEY)
+    assert load_llm_settings("exaone").model == EXAONE_MODEL
 
 
 @pytest.mark.parametrize("raw", ["abc", "0", "-5", "nan", "inf"])
@@ -516,6 +548,31 @@ def test_timeouts_are_passed_to_each_request() -> None:
     sent = server.requests[0].extensions["timeout"]
     assert sent["read"] == DEFAULT_LLM_TIMEOUT_SECONDS
     assert sent["connect"] == 5.0
+
+
+def test_nvidia_sends_bearer_key_to_the_official_address_and_hints_at_free_models() -> None:
+    settings = LLMSettings(provider="nvidia", base_url=NVIDIA_BASE_URL, model="z-ai/glm-5.3-flash", api_key=FAKE_KEY)
+    server = FakeServer(httpx.Response(200, json=_ok_body("hi")))
+    _chat(server.client(settings))
+    request = server.requests[0]
+    assert str(request.url) == f"{NVIDIA_BASE_URL}/chat/completions"
+    assert request.headers["Authorization"] == f"Bearer {FAKE_KEY}"
+    assert "reasoning_effort" not in json.loads(request.content)
+
+    exc = _raises(LLMConfigError, lambda: _chat(FakeServer(httpx.Response(403)).client(settings)))
+    assert "NVIDIA_API_KEY" in str(exc) and "Free Endpoint" in str(exc)
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_missing_or_retired_model_points_to_the_right_setting(status: int) -> None:
+    """모델을 못 찾거나(404) 종료됐으면(410 — NVIDIA 무료 목록) 설정 오류로, 그 제공자가 읽는 변수를 알려 준다(4차 리뷰 R3)."""
+    nvidia = LLMSettings(provider="nvidia", base_url=NVIDIA_BASE_URL, model="old/model", api_key=FAKE_KEY)
+    server = FakeServer(httpx.Response(status))
+    exc = _raises(LLMConfigError, lambda: _chat(server.client(nvidia)))
+    assert "NVIDIA_MODEL" in str(exc) and "LLM_MODEL" not in str(exc).replace("NVIDIA_MODEL", "")
+    assert len(server.requests) == 1  # 다시 불러도 같으니 재시도 안 함
+    local = LLMSettings(provider="local", base_url=LOCAL_LLM_DEFAULT_BASE_URL, model="m")
+    assert "LLM_MODEL" in str(_raises(LLMConfigError, lambda: _chat(FakeServer(httpx.Response(status)).client(local))))
 
 
 def test_local_auth_error_does_not_mention_exaone_key() -> None:

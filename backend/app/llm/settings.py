@@ -1,11 +1,15 @@
-"""LLM 설정 읽기 (D-014). 값은 backend/.env에서 읽고, 키는 서버에서만 쓴다.
+"""LLM 설정 읽기 (D-014 · D-027). 값은 backend/.env에서 읽고, 키는 서버에서만 쓴다.
 
-LLM_PROVIDER          mock(기본) | exaone | local
+LLM_PROVIDER          mock(기본) | exaone | local | nvidia
 EXAONE_API_KEY        exaone일 때 필요
-LLM_BASE_URL          주소를 바꿀 때만(기본: exaone은 공식 API 주소, local은 이 컴퓨터의 Ollama 주소).
-                      Ollama를 다른 컴퓨터(예: 집 데스크톱)에서 켜면 그 컴퓨터 주소를 넣는다
+NVIDIA_API_KEY        nvidia일 때 필요(build.nvidia.com에서 받은 키)
+NVIDIA_MODEL          nvidia일 때 필요 — 'Free Endpoint' 표시가 붙은 모델 이름. LLM_MODEL과 따로 둬서
+                      메인을 nvidia로 둬도 exaone 평가(provider를 넘겨 부름)가 그대로 돈다
+LLM_BASE_URL          local일 때만 읽는다(기본: 이 컴퓨터의 Ollama 주소). Ollama를 다른 컴퓨터(예: 집 데스크톱)에서
+                      켜면 그 컴퓨터 주소를 넣는다. 키를 보내는 exaone · nvidia는 코드의 공식 주소만 쓴다 — 주소 하나를
+                      같이 쓰면 provider를 넘겨 부를 때 한 회사의 키가 다른 회사 주소로 갈 수 있어서(F-009 4차 리뷰 R2, 사용자 선택)
 LLM_MODEL             모델 이름(exaone은 기본값 있음, local은 꼭 필요)
-LLM_REASONING_EFFORT  exaone: low(기본) | high | max. local은 넣을 때만 보낸다
+LLM_REASONING_EFFORT  exaone: low(기본) | high | max. local · nvidia는 넣을 때만 보낸다
 LLM_TIMEOUT_SECONDS   데이터가 오가는 간격의 상한(기본 60초). 재시도를 합친 전체 상한은 아래 상수(180초)
 """
 
@@ -15,7 +19,7 @@ from urllib.parse import urlsplit
 
 from app.llm.base import LLMConfigError
 
-LLM_PROVIDERS = ("mock", "exaone", "local")
+LLM_PROVIDERS = ("mock", "exaone", "local", "nvidia")
 DEFAULT_LLM_PROVIDER = "mock"  # 키 없이 개발 · 테스트가 돌아가게(D-014)
 
 # K-EXAONE 2.5 (2026-11-09 공개 문서 기준, D-014)
@@ -23,6 +27,10 @@ EXAONE_BASE_URL = "https://api.exaone.ai/v1"
 EXAONE_MODEL = "k-exaone_v2.5"
 EXAONE_REASONING_EFFORTS = ("low", "high", "max")
 DEFAULT_EXAONE_REASONING_EFFORT = "low"  # 가장 빠르고 가벼움. 품질이 모자라면 기능별로 올린다
+
+# NVIDIA 무료 API(build.nvidia.com, D-027) — OpenAI 호환. 카탈로그에서 'Free Endpoint' 표시가 붙은 모델만 무료라
+# 모델은 코드에 박지 않고 NVIDIA_MODEL로 고른다(무료 목록이 바뀌어도 코드는 그대로). 분당 40번 · 하루 1만 번(2026-11 기준)
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 # 내 컴퓨터의 오픈소스 모델(Ollama 기본 주소). localhost 대신 127.0.0.1(T-002)
 LOCAL_LLM_DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
@@ -43,7 +51,6 @@ LLM_MAX_FORMAT_ATTEMPTS = 2  # 답이 JSON 형식에 안 맞을 때
 MAX_REPLY_CHARS = 200_000
 MAX_JSON_CANDIDATES = 20  # 답 안에서 JSON 객체 시작점({)을 몇 개까지 읽어 볼지
 
-_LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1")
 
 
 @dataclass(frozen=True)
@@ -74,13 +81,11 @@ def _read_timeout() -> float:
     return value
 
 
-def _check_base_url(base_url: str, *, has_key: bool) -> str:
+def _check_base_url(base_url: str) -> str:
+    """local의 주소 검사. 키를 보내는 exaone · nvidia는 이 값을 읽지 않고 코드의 https 공식 주소만 쓴다."""
     parts = urlsplit(base_url)
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise LLMConfigError("LLM_BASE_URL은 http:// 또는 https://로 시작하는 주소여야 해요.")
-    # 키를 암호화 안 된 주소로 보내지 않는다. 내 컴퓨터 안(127.0.0.1)은 예외.
-    if has_key and parts.scheme != "https" and parts.hostname not in _LOCAL_HOSTS:
-        raise LLMConfigError("API 키를 보내는 주소는 https://여야 해요.")
     return base_url.rstrip("/")
 
 
@@ -110,9 +115,28 @@ def load_llm_settings(provider: str | None = None) -> LLMSettings:
             )
         return LLMSettings(
             provider="exaone",
-            base_url=_check_base_url(_env("LLM_BASE_URL") or EXAONE_BASE_URL, has_key=True),
+            base_url=EXAONE_BASE_URL,
             model=_env("LLM_MODEL") or EXAONE_MODEL,
             reasoning_effort=effort,
+            timeout_seconds=timeout_seconds,
+            api_key=api_key,
+        )
+
+    if name == "nvidia":
+        api_key = _env("NVIDIA_API_KEY")
+        if not api_key:
+            raise LLMConfigError("LLM_PROVIDER=nvidia이면 NVIDIA_API_KEY가 필요해요(backend/.env).")
+        model = _env("NVIDIA_MODEL")
+        if not model:
+            raise LLMConfigError(
+                "LLM_PROVIDER=nvidia이면 NVIDIA_MODEL이 필요해요 — build.nvidia.com에서 'Free Endpoint' 표시가 붙은 모델 이름"
+                "(예: nvidia/nemotron-3-ultra-550b-a55b — D-027)."
+            )
+        return LLMSettings(
+            provider="nvidia",
+            base_url=NVIDIA_BASE_URL,
+            model=model,
+            reasoning_effort=_env("LLM_REASONING_EFFORT").lower(),
             timeout_seconds=timeout_seconds,
             api_key=api_key,
         )
@@ -123,7 +147,7 @@ def load_llm_settings(provider: str | None = None) -> LLMSettings:
         raise LLMConfigError("LLM_PROVIDER=local이면 LLM_MODEL(내려받은 모델 이름)이 필요해요.")
     return LLMSettings(
         provider="local",
-        base_url=_check_base_url(_env("LLM_BASE_URL") or LOCAL_LLM_DEFAULT_BASE_URL, has_key=False),
+        base_url=_check_base_url(_env("LLM_BASE_URL") or LOCAL_LLM_DEFAULT_BASE_URL),
         model=model,
         reasoning_effort=_env("LLM_REASONING_EFFORT").lower(),
         timeout_seconds=timeout_seconds,

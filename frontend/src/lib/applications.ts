@@ -1,6 +1,6 @@
 import { ApiRequestError, apiRequest } from "@/lib/api-request";
 import { type CardSlot, isCardSlot } from "@/lib/cards";
-import { isObject } from "@/lib/json";
+import { isNullableNumber, isNullableString, isObject } from "@/lib/json";
 
 // 지원(공고) · 공고 분석(F-007) 응답 모양 · 확인 함수 · 브라우저 요청. 서버 컴포넌트(lib/applications-data.ts)와 브라우저가 같이 쓴다.
 // 서버: backend/app/api/applications.py. 근거는 항상 원문 인용(공고 문장 · 내 카드 칸 글)이고, 역량 이름 · 맞는 이유는 AI 글이다(D-003).
@@ -99,9 +99,6 @@ export function formatDeadline(deadline: string): string {
 }
 
 // --- 응답 확인 ---
-
-const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";
-const isNullableNumber = (value: unknown): value is number | null => value === null || typeof value === "number";
 
 function isStatus(value: unknown): value is ApplicationStatus {
   return typeof value === "string" && (APPLICATION_STATUSES as readonly string[]).includes(value);

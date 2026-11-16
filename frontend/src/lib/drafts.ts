@@ -1,6 +1,6 @@
 import { ApiRequestError, apiRequest } from "@/lib/api-request";
 import { type CardSlot, isCardSlot } from "@/lib/cards";
-import { isObject } from "@/lib/json";
+import { isNullableNumber, isNullableString, isObject } from "@/lib/json";
 
 // 근거 달린 자소서 초안(F-008) 응답 모양 · 확인 함수 · 브라우저 요청. 서버 컴포넌트(lib/drafts-data.ts)와 브라우저가 같이 쓴다.
 // 서버: backend/app/api/drafts.py. 근거는 항상 내 카드 칸 글(원문 인용 · 내 답)이고, 근거 상태는 서버가 읽을 때마다
@@ -88,8 +88,6 @@ export function formatTime(iso: string): string {
 
 // --- 응답 확인 ---
 
-const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";
-const isNullableNumber = (value: unknown): value is number | null => value === null || typeof value === "number";
 const EVIDENCE_STATUSES: readonly string[] = ["ok", "none", "card_gone", "changed"];
 const ORIGINS: readonly string[] = ["ai", "edited", "user"];
 

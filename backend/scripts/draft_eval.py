@@ -21,7 +21,6 @@ backend 폴더에서:
 import argparse
 import asyncio
 import json
-import os
 import sys
 import tempfile
 from collections.abc import Callable, Mapping
@@ -67,6 +66,7 @@ from app.services.posting_evaluation import (
     parse_posting_key,
 )
 from app.services.quiz_evaluation import PatientClient
+from scripts.eval_files import PROVIDER_HELP, REAL_PROVIDERS, write_json_atomic
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 EVAL_DIR = BACKEND_DIR / "eval" / "drafts"
@@ -196,23 +196,12 @@ def _print(mode: str, provider: str, summary: Summary, waits: list[float]) -> No
 # --- 결과 파일 ---
 
 
-def _write_json(path: Path, payload: dict[str, object]) -> None:
-    """같은 폴더의 임시 파일에 다 쓴 뒤 바꿔 끼운다 — 쓰다 멈춰도 원래 파일(사람 판정)이 그대로 남게(5차 리뷰 R3)."""
-    text = json.dumps(payload, ensure_ascii=False, indent=2)
-    handle, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.stem}-", suffix=".tmp")
-    try:
-        with os.fdopen(handle, "w", encoding="utf-8") as tmp:
-            tmp.write(text)
-        Path(tmp_name).replace(path)
-    except BaseException:
-        Path(tmp_name).unlink(missing_ok=True)
-        raise
 
 
 def _write_results(
     out: Path, *, mode: str, provider: str, model: str, results: list[QuestionEvalResult], waits: list[float], done: bool
 ) -> None:
-    _write_json(
+    write_json_atomic(
         out,
         {
             "mode": mode,
@@ -334,7 +323,7 @@ async def _run(options: EvalOptions) -> int:
         provider_name, model = settings.provider, settings.model
         if settings.provider == "mock":
             if not options.allow_mock:
-                print("mock으로는 평가 수치에 뜻이 없어요. 예) python -m scripts.draft_eval exaone")
+                print(f"mock으로는 평가 수치에 뜻이 없어요. 제공자를 넘겨 주세요({REAL_PROVIDERS}). 예) python -m scripts.draft_eval nvidia")
                 return 1
             writer = MockLLMClient(responder=mock_draft_responder)
 
@@ -364,7 +353,7 @@ def _rescore(path: Path) -> int:
         return 1
     mode = str(payload.get("mode") or MODE_AI)
     payload["summary"] = _summary(mode, results)
-    _write_json(path, payload)
+    write_json_atomic(path, payload)
     _print(mode, str(payload.get("provider")), payload["summary"], list(payload.get("rate_limit_waits") or []))
     return 0
 
@@ -373,7 +362,7 @@ def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):  # Windows cp949 파이프 출력(T-003)
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="자소서 초안 평가(F-008 완료 기준 4)")
-    parser.add_argument("provider", nargs="?", default=None, help="exaone · local (빼면 LLM_PROVIDER 설정)")
+    parser.add_argument("provider", nargs="?", default=None, help=PROVIDER_HELP)
     parser.add_argument("--planted", action="store_true", help="심은 문장 평가(D-005, AI 안 부름)")
     parser.add_argument("--score", type=Path, default=None, help="사람 판정을 적은 결과 파일을 다시 채점(AI 안 부름)")
     parser.add_argument("--limit", type=int, default=None, help="앞에서부터 공고 몇 개만(1 이상, 공고마다 문항 2개)")

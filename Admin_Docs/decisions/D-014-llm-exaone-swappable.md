@@ -12,7 +12,7 @@
 - LG AI연구원이 2026-11-09 K-EXAONE 2.5 API를 무료 공개했다. OpenAI 호환 `POST https://api.exaone.ai/v1/chat/completions`, 모델 `k-exaone_v2.5`, 최대 문맥 524,288 토큰, 텍스트 전용, 항상 추론 후 답변(`reasoning_effort` low/high/max, 추론은 `message.reasoning_content`, 답은 `message.content`, 답 앞에 "\n\n"이 붙을 수 있음).
 
 ### 결정
-- 메인 모델: K-EXAONE 2.5 API. 키는 `backend/.env`의 `EXAONE_API_KEY`(서버에서만, 커밋 · 문서 · 화면 쪽 금지).
+- 메인 모델: K-EXAONE 2.5 API. → **2026-11-16 D-027로 바뀜(메인 = NVIDIA 무료 API, EXAONE은 예비 · 비교용).** 키는 `backend/.env`의 `EXAONE_API_KEY`(서버에서만, 커밋 · 문서 · 화면 쪽 금지).
 - 구조: `LLM_PROVIDER = mock | exaone | local` 한 인터페이스. 셋 다 OpenAI 호환 형식이라 local은 주소(base_url)와 모델 이름만 바꾼다(Ollama · LM Studio의 작은 EXAONE 공개 모델 또는 gpt-oss).
 - 개발 · 테스트 기본값은 mock(키 없이 동작, 테스트가 외부 API에 의존하지 않게).
 - 응답은 정해진 JSON 스키마로 서버에서 검사하고, 틀리면 재시도 · 실패 처리(원칙 3). 구조화 출력 기능이 문서에 없어서 검사는 우리 쪽에서 한다.

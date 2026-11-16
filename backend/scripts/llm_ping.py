@@ -3,6 +3,7 @@
 backend 폴더에서:
     uv run --env-file .env python -m scripts.llm_ping           # LLM_PROVIDER 설정대로
     uv run --env-file .env python -m scripts.llm_ping exaone    # 설정과 상관없이 exaone으로
+    uv run --env-file .env python -m scripts.llm_ping nvidia    # nvidia로(NVIDIA_MODEL에 고른 무료 모델)
 
 키 · 주소 같은 설정값은 출력하지 않는다. pytest에는 넣지 않는다
 (테스트가 외부 API · 키 · 사용량에 기대지 않게, D-014).

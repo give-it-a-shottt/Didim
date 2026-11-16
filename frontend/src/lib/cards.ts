@@ -1,7 +1,7 @@
 import { ApiRequestError, apiRequest } from "@/lib/api-request";
 import { type CardSlot, isCardSlot } from "@/lib/card-slots";
 import { type InterviewQuestion, toInterviewQuestions } from "@/lib/interview";
-import { isObject, isStringArray } from "@/lib/json";
+import { isNullableNumber, isNullableString, isObject, isStringArray } from "@/lib/json";
 
 // 경험 카드(F-006) 응답 모양 · 확인 함수 · 브라우저 요청. 서버 컴포넌트(lib/cards-data.ts)와 브라우저가 같이 쓴다.
 // 서버: backend/app/api/cards.py. 카드에는 원문 인용 · 사용자 답 · 근거 링크만 있다(D-003) — AI 질문은 화면 안내일 뿐.
@@ -97,8 +97,6 @@ export function filterCardsByTitle<T extends { title: string }>(cards: readonly 
 
 // --- 응답 확인 ---
 
-const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";
-const isNullableNumber = (value: unknown): value is number | null => value === null || typeof value === "number";
 export function toCardSummary(value: unknown): CardSummary | null {
   if (
     !isObject(value) ||
