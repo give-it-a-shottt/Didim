@@ -9,14 +9,22 @@ from collections.abc import Callable, Sequence
 
 from fastapi import HTTPException, status
 
-from app.llm import LLMClient, LLMConfigError, LLMError, LLMInvalidOutput, Message, MockLLMClient
-from app.llm import get_llm_client, load_llm_settings
+from app.llm import (
+    LLMClient,
+    LLMConfigError,
+    LLMError,
+    LLMInvalidOutput,
+    Message,
+    MockLLMClient,
+    get_llm_client,
+    load_llm_settings,
+)
 
 NOTE_NOT_FOUND_DETAIL = "노트를 찾을 수 없어요."
 UNAVAILABLE_DETAIL = "지금은 AI에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요."
 AI_NOT_CONFIGURED_DETAIL = "서버의 AI 설정이 완료되지 않았어요."
 # 사용자당 AI 작업은 기능을 가리지 않고 1개(D-020, app/services/note_claim.py)
-OTHER_AI_WORK_DETAIL = "다른 AI 작업(문제 만들기 · 카드 후보 찾기 · 공고 분석 · 자소서 초안)이 진행 중이에요. 끝난 뒤 다시 시도해 주세요."
+OTHER_AI_WORK_DETAIL = "다른 AI 작업(문제 만들기 · 카드 후보 찾기 · 공고 분석 · 자소서 초안 · 면접 질문)이 진행 중이에요. 끝난 뒤 다시 시도해 주세요."
 
 
 def daily_limit_detail(limit: int) -> str:

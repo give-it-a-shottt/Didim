@@ -1,18 +1,13 @@
 import { ApiRequestError, apiRequest } from "@/lib/api-request";
+import { type CardSlot, isCardSlot } from "@/lib/card-slots";
+import { type InterviewQuestion, toInterviewQuestions } from "@/lib/interview";
 import { isObject, isStringArray } from "@/lib/json";
 
 // 경험 카드(F-006) 응답 모양 · 확인 함수 · 브라우저 요청. 서버 컴포넌트(lib/cards-data.ts)와 브라우저가 같이 쓴다.
 // 서버: backend/app/api/cards.py. 카드에는 원문 인용 · 사용자 답 · 근거 링크만 있다(D-003) — AI 질문은 화면 안내일 뿐.
 
-export const CARD_SLOTS = ["situation", "task", "action", "result"] as const;
-export type CardSlot = (typeof CARD_SLOTS)[number];
-
-export const SLOT_LABELS: Record<CardSlot, string> = {
-  situation: "상황",
-  task: "과제",
-  action: "행동",
-  result: "결과",
-};
+// 칸 이름은 lib/card-slots.ts(면접 질문 모듈도 쓰는데 순환 import를 피하려고 따로 둠). 기존 import 경로를 위해 다시 내보낸다.
+export { CARD_SLOTS, type CardSlot, isCardSlot, SLOT_LABELS } from "@/lib/card-slots";
 
 export type CardStatus = "candidate" | "saved";
 
@@ -53,6 +48,13 @@ export type CardDetail = {
   blankCount: number;
   evidenceCount: number;
   fields: CardField[];
+  interviewQuestions: InterviewQuestion[]; // F-009 — 근거 상태는 서버가 지금 카드 칸과 다시 비교한 값
+};
+
+export type InterviewWriteResult = {
+  written: boolean; // false면 근거 검사를 넘은 질문이 없어 아무것도 저장하지 않음
+  questions: number;
+  remainingToday: number;
 };
 
 export type FindResult = {
@@ -66,10 +68,6 @@ export type FindResult = {
 
 export function cardHref(cardId: number): string {
   return `/cards/${cardId}`;
-}
-
-export function isCardSlot(value: unknown): value is CardSlot {
-  return typeof value === "string" && (CARD_SLOTS as readonly string[]).includes(value);
 }
 
 /** 빈칸 = 인용도 내 답도 없는 칸 */
@@ -101,7 +99,6 @@ export function filterCardsByTitle<T extends { title: string }>(cards: readonly 
 
 const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";
 const isNullableNumber = (value: unknown): value is number | null => value === null || typeof value === "number";
-
 export function toCardSummary(value: unknown): CardSummary | null {
   if (
     !isObject(value) ||
@@ -172,6 +169,8 @@ export function toCardDetail(value: unknown): CardDetail | null {
   }
   const fields = value.fields.map(toCardField);
   if (fields.some((field) => field === null)) return null;
+  const interviewQuestions = toInterviewQuestions(value.interview_questions);
+  if (interviewQuestions === null) return null;
   return {
     id: value.id,
     title: value.title,
@@ -182,6 +181,7 @@ export function toCardDetail(value: unknown): CardDetail | null {
     blankCount: value.blank_count,
     evidenceCount: value.evidence_count,
     fields: fields as CardField[],
+    interviewQuestions,
   };
 }
 
@@ -247,4 +247,18 @@ export async function updateField(
       remove_quote: removeQuote,
     }),
   );
+}
+
+/** [면접 질문 만들기](AI 1번, 카드당 한 번). 409(후보 · 이미 있음 · 빈칸만 · 만드는 중) · 429 · 502 · 503은 서버 문구 그대로. */
+export async function writeInterviewQuestions(cardId: number): Promise<InterviewWriteResult> {
+  const body = await apiRequest("POST", `/api/cards/${cardId}/interview-questions`, "면접 질문을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.");
+  if (
+    !isObject(body) ||
+    typeof body.written !== "boolean" ||
+    typeof body.questions !== "number" ||
+    typeof body.remaining_today !== "number"
+  ) {
+    throw new ApiRequestError("만든 결과를 읽지 못했어요. 새로 고침해 확인해 주세요.");
+  }
+  return { written: body.written, questions: body.questions, remainingToday: body.remaining_today };
 }

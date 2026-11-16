@@ -1,6 +1,8 @@
-"""AI 작업 선점 — AI를 오래 부르는 기능(문제 만들기 · 카드 후보 찾기 · 공고 분석)이 같이 쓰는 동시 클릭 막기 (F-004 · F-006 · F-007).
+"""AI 작업 선점 — AI를 오래 부르는 기능(문제 만들기 · 카드 후보 찾기 · 공고 분석 · 자소서 초안 · 면접 질문)이 같이 쓰는 동시 클릭 막기
+(F-004 · F-006 · F-007 · F-008 · F-009).
 
-선점 대상(target)은 기능마다 다르다 — 퀴즈 · 카드는 노트(note_id), 공고 분석은 공고(application_id). ClaimTable.key가 그 칸 이름이다.
+선점 대상(target)은 기능마다 다르다 — 퀴즈 · 카드는 노트(note_id), 공고 분석 · 초안은 공고(application_id),
+면접 질문은 카드(card_id). ClaimTable.key가 그 칸 이름이다.
 
 규칙 (모든 AI 기능이 똑같이 따른다 — F-006 1차 리뷰 R1에서 한 곳으로 모음, 사용자 확인 2026-11-11)
 - 대상(노트 · 공고)마다 선점은 기능별로 하나만(선점 표의 대상 칸 유니크).
@@ -31,12 +33,24 @@ from sqlalchemy import ColumnElement, Delete, delete, exists, false, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.config import APPLICATION_CLAIM_STALE_SECONDS, CARD_CLAIM_STALE_SECONDS, QUIZ_CLAIM_STALE_SECONDS
-from app.db.models import ApplicationClaim, NoteCardClaim, NoteQuizClaim, Quiz, User
+from app.config import (
+    APPLICATION_CLAIM_STALE_SECONDS,
+    CARD_CLAIM_STALE_SECONDS,
+    INTERVIEW_CLAIM_STALE_SECONDS,
+    QUIZ_CLAIM_STALE_SECONDS,
+)
+from app.db.models import (
+    ApplicationClaim,
+    CardInterviewClaim,
+    NoteCardClaim,
+    NoteQuizClaim,
+    Quiz,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
-ClaimModel = type[NoteQuizClaim] | type[NoteCardClaim] | type[ApplicationClaim]
+ClaimModel = type[NoteQuizClaim] | type[NoteCardClaim] | type[ApplicationClaim] | type[CardInterviewClaim]
 
 
 class OtherAIWorkInProgress(Exception):
@@ -87,7 +101,15 @@ APPLICATION_CLAIMS = ClaimTable(
     keeps_finished=False,
     key="application_id",
 )
-ALL_TABLES = (QUIZ_CLAIMS, CARD_CLAIMS, APPLICATION_CLAIMS)  # 사용자당 AI 작업 1개를 셀 때 보는 표 전부
+# 면접 질문(F-009): 카드당 한 줄. 끝나면 성공 · 실패 모두 지운다 — '이미 만듦'은 질문 유무로 선점 전에 막는다.
+INTERVIEW_CLAIMS = ClaimTable(
+    model=CardInterviewClaim,
+    stale_seconds=INTERVIEW_CLAIM_STALE_SECONDS,
+    finished=lambda _user_id: false(),
+    keeps_finished=False,
+    key="card_id",
+)
+ALL_TABLES = (QUIZ_CLAIMS, CARD_CLAIMS, APPLICATION_CLAIMS, INTERVIEW_CLAIMS)  # 사용자당 AI 작업 1개를 셀 때 보는 표 전부
 
 
 @dataclass(frozen=True)

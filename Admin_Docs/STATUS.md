@@ -2,7 +2,7 @@
 
 ## 한눈에 보기
 됨 10 · 일부 3 · 다음 3 · 열린 질문 2개
-최종 수정: 2026-11-15
+최종 수정: 2026-11-16
 
 ## 기능별 상태
 | 기능 | 상태 | 한 줄 설명 | 확인 방법 | 최근 리뷰 | 날짜 |
@@ -18,7 +18,7 @@
 | [F-006](features/F-006-experience-cards/feature.md) 경험 카드 | [됨] | 4주차. 후보 찾기(칸별 원문 인용 · 노트당 AI 1번) · 후보 검토 · 카드 화면 · 평가 세트. 1차 [주의] → 2차 [통과] → 3차 [통과], 3차 제안 전부 반영. 평가: 찾은 비율 12/12 · 없는 경험 후보 0 · 인용 검사 빈칸 0(노트마다 성공한 회차를 합침, 사용자 확인) | pytest SQLite 343 · PostgreSQL 355, Playwright 42 · tsc · eslint 통과(2026-11-11), EXAONE 평가 2회 — `backend/eval/cards/results/cards-exaone-20261111-170327.json`(경험 노트 8개 모두 성공) · `cards-exaone-20261112-092305.json`(경험 없는 노트 10개 모두 성공, 경험 노트 5개는 180초 상한 실패), 사용자 화면 확인(2026-11-12) | 3차 [통과] | 2026-11-12 |
 | [F-007](features/F-007-posting-analysis/feature.md) 공고 분석 · 매칭 | [됨] | 공고 추가 · D-day 목록 · 상태 · 지우기 · 역량 뽑기(공고 인용 검사) · 카드 매칭(카드 칸 인용 검사) · 근거 없는 역량 → 기록 검색 · 평가. 남은 것: 마감일을 나중에 넣는 화면(미룸) | 테스트 test_applications.py 48 · test_posting_evaluation.py 10 · applications.spec.ts 10 통과(전체 SQLite 452 · PostgreSQL 465 · Playwright 63 · tsc · eslint, 2026-11-13). 평가: EXAONE 성공 공고 3개 매칭 적중 10/10 · 없는 근거 매칭 0(실패 3개는 한도 · 시간 초과, 사용자 결정으로 성공분 판정). 직접 실행(사용자 확인 2026-11-13, 개발 DB · 가짜 AI): 공고 추가 → 분석 → 근거 칩 · 근거 없음, 상태 바꾸기, 매칭 다시, 공고 지우기 | 4차 [통과] | 2026-11-13 |
 | [F-008](features/F-008-evidence-draft/feature.md) 근거 달린 자소서 | [일부] | 구현 끝(초안 쓰기 · 근거 검사 · 다시 검사 · 문장 고치기 · 카드 연결 · 완료 · 문항 고치기 · 제출 확인창) · 심은 문장 평가 끝(잡음 27/36 — 덧붙인 사실 0/9가 사각지대). 빠진 것: AI 초안 평가(EXAONE 무응답으로 중단) | 테스트 test_drafts.py 38개 · 평가 테스트 19개(SQLite 509 · PostgreSQL 522 전체 통과, 2026-11-15) · drafts.spec.ts 13개 통과(2026-11-14), 직접 실행(사용자 확인 — 개발 DB · mock, 2026-11-14), `draft_eval --planted` 실행(2026-11-15) | 6차 [통과] | 2026-11-15 |
-| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [일부] | 6주차. 설계 의도 받음(문제 · 완료 기준 4 · 칸별 꼬리 질문 3~5개, 2026-11-13). 빠진 것: 구현 전부 | - | - | 2026-11-13 |
+| [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [일부] | 구현 끝(질문 만들기 · 근거 검사 · 다시 검사 · 메모 · 면접 연습 탭). 1 · 2 · 3차 리뷰 반영함. 빠진 것: 평가(완료 기준 4), 사용자 화면 확인 | 테스트 test_interview.py 29개 포함 백엔드 SQLite 538 · PostgreSQL 551 passed, interview.spec.ts 10개 포함 Playwright 86 passed(2026-11-16) | 3차 [통과] | 2026-11-16 |
 | [F-010](features/F-010-eval-and-sample/feature.md) 평가 · 샘플 체험 | [다음] | 7주차 | - | - | - |
 | [F-011](features/F-011-landing/feature.md) 랜딩 | [다음] | 8주차 | - | - | - |
 | [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [다음] | 8주차(랜딩과 같이) | - | - | - |

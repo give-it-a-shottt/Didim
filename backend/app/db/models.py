@@ -677,6 +677,78 @@ class DraftLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
 
 
+class InterviewQuestion(Base):
+    """경험 카드의 면접 예상 질문 (F-009, 버전 0009).
+
+    카드 상세 [면접 질문 만들기](AI 1번)로 생긴다. 카드 칸별 꼬리 질문 — 질문마다 근거 칸(slot)과 그 칸 글
+    (원문 인용 또는 내 답, quote_source)에 글자 그대로 있는 인용을 남긴다. quote_start · quote_end는 만든 때 그 글 안의 위치.
+    근거 상태는 저장하지 않고 읽을 때 지금 카드 칸과 다시 비교한다(사용자 확인 2026-11-15 — F-008 다시 검사와 같음).
+    memo는 내 답 메모 — 질문이 카드에 붙어 있어 어느 공고 면접 연습 탭에서 봐도 같은 메모다. answered_at은 메모가 있으면 채운다.
+    카드를 지우면 질문도 지워진다(CASCADE).
+    """
+
+    __tablename__ = "interview_questions"
+    __table_args__ = (UniqueConstraint("card_id", "position", name="uq_interview_questions_position"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)  # 0부터, 카드 칸 순서 · AI 답 순서
+    slot: Mapped[str] = mapped_column(String(16), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    quote: Mapped[str] = mapped_column(Text, nullable=False)
+    quote_source: Mapped[str] = mapped_column(String(16), nullable=False)  # quote · answer
+    quote_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    quote_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    memo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class CardInterviewClaim(Base):
+    """카드별 [면접 질문 만들기] 선점 (F-009, 버전 0009 — application_claims 구조, D-020).
+
+    AI를 부르기 전에 카드당 한 줄을 넣고 커밋한다(card_id 유니크). 끝나면 성공 · 실패 모두 지운다 —
+    '이미 만듦'은 interview_questions에 그 카드 질문이 있는지로 본다. 5분 지나면 새 요청이 가져간다.
+    """
+
+    __tablename__ = "card_interview_claims"
+    __table_args__ = (UniqueConstraint("card_id", name="uq_card_interview_claims_card_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
+class InterviewLog(Base):
+    """면접 질문 만들기 평가 로그 (F-009 완료 기준 4, 설계 원칙 5, 버전 0009).
+
+    [면접 질문 만들기] 한 번마다 보낸 칸 수 · AI 질문 수 · 남긴 질문 수 · 버린 이유를 남긴다.
+    호출 · 토큰은 ai_usage_logs(D-018). card_id는 외래키가 아니다(카드를 지워도 로그는 남김).
+    """
+
+    __tablename__ = "interview_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    card_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    fields_sent: Mapped[int] = mapped_column(Integer, nullable=False)  # 글이 있어 AI에 보낸 칸 수
+    questions: Mapped[int] = mapped_column(Integer, nullable=False)  # AI가 준 질문 수(빈 질문 뺌)
+    kept: Mapped[int] = mapped_column(Integer, nullable=False)  # 검사를 넘어 저장한 질문 수
+    # 버린 이유별 개수. 예) {"quote_not_found": 1, "unknown_slot": 1, "too_many": 2}
+    drop_reasons: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utc_now)
+
+
 # pg_trgm · btree_gin 확장은 테이블보다 먼저 있어야 검색 색인을 만들 수 있다. create_all(테스트)도 같은 순서를 따르게 한다.
 # 실제 DB는 버전 파일 0003이 확장을 설치한다.
 for _extension in ("pg_trgm", "btree_gin"):

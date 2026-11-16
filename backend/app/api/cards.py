@@ -27,6 +27,7 @@ from app.api.errors import (
     llm_client_or_500,
     llm_error_status,
 )
+from app.api.schemas import InterviewQuestionOut
 from app.config import (
     CARD_MAX_ANSWER_CHARS,
     CARD_STATUS_CANDIDATE,
@@ -60,6 +61,7 @@ from app.services.card_service import (
     save_card,
     update_field,
 )
+from app.services.interview_service import list_card_questions
 from app.services.usage_service import DailyLimitExceeded
 
 router = APIRouter(tags=["cards"])
@@ -200,9 +202,12 @@ class CardDetailOut(BaseModel):
     blank_count: int
     evidence_count: int
     fields: list[CardFieldOut]
+    interview_questions: list[InterviewQuestionOut]  # 면접 예상 질문(F-009) — 근거는 지금 카드 칸과 다시 비교한 상태
 
 
-def _detail(card: CardDetail) -> CardDetailOut:
+def _detail(db: Session, card: CardDetail, *, user_id: int) -> CardDetailOut:
+    """카드 상세 응답. 면접 질문은 카드를 고칠 때마다 근거 상태가 바뀔 수 있어 응답마다 다시 읽는다."""
+    questions = list_card_questions(db, user_id=user_id, card_id=card.id)
     return CardDetailOut(
         id=card.id,
         title=card.title,
@@ -214,6 +219,7 @@ def _detail(card: CardDetail) -> CardDetailOut:
         blank_count=card.blank_count,
         evidence_count=card.evidence_count,
         fields=[CardFieldOut(**vars(item)) for item in card.fields],
+        interview_questions=[InterviewQuestionOut.model_validate(item) for item in questions],
     )
 
 
@@ -245,7 +251,7 @@ def get_card_detail(
     if not 1 <= card_id <= MAX_DB_ID:
         raise _not_found()
     try:
-        return _detail(get_card(db, user_id=current_user.id, card_id=card_id))
+        return _detail(db, get_card(db, user_id=current_user.id, card_id=card_id), user_id=current_user.id)
     except CardNotFound as exc:
         raise _not_found() from exc
 
@@ -274,7 +280,7 @@ def save_card_endpoint(
     if not 1 <= card_id <= MAX_DB_ID:
         raise _not_found()
     try:
-        return _detail(save_card(db, user_id=current_user.id, card_id=card_id, title=body.title))
+        return _detail(db, save_card(db, user_id=current_user.id, card_id=card_id, title=body.title), user_id=current_user.id)
     except CardNotFound as exc:
         raise _not_found() from exc
     except InvalidCardInput as exc:
@@ -326,4 +332,4 @@ def update_field_endpoint(
         raise _not_found() from exc
     except InvalidCardInput as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    return _detail(card)
+    return _detail(db, card, user_id=current_user.id)

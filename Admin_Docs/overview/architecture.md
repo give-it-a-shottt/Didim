@@ -42,6 +42,9 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/components/card-*.tsx   경험 카드 화면(card-editor 상세 · card-review-sheet 후보 검토 · card-tile 목록 · note-card-panel 노트 상세 칸 · card-parts 원문 인용 부품) (F-006)
   src/lib/applications.ts · applications-data.ts   지원 · 공고 분석(F-007) 응답 모양 + 브라우저 요청 / 서버 컴포넌트용(server-only, 상세는 React cache — 머리 · 탭이 같이 부름)
   src/lib/drafts.ts · drafts-data.ts   자소서 초안(F-008) 응답 모양 + 브라우저 요청 / 서버 컴포넌트용(server-only)
+  src/lib/interview.ts · interview-data.ts   면접 질문(F-009) 모양 · 메모 저장 · 면접 연습 탭 응답 / 서버 컴포넌트용(server-only). [면접 질문 만들기] 요청은 카드 상세 전용이라 lib/cards.ts
+  src/lib/card-slots.ts   카드 네 칸 이름(cards.ts · interview.ts가 같이 씀 — 순환 import 방지, cards.ts가 다시 내보냄)
+  src/components/interview-workspace.tsx   면접 연습 탭(F-009): 질문 목록 · 메모 · 선택한 질문의 근거
   src/components/draft-workspace.tsx · draft-questions.tsx · draft-editor.tsx · draft-aside.tsx · card-link-dialog.tsx · card-search-input.tsx   자소서 탭(F-008): 상태 · 요청을 묶는 틀 / 왼쪽 문항 · 문항 고치기 · 경험 카드 / 가운데 문장 + 근거 칩 · 고치는 칸 · 초안 쓰기 · 빈 상태 · 쓰는 중 / 오른쪽 검사 · 근거 / [카드 연결] 창 / 카드 제목 검색 칸(왼쪽 목록 · 카드 연결 창 공용)
   src/components/application-parts.tsx · add-application-dialog.tsx · application-header-actions.tsx · posting-analysis.tsx · posting-requirements.tsx · posting-aside.tsx   지원 화면(F-007): 상태 · D-day 배지 / 공고 추가 모달 / 상세 머리의 탭 · 상태 선택(제목 줄 끝) · 공고 지우기(탭 줄 끝) / 공고 분석 탭(① 뽑기 → ② 매칭, 실패 안내) · 왼쪽 요구 역량 표 · 오른쪽 칸(요약 · 선택한 근거 · 공고 원문)
   src/components/request-error.tsx   요청 실패 문구 + 로그인 링크(`RequestErrorText` 한 줄 · `RequestErrorBlock` 버튼 모양) — 퀴즈 · 카드 화면이 같이 씀 (F-006 2차 리뷰 R1)
@@ -50,7 +53,7 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어, 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
-  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, applications.py, drafts.py, deps.py) + schemas.py(여러 라우터가 같이 쓰는 ServiceOut · RAW_INPUT_SLACK, F-008 3차 리뷰 R1) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
+  app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, applications.py, drafts.py, interview.py, deps.py) + schemas.py(여러 라우터가 같이 쓰는 ServiceOut · RAW_INPUT_SLACK, F-008 3차 리뷰 R1) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어)
   app/importers/          가져오기 어댑터(D-001) — 파일 · 노션 페이지를 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py, notion.py — 블록 나무 → 마크다운 글, 노션을 부르지 않는 순수 함수). 노션도 입력 모양(파일 바이트 · 블록 나무)이 달라 Protocol 없이 함수 두 개로 둠(F-005)
   app/notion/             노션 REST API 클라이언트(F-005) — 토큰 교환 · 갱신 · 회수 · 검색 · 페이지 · 블록 읽기, 호출 간격 · 429 · 5xx 재시도(토큰 요청은 다시 보내지 않음), 시간 예산(호출 안에서도 마감을 지킴). HTTP만 맡고 DB는 모름
   app/services/           비즈니스 로직 (auth_service.py, note_service.py, import_service.py, chunking.py, search_service.py, quiz_generation.py · quiz_review.py · quiz_evaluation.py, card_generation.py · card_service.py · card_evaluation.py, usage_service.py, notion_service.py — 노션 연결 저장 · 토큰 갱신(줄 잠금) · 페이지 목록 · 가져오기, token_crypto.py — 토큰 암호화, application_service.py — 공고 CRUD · D-day 순 목록, posting_analysis.py — 공고 분석 흐름(선점 · 저장 · 사용량) + posting_extraction.py(① 답 모양 · 검사) · posting_matching.py(② 키워드 후보 · 검사) · posting_checks.py(버린 이유 이름) · posting_mock.py(가짜 답) · posting_evaluation.py(평가 채점), draft_service.py — 자소서 초안 흐름(선점 · 저장 · 사용량) · 고치기 · 완료 + draft_view.py(읽기 — 문항별 초안 · 근거 상태 · 내가 고친 비율) · draft_writing.py(AI 답 모양 · 보내는 내용 · 근거 검사) · draft_mock.py(가짜 답) · draft_evidence.py(근거 다시 검사 — find_in_card → find_in_field)) + note_claim.py(AI를 오래 부르는 기능의 선점 규칙 한 곳 — 대상은 노트 또는 공고(ClaimTable.key) — 기능마다 다른 점은 ClaimTable · ClaimRules로, 사용자당 AI 작업 1개는 ALL_TABLES 전부를 봄(D-020), F-006 1차 리뷰 R1) · text_clean.py(제어 문자 막기 · 지우기 — PostgreSQL은 NUL을 못 받음, F-006 1차 리뷰 R2 / 공백 뺀 글자 수 · 한 줄 정리 · 자르기 — 퀴즈 · 카드 · 공고 분석 공용, F-007 1차 리뷰 R1)
@@ -67,6 +70,7 @@ backend/                  FastAPI (uv)
 - 노션 가져오기(F-005): 라우터가 `NotionSession`(토큰 꺼내기 · 미리 갱신 · 401 뒤 한 번 갱신)을 열고 사용자당 가져오기 하나를 선점(`claim_import`, 연결 줄의 `importing_since`)한 뒤 서비스에 넘기고 → 서비스가 페이지마다 블록 나무를 읽어(상한 · 시간 예산) 어댑터로 마크다운 글로 바꾼 뒤 F-002와 같은 나누기 · 저장 함수로 넣는다. 노션을 부르는 동안에는 DB 트랜잭션을 닫아 둔다(연결 풀을 붙잡지 않게). 노션 오류 → HTTP 응답은 라우터의 `_http_error` 한 곳. 연결은 OAuth(설정 화면 → 노션 동의 화면 → 콜백, 비로그인이면 /login), 토큰은 암호화 저장.
 - 공고 분석(F-007): 라우터가 ① `prepare_extract` → AI(`request_requirements`) → `save_extract`, ② `prepare_match` → AI(`request_matches`, 후보가 없으면 건너뜀) → `save_match` 순서로 부른다. 공고 선점(`application_claims`)은 퀴즈 · 카드와 같은 `note_claim` 규칙이라 사용자당 AI 작업 1개(D-020). 매칭 후보는 내 저장 카드만 읽어 파이썬에서 키워드 점수로 고른다(D-004). 화면은 ① 성공 뒤 ②를 이어 부르고 `router.refresh()`로 서버 컴포넌트를 새로 받는다.
 - 자소서 초안(F-008): 라우터(`api/drafts.py`)가 `prepare_draft` → AI(`request_draft`) → `save_draft` 순서로 부른다(공고 선점 `application_claims`를 공고 분석과 같이 씀). 근거 검사는 `posting_matching.find_in_field` 함수 하나 — AI 초안 저장 · [카드 연결] · 읽을 때 다시 검사(`draft_evidence.find_in_card`)가 모두 이 함수를 부른다(사용자 확인 2026-11-14). 문항 목록 저장은 지울 문항을 화면이 직접 보내고 '보낸 + 지울 = 지금 목록'이 아니면 409(공고 줄 잠금). 지원 상세의 근거 없는 문장 수는 라우터(`api/applications._detail_out`)가 공고 서비스와 `draft_evidence`를 조합해 채운다 — 공고 서비스가 초안을 모르게. 근거 상태는 저장하지 않는다.
+- 면접 질문(F-009): 라우터(`api/interview.py`)가 `prepare_interview` → AI(`request_interview_questions`) → `save_interview` 순서로 부른다(카드 선점 `card_interview_claims`). 근거 검사는 F-007 · F-008과 같은 `find_in_field`, 읽을 때 다시 검사는 `draft_evidence.find_in_card`. 카드 상세 응답(`api/cards.py`)이 `list_card_questions`로 질문을 붙인다.
 - 기록 가져오기(F-002): 라우터가 파일 앞부분(상한 + 1바이트)만 읽어 서비스에 넘기고 → 서비스가 파일마다 어댑터로 읽기 → 내 노트 안에서 중복 확인 → 나누기 → 저장(파일마다 커밋)한다. 조각은 노트 원문의 구간이고 제목 경로 · 원문 위치를 같이 저장한다(설계 원칙 1).
 
 ### 상태 관리 지도 (D-012)
@@ -105,6 +109,8 @@ backend/                  FastAPI (uv)
 | 고른 문항 · 고른 문장 · 고치는 문장 · 카드 연결 창 · 문항 고치기 입력 · 카드 검색어 | 컴포넌트 안(`useState`) | 이 화면 하나에서만 쓰는 표시 · 입력 상태라서 | F-008 |
 | 머리의 '자동 저장됨 · 시각' | 자소서 탭이 채운 TanStack Query 캐시를 읽기만(`DraftHeaderActions`, `enabled: false`) — 브라우저에서만(hydration 불일치 방지) | 머리(layout)와 탭(page)이 같은 초안 데이터를 보므로 따로 부르지 않는다 | F-008 |
 | 사이드바 접힘(자소서 탭) | 상태 없음 — CSS(`globals.css`의 `sidebar-open` 변형, 화면의 `data-collapse-sidebar`를 `:has()`로 봄) | F-008 메모의 Zustand 후보는 필요 없었다. 서버 렌더부터 접혀 깜빡임이 없다. Next 16이 숨겨 둔 앞 화면(`display: none`)은 뺀다 | F-008 |
+| 카드 상세의 면접 질문 · [면접 질문 만들기] | 카드 응답(`CardDetail.interviewQuestions`)을 카드와 같이 `useState`(`card-editor.tsx`), 만들기는 `useMutation` 뒤 카드를 다시 받음 | 카드 상세가 이미 카드를 useState로 들고 있어서(질문은 카드에 딸린 값) |
+| 면접 연습 탭: 질문 · 메모 | 처음은 서버 컴포넌트(`[id]/interview/page.tsx`, `lib/interview-data.ts` — Suspense 안), 메모 저장은 `useMutation` 응답으로 그 질문만 `useState`에서 바꿈(`interview-workspace.tsx`) | 이 화면 하나에서만 쓰고, 다른 화면이 같은 값을 실시간으로 보지 않아서 TanStack Query 캐시까지는 두지 않음. 고른 질문도 `useState` |
 | 지원 상태 바꾸기 · 공고 지우기 | TanStack Query `useMutation`(`application-header-actions.tsx`의 `ApplicationStatusSelect` · `DeleteApplicationButton` — 자리가 달라 따로, 오류도 각자 옆에) + `router.refresh()` · 목록으로 이동 | 서버 수정이라서 | F-007 |
 
 ### DB (D-008)

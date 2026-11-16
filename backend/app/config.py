@@ -149,6 +149,17 @@ DRAFT_MAX_QUOTE_CHARS = MATCH_MAX_QUOTE_CHARS
 # '내가 고친 비율'을 정확히(순서까지) 재는 크기 상한: AI 원문 낱말 수 × 지금 낱말 수. 넘으면 빠른 근사(F-008 1차 리뷰 R2)
 EDITED_PERCENT_EXACT_LIMIT = 50_000  # 약 220 × 220 낱말(1,000자쯤 초안)까지 정확히. 같은 낱말 반복 최악 약 0.11초(F-008 2차 리뷰 R2 실측)
 
+# 면접 연습 (F-009 설계 의도, 사용자 확인 2026-11-13 · 15). 숫자 상한은 임시값 — 리뷰 · 평가 때 확인
+# 카드당 칸별 꼬리 질문 3~5개(빈칸에서는 안 만듦), AI 1번. 카드당 한 번만(다시 만들기는 2차 후보)
+INTERVIEW_MIN_QUESTIONS = 3  # AI에 주는 목표 개수(아래)와 화면 안내. 덜 남아도 저장한다(검사로 버린 결과)
+INTERVIEW_MAX_QUESTIONS = 5  # 저장하는 질문 수 상한. 넘는 질문은 버린다
+INTERVIEW_FIELD_SEND_CHARS = MATCH_FIELD_SEND_CHARS  # 카드 칸 하나에서 보내는 글자 수(인용 · 내 답 각각, 앞에서부터)
+INTERVIEW_QUESTION_MAX_CHARS = 300  # 질문 하나 길이. 넘으면 자른다
+INTERVIEW_MIN_QUOTE_CHARS = MATCH_MIN_QUOTE_CHARS  # 근거 인용 길이 — 카드 칸 글을 인용하는 것이 매칭 · 초안과 같아서
+INTERVIEW_MAX_QUOTE_CHARS = MATCH_MAX_QUOTE_CHARS
+INTERVIEW_MEMO_MAX_CHARS = CARD_MAX_ANSWER_CHARS  # 질문마다 쓰는 내 답 메모 — 카드 칸 내 답과 같은 상한
+INTERVIEW_CLAIM_STALE_SECONDS = QUIZ_CLAIM_STALE_SECONDS  # 카드 선점 — 다른 AI 기능과 같은 이유 · 같은 값
+
 
 # 노션 연결 (F-005 설계 의도, 사용자 확인 2026-11-12)
 NOTION_API_BASE = "https://api.notion.com/v1"

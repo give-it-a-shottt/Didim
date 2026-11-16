@@ -147,6 +147,15 @@ const mockCard = (id, noteId, status, title, quotes) => ({
     question: quotes[slot] ? null : `${slot} 칸에 무엇을 적을까요?`, answer: null,
   })),
 });
+// 면접 연습(F-009): 831 [면접 질문 만들기] 성공(질문 2개가 생김) · 832 질문 3개(8322는 근거가 바뀜, 8323은 메모 저장 500) ·
+// 833 만들기 503 · 834 질문 없는 저장 카드(공고 930 · 933에 매칭) · 835 만들기는 되는데 그 뒤 카드 다시 받기 500 ·
+// 836 질문 8361(메모 저장이 1.5초 — 저장 중에 이어 쓰기, 공고 935에 매칭) · 837 다른 탭이 먼저 만들어 409(누르는 순간 질문이 생김) ·
+// 838 409에 카드 다시 받기까지 500.
+const interviewQuestion = (id, cardId, position, slot, question, quote, extra = {}) => ({
+  id, card_id: cardId, position, slot, question, quote, quote_source: "quote", evidence_status: "ok",
+  memo: null, answered_at: null, updated_at: "2026-11-15T03:00:00Z", ...extra,
+});
+const withInterview = (card, questions) => ({ ...card, interview: questions });
 const MOCK_CARDS = new Map(
   [
     mockCard(801, 1, "saved", "useEffect로 구독 정리", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요.", action: "상태를 바꾸면 다시 그려져요." }),
@@ -157,6 +166,25 @@ const MOCK_CARDS = new Map(
     mockCard(804, 1, "saved", "저장이 실패하는 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
     mockCard(1001, 10, "candidate", "불러오지 못하는 후보", { situation: "깨진 후보 노트 본문이에요." }),
     mockCard(1002, 10, "candidate", "멀쩡한 후보", { situation: "깨진 후보 노트 본문이에요." }),
+    mockCard(831, 1, "saved", "질문 만들 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요.", action: "상태를 바꾸면 다시 그려져요." }),
+    withInterview(
+      mockCard(832, 1, "saved", "Redis 재설계", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요.", action: "상태를 바꾸면 다시 그려져요." }),
+      [
+        interviewQuestion(8321, 832, 0, "situation", "그 상황에서 무엇이 문제였나요?", "useEffect는 그려진 뒤", {
+          memo: "그려진 뒤 실행되는 점을 먼저 말한다", answered_at: "2026-11-15T03:00:00Z",
+        }),
+        interviewQuestion(8322, 832, 1, "action", "왜 상태를 바꾸는 방법을 골랐나요?", "상태를 바꾸면 다시", { evidence_status: "changed" }),
+        interviewQuestion(8323, 832, 2, "action", "다시 그려지는 걸 어떻게 확인했나요?", "다시 그려져요"),
+      ],
+    ),
+    mockCard(833, 1, "saved", "질문 만들기가 실패하는 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    mockCard(834, 1, "saved", "질문 없는 카드", { situation: "상태를 바꾸면 다시 그려져요." }),
+    mockCard(835, 1, "saved", "다시 받기가 실패하는 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    mockCard(837, 1, "saved", "다른 탭에서 만든 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    mockCard(838, 1, "saved", "409 뒤 다시 받기도 실패하는 카드", { situation: "useEffect는 그려진 뒤 부수 효과를 실행해요." }),
+    withInterview(mockCard(836, 1, "saved", "느린 메모 카드", { situation: "상태를 바꾸면 다시 그려져요." }), [
+      interviewQuestion(8361, 836, 0, "situation", "느린 메모 질문인가요?", "상태를 바꾸면"),
+    ]),
   ].map((card) => [card.id, card]),
 );
 const searchedNotes = new Set([1, 4, 10]);
@@ -170,7 +198,7 @@ const cardSummary = (card) => ({
 const cardDetail = (card) => {
   const summary = cardSummary(card);
   delete summary.blank_slots; // 상세에는 없음(서버와 같은 모양)
-  return { ...summary, created_at: card.created_at, fields: card.fields };
+  return { ...summary, created_at: card.created_at, fields: card.fields, interview_questions: card.interview ?? [] };
 };
 const noteExists = (noteId) => noteId === MOCK_NOTE.id || noteId === BIG_NOTE.id || EXTRA_NOTES.has(noteId);
 
@@ -218,6 +246,26 @@ const MOCK_APPLICATIONS = new Map(
       [910, "초안회사"], [911, "쓰기회사"], [913, "실패쓰기회사"], [914, "제출회사"], [915, "고치기회사"], [916, "연결회사"], [917, "문항회사"], [918, "충돌회사"], [919, "목록실패회사"], [920, "완료실패회사"], [921, "다시받기실패회사"], [922, "문항충돌회사"],
     ].map(([id, company]) => mockApplication(id, company, "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z", requirements: matchedRequirements(id) })),
     mockApplication(912, "카드없는회사", "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z" }),
+    // --- 면접 연습(F-009): 930 카드 832(역량 2개) · 834(질문 없음) 매칭 / 931 분석 전 ---
+    mockApplication(930, "면접회사", "개발자", {
+      extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z",
+      requirements: [
+        appRequirement(9301, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [interviewMatch(1, 832), interviewMatch(2, 834)]),
+        appRequirement(9302, "클라우드 배포", "preferred", POSTING_A, "클라우드 배포 경험", [interviewMatch(3, 832)]),
+      ],
+    }),
+    mockApplication(931, "분석전면접회사", "개발자"),
+    // 932 분석 끝 · 매칭 카드 없음 / 933 질문 없는 카드만 매칭 / 934 탭 500 / 935 느린 메모 카드 836
+    mockApplication(932, "매칭없는면접회사", "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z" }),
+    mockApplication(933, "질문없는면접회사", "개발자", {
+      extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z",
+      requirements: [appRequirement(9331, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [interviewMatch(4, 834)])],
+    }),
+    mockApplication(934, "탭실패면접회사", "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z" }),
+    mockApplication(935, "느린메모면접회사", "개발자", {
+      extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z",
+      requirements: [appRequirement(9351, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [interviewMatch(5, 836)])],
+    }),
   ].map((item) => [item.id, item]),
 );
 
@@ -263,6 +311,29 @@ const draftsView = (item) => ({
 });
 
 // 공고 분석이 끝난 자소서 공고의 역량(카드 801과 매칭)
+function interviewMatch(id, cardId) {
+  return { id, card_id: cardId, card_title: "카드", slot: "situation", quote: "상태를 바꾸면", quote_source: "quote", quote_start: 0, quote_end: 6, reason: "이유" };
+}
+
+// [면접 연습] 탭 응답(서버 get_application_interview와 같은 모양): 매칭된 저장 카드마다 한 번, 역량 이름은 태그
+const interviewView = (item) => {
+  const order = [...new Set(item.requirements.flatMap((requirement) => requirement.matches.map((match) => match.card_id)))];
+  const cards = order
+    .map((id) => MOCK_CARDS.get(id))
+    .filter((card) => card && card.status === "saved")
+    .map((card) => ({
+      card_id: card.id, card_title: card.title, note_title: card.note_title,
+      requirement_names: item.requirements.filter((r) => r.matches.some((m) => m.card_id === card.id)).map((r) => r.name),
+      has_questions: (card.interview ?? []).length > 0,
+      questions: card.interview ?? [],
+    }));
+  const questions = cards.flatMap((card) => card.questions);
+  return {
+    application_id: item.id, analysis_done: item.matched_at !== null, question_count: questions.length,
+    answered_count: questions.filter((question) => question.answered_at !== null).length, cards,
+  };
+};
+
 function matchedRequirements(id) {
   return [
     appRequirement(id * 10 + 1, "React 화면 개발", "required", POSTING_A, "React로 화면을 만든 경험", [
@@ -341,6 +412,15 @@ function handleDrafts(req, res, url, body) {
       return true;
     }
     return false;
+  }
+
+  const interviewTab = req.method === "GET" ? url.pathname.match(/^\/api\/applications\/(\d+)\/interview$/) : null;
+  if (interviewTab) {
+    const target = MOCK_APPLICATIONS.get(Number(interviewTab[1]));
+    if (target?.id === 934) sendJson(res, 500, { detail: "서버 오류" });
+    else if (target) sendJson(res, 200, interviewView(target));
+    else sendJson(res, 404, { detail: "공고를 찾을 수 없어요." });
+    return true;
   }
 
   const appMatch = url.pathname.match(/^\/api\/applications\/(\d+)\/(drafts|questions|questions\/(\d+)\/draft)$/);
@@ -697,11 +777,70 @@ const server = http.createServer((req, res) => {
     }
     return;
   }
+  // --- 면접 연습(F-009): 질문 만들기 · 메모 ---
+  const makeMatch = req.method === "POST" ? url.pathname.match(/^\/api\/cards\/(\d+)\/interview-questions$/) : null;
+  const memoMatch = req.method === "PATCH" ? url.pathname.match(/^\/api\/interview-questions\/(\d+)$/) : null;
+  if (makeMatch || memoMatch) {
+    if (!isLoggedIn(req)) {
+      sendJson(res, 401, { detail: "로그인이 필요해요." });
+      return;
+    }
+  }
+  if (makeMatch) {
+    const card = MOCK_CARDS.get(Number(makeMatch[1]));
+    if (!card) {
+      sendJson(res, 404, { detail: "카드를 찾을 수 없어요." });
+    } else if (card.status !== "saved") {
+      sendJson(res, 409, { detail: "저장한 카드에서만 면접 질문을 만들 수 있어요. 카드를 먼저 저장해 주세요." });
+    } else if ((card.interview ?? []).length > 0) {
+      sendJson(res, 409, { detail: "이 카드에는 이미 면접 질문이 있어요." });
+    } else if (card.id === 833) {
+      sendJson(res, 503, { detail: "AI 서버에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요." });
+    } else if (card.id === 837 || card.id === 838) {
+      card.interview = [interviewQuestion(card.id * 10 + 1, card.id, 0, "situation", "다른 탭에서 만든 질문인가요?", "useEffect는 그려진 뒤")];
+      sendJson(res, 409, { detail: "이 카드에는 이미 면접 질문이 있어요." });
+    } else {
+      card.interview = [
+        interviewQuestion(card.id * 10 + 1, card.id, 0, "situation", "그때 가장 먼저 확인한 것은 무엇인가요?", "useEffect는 그려진 뒤"),
+        interviewQuestion(card.id * 10 + 2, card.id, 1, "action", "그 방법을 고른 이유는 무엇인가요?", "상태를 바꾸면"),
+      ];
+      sendJson(res, 201, { card_id: card.id, written: true, questions: 2, received: 3, fields_sent: 2, drop_reasons: { quote_not_found: 1 }, remaining_today: 28 });
+    }
+    return;
+  }
+  if (memoMatch) {
+    const questionId = Number(memoMatch[1]);
+    const owner = [...MOCK_CARDS.values()].find((card) => (card.interview ?? []).some((q) => q.id === questionId));
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      if (!owner) {
+        sendJson(res, 404, { detail: "면접 질문을 찾을 수 없어요." });
+        return;
+      }
+      if (questionId === 8323) {
+        sendJson(res, 500, { detail: "메모를 저장하지 못했어요." });
+        return;
+      }
+      const memo = String(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}").memo ?? "").trim() || null;
+      owner.interview = owner.interview.map((q) =>
+        q.id === questionId ? { ...q, memo, answered_at: memo ? "2026-11-15T04:00:00Z" : null, updated_at: "2026-11-15T04:00:00Z" } : q,
+      );
+      const saved = owner.interview.find((q) => q.id === questionId);
+      setTimeout(() => sendJson(res, 200, saved), questionId === 8361 ? 1500 : 0);
+    });
+    return;
+  }
+
   const cardMatch = url.pathname.match(/^\/api\/cards\/(\d+)(\/save|\/fields\/(\w+))?$/);
   if (cardMatch) {
     const card = MOCK_CARDS.get(Number(cardMatch[1]));
     if (!card) {
       sendJson(res, 404, { detail: "카드를 찾을 수 없어요." });
+      return;
+    }
+    if (req.method === "GET" && !cardMatch[2] && (card.id === 835 || card.id === 838) && (card.interview ?? []).length > 0) {
+      sendJson(res, 500, { detail: "카드를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요." });
       return;
     }
     if (req.method === "GET" && !cardMatch[2] && card.id === 1001) {
@@ -782,6 +921,8 @@ const server = http.createServer((req, res) => {
   // --- 지원 · 공고 분석(F-007) ---
   // 901: 분석 · 매칭 끝(역량 2개 — 하나는 카드 801, 하나는 근거 없음) / 902: 분석 전 → 뽑기 · 매칭 성공
   // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 907: 상태 · 지우기 500 / 950~: [공고 추가]로 만든 공고(902처럼)
+  // 면접 연습(F-009): 930 카드 832(질문 3 · 역량 2) · 834(질문 없음) 매칭 · 931 분석 전 · 932 매칭 없음 · 933 질문 없는 카드만 ·
+  // 934 탭 500 · 935 느린 메모 — 카드 831 만들기 성공 · 833 만들기 503 · 835 만든 뒤 다시 받기 500
   // 자소서(F-008): 910 초안 있음 · 911 [초안 쓰기] 1.5초 · 912 매칭 카드 없음 · 913 쓰기 503 · 914 제출 확인 · 915 고치기 · 916 카드 연결 · 917 문항 고치기 · 918 저장 409 · 422 · 919 목록 500 · 920 완료 500 · 921 쓰기 404 뒤 다시 받기 500 · 922 문항 409 · 422
   if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/") || url.pathname.startsWith("/api/drafts/")) {
     if (!isLoggedIn(req)) {

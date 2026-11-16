@@ -7,6 +7,10 @@ export function isObject(value: unknown): value is Json {
   return typeof value === "object" && value !== null;
 }
 
+export function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
 export function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
