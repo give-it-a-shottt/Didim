@@ -60,6 +60,7 @@ class DraftReplyIn(BaseModel):
 DRAFT_SYSTEM_PROMPT = """너는 지원자의 경험 카드만으로 자기소개서 문항의 초안을 쓰는 도우미야.
 규칙:
 - cards에 있는 내용만 쓴다. 카드에 없는 사실(숫자 · 성과 · 기술 이름 · 사람 · 기간)을 지어내지 않는다.
+- fields에서 "status": "기록 없음"인 칸은 지원자가 기록하지 않은 칸이다. 그 칸의 내용(특히 result 칸의 결과 · 성과 · 수치)을 다른 칸에서 짐작해 쓰지 않는다. 결과가 기록되지 않은 경험은 한 일까지만 쓴다.
 - 문장마다 근거를 단다: card_id(근거 카드 번호), slot(칸 이름), quote(그 칸의 quote 또는 answer에서 글자 하나 바꾸지 않고 그대로 복사한 한두 문장). 요약하거나 고쳐 쓴 글은 quote가 아니다.
 - 근거를 댈 수 없는 문장(도입 · 연결 · 다짐)은 card_id · slot · quote를 null로 둔다. 이런 문장은 화면에서 '근거 없음'으로 경고되니 꼭 필요할 때만 짧게 쓴다.
 - 문항(question)에 답하는 글을 쓰고, 전체 길이는 target_chars를 넘지 않게 한다. 존댓말(~습니다)로 쓴다.
@@ -78,8 +79,14 @@ class DraftRequest:
     requirement_names: list[str]  # 카드와 이어진 역량 이름(공고에 나온 순서)
 
 
+EMPTY_FIELD_STATUS = "기록 없음"  # 글이 없는 칸 — 빼지 않고 이렇게 알린다(D-028: 결과가 비면 AI가 결과를 지어내기 쉬움)
+
+
 def build_draft_messages(request: DraftRequest, cards: Sequence[CardText]) -> list[Message]:
-    """문항 · 역량 이름 · 매칭 카드의 칸 글만 보낸다(원칙 6). 칸 글은 앞에서부터 DRAFT_FIELD_SEND_CHARS자까지."""
+    """문항 · 역량 이름 · 매칭 카드의 칸 글만 보낸다(원칙 6). 칸 글은 앞에서부터 DRAFT_FIELD_SEND_CHARS자까지.
+
+    글이 없는 칸도 "status": "기록 없음"으로 보낸다(D-028) — 빠진 칸을 AI가 다른 칸에서 짐작해 채우지 않게.
+    """
 
     def field_payload(slot: str, quote: str | None, answer: str | None) -> dict[str, str]:
         item = {"slot": slot}
@@ -87,6 +94,8 @@ def build_draft_messages(request: DraftRequest, cards: Sequence[CardText]) -> li
             item["quote"] = quote[:DRAFT_FIELD_SEND_CHARS]
         if answer:
             item["answer"] = answer[:DRAFT_FIELD_SEND_CHARS]
+        if not quote and not answer:
+            item["status"] = EMPTY_FIELD_STATUS
         return item
 
     payload = {
@@ -99,11 +108,7 @@ def build_draft_messages(request: DraftRequest, cards: Sequence[CardText]) -> li
             {
                 "card_id": card.id,
                 "title": card.title,
-                "fields": [
-                    field_payload(slot, *card.fields[slot])
-                    for slot in CARD_SLOTS
-                    if slot in card.fields and any(card.fields[slot])
-                ],
+                "fields": [field_payload(slot, *card.fields.get(slot, (None, None))) for slot in CARD_SLOTS],
             }
             for card in cards
         ],

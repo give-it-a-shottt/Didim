@@ -11,7 +11,7 @@ import { FOCUS_RING } from "@/lib/ui-classes";
 // 스크롤해도 왼쪽에 붙어 있다(sticky). 로고 마크만 primary/accent(큰 장식 면).
 export function AppSidebar() {
   return (
-    <aside className="sticky top-0 flex h-screen w-14 shrink-0 flex-col rounded-r-sheet border-r border-line-regular bg-bg-light shadow-sidebar sidebar-open:w-60">
+    <aside className="motion-width sticky top-0 flex h-screen w-14 shrink-0 flex-col rounded-r-sheet border-r border-line-regular bg-bg-light shadow-sidebar sidebar-open:w-60">
       {/* 펼침: 로고 왼쪽 · [사이드바 접기] 오른쪽 한 줄 / 접힘: 로고 아래에 [사이드바 펼치기](버튼이 보일 때만) */}
       <div className="flex min-h-16 shrink-0 flex-col items-center justify-center gap-2 py-4 sidebar-open:flex-row sidebar-open:justify-between sidebar-open:py-0 sidebar-open:pr-3 sidebar-open:pl-5">
         <Link href="/home" className={`flex items-center gap-2 rounded-button ${FOCUS_RING}`}>

@@ -274,7 +274,7 @@ function CardList({
                 <li key={card.id}>
                   <Link
                     href={cardHref(card.id)}
-                    className={`flex flex-col gap-1 rounded-card border border-line-regular bg-bg-default p-3 hover:bg-bg-hover ${FOCUS_RING}`}
+                    className={`motion-lift flex flex-col gap-1 rounded-card border border-line-regular bg-bg-default p-3 hover:bg-bg-hover ${FOCUS_RING}`}
                   >
                     <span className="text-body-3 font-semibold text-text-main">{card.title}</span>
                     <span className="text-body-4 text-text-sub">

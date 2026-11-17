@@ -152,6 +152,58 @@
   }
 }
 
+/*
+ * 움직임 — Figma · 디자인 md에 값이 없어 정함(사용자 선택 2026-11-17: '보통' 4px · 0.2초, 감속).
+ * static: 유틸리티 이름이 없는 값(시간 · 거리)도 늘 CSS 변수로 내보낸다 — 아래 motion-* 유틸리티와 select 목록이 var()로 쓴다.
+ */
+@theme static {
+  --ease-motion: cubic-bezier(0, 0, 0.2, 1);
+  --motion-duration: 200ms;
+  --motion-lift: 4px;
+}
+
+/*
+ * 움직임 유틸리티. 전환(transition)은 기본 선택자에 두고 바뀌는 값만 상태(:hover · 클래스)에 둔다 — 그래야 돌아갈 때도
+ * 같은 속도로 부드럽다(사용자 요청 2026-11-17). 움직임 줄이기 설정을 켠 사람에게는 전환을 끈다.
+ */
+/* 누를 수 있는 카드 박스: 호버하면 motion-lift만큼 올라간다(비활성은 그대로) */
+@utility motion-lift {
+  transition-property: transform, background-color;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--ease-motion);
+  &:hover:not(:disabled) {
+    transform: translateY(calc(var(--motion-lift) * -1));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+/* 너비가 바뀌는 칸(사이드바 접기 · 펴기) */
+@utility motion-width {
+  transition-property: width;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--ease-motion);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+/* 최대 높이가 바뀌는 칸(공고 원문 펼치기 · 접기) */
+@utility motion-height {
+  transition-property: max-height;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--ease-motion);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+/* 접힌 원문의 높이 = 4줄(line-clamp-4와 같은 높이) — 펼칠 때 이 높이에서 늘어난다 */
+@utility max-h-4-lines {
+  max-height: 4lh;
+}
+
 @theme inline {
   /* 글꼴(Q-018 · D-026): 모든 글이 Pretendard 하나. app/layout.tsx의 next/font가 변수를 채운다 */
   --font-sans: var(--font-pretendard);
@@ -223,6 +275,29 @@
       border: 1px solid var(--color-line-regular);
       border-radius: var(--radius-input);
       background: var(--color-bg-elevated);
+      /* 펼칠 때 · 접을 때 부드럽게(사용자 요청 2026-11-17): 닫힌 모양을 기본에 두고 열린 모양만 :open에 —
+         display · overlay도 같이 넘겨야 닫힐 때 전환이 끝난 뒤 사라진다 */
+      opacity: 0;
+      transform: translateY(calc(var(--motion-lift) * -1));
+      transition-property: opacity, transform, display, overlay;
+      transition-duration: var(--motion-duration);
+      transition-timing-function: var(--ease-motion);
+      transition-behavior: allow-discrete;
+    }
+    .select-picker:open::picker(select) {
+      opacity: 1;
+      transform: none;
+    }
+    @starting-style {
+      .select-picker:open::picker(select) {
+        opacity: 0;
+        transform: translateY(calc(var(--motion-lift) * -1));
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .select-picker::picker(select) {
+        transition: none;
+      }
     }
     .select-picker option {
       padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3);

@@ -2,6 +2,7 @@
 
 // APL_02_003 가운데 칸(Figma 18:257 '에디터'): 문항 머리(글자 수 · 내가 고친 비율 · [이 문항 완료]) + 문장마다 근거 칩.
 // - 근거 없음(근거 상태가 ok가 아님): 문장에 경고색 밑줄 + 경고 아이콘 + '근거 없음' 칩. 고친 AI 문장은 '내가 고침'.
+// - 확인 필요(D-028 — 근거는 ok인데 인용 밖 사실이 덧붙었을 수 있음): 근거 칩은 그대로 두고 경고색 점선 밑줄 + '확인 필요' 칩.
 // - 문장을 누르면 고른 문장(primary/soft 바탕) → 오른쪽 칸에 근거. 고치기는 그 자리에 고치는 칸(Figma 23:959).
 // - 초안 전: 매칭 카드가 없으면 빈 상태(Figma 19:383), 있으면 보내는 범위 안내 + [초안 쓰기](원칙 6).
 // - 쓰는 중(Figma 19:407): 요청 한 번(D-022)이라 진행 단계를 실제로 알 수 없어 단계 목록만 보여 준다(문장 수 · 만든 문장 미리보기 없음).
@@ -117,7 +118,8 @@ export function DraftEditor({
         </div>
         {draft && !writingThis ? (
           <>
-            <button type="button" onClick={() => startWrite(true)} disabled={writing} className={GHOST_BUTTON_S}>
+            {/* 문장 저장 · [확인함]이 날아가는 동안은 다시 쓰지 않는다 — 늦게 온 응답이 새 초안을 덮지 않게(9차 리뷰 R2) */}
+            <button type="button" onClick={() => startWrite(true)} disabled={writing || save.pending} className={GHOST_BUTTON_S}>
               다시 쓰기
             </button>
             <button
@@ -283,6 +285,7 @@ function SentenceSpan({
   onSelect: () => void;
 }) {
   const supported = sentence.evidenceStatus === "ok";
+  const check = sentence.needsCheck; // 서버가 근거가 ok인 문장에만 준다
   const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -294,16 +297,29 @@ function SentenceSpan({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`문장 ${number}${supported ? "" : " · 근거 없음"}${sentence.origin === "edited" ? " · 내가 고침" : ""}: ${sentence.text}`}
+      aria-label={`문장 ${number}${supported ? "" : " · 근거 없음"}${check ? " · 확인 필요" : ""}${sentence.origin === "edited" ? " · 내가 고침" : ""}: ${sentence.text}`}
       onClick={onSelect}
       onKeyDown={onKeyDown}
       className={`cursor-pointer rounded-tag px-0.5 box-decoration-clone ${selected ? "bg-primary-soft" : "hover:bg-bg-hover"} ${FOCUS_RING}`}
     >
-      <span className={supported ? undefined : "underline decoration-warning-text decoration-2 underline-offset-4"}>{sentence.text}</span>
+      <span
+        className={
+          !supported
+            ? "underline decoration-warning-text decoration-2 underline-offset-4"
+            : check
+              ? "underline decoration-warning-text decoration-dotted decoration-2 underline-offset-4"
+              : undefined
+        }
+      >
+        {sentence.text}
+      </span>
       {/* '내가 고침'은 문장 글 바로 뒤 — 칩 뒤에 두면 줄이 바뀔 때 다음 문장 앞에 붙어 보인다 */}
       {sentence.origin === "edited" ? <span className={`${BADGE_SOFT} ml-1 align-middle`}>내가 고침</span> : null}
       {supported ? (
-        <span className={CHIP}>{sentence.evidence?.cardTitle ?? "근거"}</span>
+        <>
+          <span className={CHIP}>{sentence.evidence?.cardTitle ?? "근거"}</span>
+          {check ? <span className={`${CHIP_WARNING} ml-1`}>확인 필요</span> : null}
+        </>
       ) : (
         <span className="ml-1 inline-flex items-center gap-1 align-middle">
           <Icon name="warning" size={16} className="text-warning-text" />

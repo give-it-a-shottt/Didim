@@ -146,6 +146,10 @@ def _status_line(result: QuestionEvalResult) -> str:
     return " · ".join(parts)
 
 
+# D-028 전 결과 파일을 --score로 다시 채점할 때(문장마다 '확인 필요'를 계산하지 않았음 — 7차 리뷰 R3)
+NOT_CHECKED_LINE = "'확인 필요'까지(D-028): 이 결과 파일은 D-028 전이라 계산하지 않았어요(근거 검사만의 수치만 봐요)"
+
+
 def _print_summary(provider: str, s: Summary, waits: list[float]) -> None:
     rule = s["rule_only"]
     kinds = s["by_kind"]
@@ -155,6 +159,13 @@ def _print_summary(provider: str, s: Summary, waits: list[float]) -> None:
         f"지어낸 문장을 검사가 잡은 비율: {s['fabricated_caught']}/{s['fabricated']} = {_pct(s['catch_rate'])}"
         f"  · 사람 확인 전 {s['labels_pending']}문장" + ("  ← 아직 최종 아님" if s["labels_pending"] else ""),
         f"검사를 통과한 지어낸 문장(놓침): {s['fabricated_missed']} · 지어내지 않았는데 근거 없음: {s['unsupported_not_fabricated']}",
+        (
+            f"'확인 필요'까지(D-028): 잡음 {s['fabricated_warned']}/{s['fabricated']} = {_pct(s['warn_rate'])}"
+            f" · 확인 필요 {s['needs_check_sentences']}문장(지어내지 않았는데 {s['needs_check_not_fabricated']})"
+            f" · 경고 없이 남은 지어냄 {s['fabricated_missed_after_check']}"
+            if s["claims_checked"]
+            else NOT_CHECKED_LINE
+        ),
         f"규칙만: 지어냄 {rule['fabricated']} · 잡음 {rule['caught']} ({_pct(rule['catch_rate'])}) · 문항 말만 겹침 {rule['from_question']}",
         "문항 종류별: "
         + " · ".join(
@@ -175,6 +186,13 @@ def _print_planted_summary(s: Summary) -> None:
         f"심은 지어낸 문장을 검사가 잡은 비율: {s['planted_caught']}/{s['planted']} = {_pct(s['catch_rate'])}",
         "종류별: " + " · ".join(f"{kind} {c['caught']}/{c['planted']}" for kind, c in s["by_type"].items()),
         f"진짜 문장을 '근거 없음'으로 잘못 경고: {s['genuine_flagged']}/{s['genuine']}",
+        (
+            f"'확인 필요'까지(D-028): 잡음 {s['planted_warned']}/{s['planted']} = {_pct(s['warn_rate'])} · 종류별 "
+            + " · ".join(f"{kind} {c['warned']}/{c['planted']}" for kind, c in s["by_type"].items())
+            + f" · 진짜 문장 잘못 경고 {s['genuine_needs_check']}/{s['genuine']}"
+            if s["claims_checked"]
+            else NOT_CHECKED_LINE
+        ),
         f"근거를 못 붙인 이유: {s['drop_reasons']} · 실패 {s['failures']}번",
     ]
     print("\n" + "\n".join(lines))

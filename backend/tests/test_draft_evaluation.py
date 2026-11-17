@@ -266,9 +266,15 @@ def test_evaluate_planted_question_runs_the_real_check_without_ai(db_session: Se
     # 카드 1장(칸 3개) → 진짜 3 + 심음 3. 카드가 1장뿐이라 other_card는 보내지 않은 번호에 붙는다
     assert [record.planted for record in results[0].sentences] == [None, None, PLANT_NO_EVIDENCE, None, PLANT_FAKE_QUOTE, PLANT_OTHER_CARD]
     summary = summarize_planted(results)
-    assert summary["by_type"][PLANT_ADDED_FACT] == {"planted": 1, "caught": 0, "catch_rate": 0.0}  # 검사기가 못 보는 곳
-    assert summary["by_type"][PLANT_FAKE_QUOTE] == {"planted": 2, "caught": 2, "catch_rate": 1.0}
+    # 근거 검사는 못 보지만(caught 0) '확인 필요'(D-028 — 카드에 없는 숫자 37)가 잡는다
+    assert summary["by_type"][PLANT_ADDED_FACT] == {
+        "planted": 1, "caught": 0, "catch_rate": 0.0, "warned": 1, "warn_rate": 1.0,
+    }
+    assert summary["by_type"][PLANT_FAKE_QUOTE] == {
+        "planted": 2, "caught": 2, "catch_rate": 1.0, "warned": 2, "warn_rate": 1.0,
+    }
     assert (summary["planted"], summary["planted_caught"], summary["genuine_flagged"]) == (6, 5, 0)
+    assert (summary["planted_warned"], summary["genuine_needs_check"]) == (6, 0)  # 진짜 문장은 '확인 필요'도 0
     assert summary["drop_reasons"] == {"no_evidence": 1, "quote_not_found": 2, "card_not_sent": 2}
     assert db_session.scalar(select(func.count()).select_from(ApplicationClaim)) == 0
     raw = json.loads(json.dumps(result_to_dict(results[0]), ensure_ascii=False))
@@ -320,3 +326,39 @@ def test_answer_card_without_quote_field_stops_that_posting(db_session: Session,
             db_session, user_id=user_id, application_id=application_id, posting_text=POSTING, key=KEY,
             experience_card={experience: cid for cid, experience in mapping.items()},
         )
+
+
+def test_old_result_file_without_claim_checks_is_scored_without_those_numbers() -> None:
+    """D-028 전 결과 파일(needs_check 없음)을 --score로 다시 채점해도 터지지 않고, '확인 필요까지' 수치는 내지 않는다
+    — 근거 검사만의 수치와 같게 찍혀 새 규칙을 돌린 것처럼 보이지 않게(7차 리뷰 R3)."""
+    raw = {
+        "file": "p01-backend.md", "index": 1, "kind": "answerable", "question": "문항", "char_limit": 500,
+        "sentences": [
+            {"id": "p01-q1-s1", "text": "빌드를 단축했습니다.", "supported": True, "human": True},
+            {"id": "p01-q1-s2", "text": "맺음말입니다.", "supported": False, "human": False},
+        ],
+    }
+    old = result_from_dict(raw)
+    assert [record.needs_check for record in old.sentences] == [None, None]
+    summary = summarize([old])
+    assert summary["claims_checked"] is False
+    assert (summary["fabricated"], summary["fabricated_caught"]) == (1, 0)
+    assert (summary["fabricated_warned"], summary["warn_rate"], summary["needs_check_sentences"]) == (None, None, None)
+    assert summary["by_kind"]["answerable"]["warned"] is None
+
+
+def test_old_planted_file_and_empty_results_do_not_report_claim_numbers() -> None:
+    """심은 문장 요약도 옛 결과 파일 · 빈 결과에서는 '확인 필요까지' 수치를 내지 않는다(8차 리뷰 R3 — 빈 목록은 all([])=True였음)."""
+    raw = {
+        "file": "p01-backend.md", "index": 1, "kind": "answerable", "question": "문항", "char_limit": 500,
+        "sentences": [
+            {"id": "p01-q1-s1", "text": "진짜 문장.", "supported": True},
+            {"id": "p01-q1-s2", "text": "37% 빨라졌습니다.", "supported": True, "planted": "added_fact"},
+        ],
+    }
+    summary = summarize_planted([result_from_dict(raw)])
+    assert summary["claims_checked"] is False
+    assert (summary["planted_warned"], summary["warn_rate"], summary["genuine_needs_check"]) == (None, None, None)
+    assert summary["by_type"]["added_fact"]["warned"] is None
+    empty = summarize([])
+    assert (empty["claims_checked"], empty["warn_rate"], empty["needs_check_sentences"]) == (False, None, None)

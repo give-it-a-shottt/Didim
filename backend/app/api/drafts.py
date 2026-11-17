@@ -5,6 +5,7 @@ POST   /api/applications/{id}/questions/{qid}/draft     — [초안 쓰기](AI 1
 PUT    /api/applications/{id}/questions                 — 문항 목록 저장(추가 · 수정 · 삭제, 지운 문항의 초안도 지움).
 PUT    /api/drafts/{draft_id}                           — 문장 단위로 고친 목록 저장(고침 · 지우기 · 새 문장 · [카드 연결]).
 PATCH  /api/drafts/{draft_id}                           — [이 문항 완료] · 완료 풀기.
+PATCH  /api/drafts/{draft_id}/sentences/{sentence_id}     — '확인 필요'의 [확인함] · [확인 풀기](D-028, 완료 표시는 그대로).
 
 AI 엔드포인트는 공고 분석(api/applications.py)과 같은 구조다: 일반 함수(def)라 작업 스레드에서 DB를 다루고,
 AI 호출(async, 최대 180초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
@@ -49,7 +50,9 @@ from app.services.draft_service import (
     NoMatchedCards,
     QuestionNotFound,
     SentenceEdit,
+    SentenceNotFound,
     abandon,
+    confirm_sentence,
     prepare_draft,
     save_draft,
     save_failed,
@@ -66,6 +69,7 @@ router = APIRouter(tags=["drafts"])
 APPLICATION_NOT_FOUND_DETAIL = "공고를 찾을 수 없어요."
 QUESTION_NOT_FOUND_DETAIL = "자소서 문항을 찾을 수 없어요."
 DRAFT_NOT_FOUND_DETAIL = "초안을 찾을 수 없어요."
+SENTENCE_NOT_FOUND_DETAIL = "문장을 찾을 수 없어요. 다른 곳에서 초안이 바뀌었을 수 있어요. 새로고침한 뒤 다시 시도해 주세요."
 DRAFT_EXISTS_DETAIL = "이 문항에는 이미 초안이 있어요. 다시 쓰면 지금 초안을 덮어써요."
 NO_CARDS_DETAIL = "이 공고에 매칭된 경험 카드가 없어요. 근거 없이 쓰면 AI가 지어낸 문장이 돼요. 카드를 만든 뒤 공고 분석에서 [매칭 다시]를 눌러 주세요."
 NOT_ANALYZED_DETAIL = "먼저 공고 분석에서 내 카드를 매칭해 주세요. 매칭된 카드로만 초안을 써요."
@@ -100,6 +104,12 @@ class EvidenceOut(ServiceOut):
     added_by: str  # ai · user([카드 연결])
 
 
+class ClaimCheckOut(ServiceOut):
+    reasons: list[str]  # unknown_token · result_without_record (D-028)
+    unknown_tokens: list[str]  # 근거 카드에 없는 숫자 · 영문 낱말
+    confirmed: bool  # 지금 이유를 [확인함]으로 껐는가(이유가 달라지면 false — Q-029)
+
+
 class SentenceOut(ServiceOut):
     id: int
     position: int
@@ -108,6 +118,8 @@ class SentenceOut(ServiceOut):
     original_text: str | None
     evidence_status: str  # ok · none · card_gone · changed
     evidence: EvidenceOut | None
+    claim_check: ClaimCheckOut | None  # '확인 필요'(D-028) — 근거는 ok인데 규칙에 걸린 문장만. 아니면 null
+    needs_check: bool  # 화면의 '확인 필요' — 서버(SentenceClaims.needs_check)가 정한 값을 그대로 쓴다(8차 리뷰 R1)
 
 
 class DraftOut(ServiceOut):
@@ -121,6 +133,7 @@ class DraftOut(ServiceOut):
     edited_percent: int
     sentence_count: int
     unsupported_count: int
+    needs_check_count: int  # '확인 필요'이고 [확인함]을 누르지 않은 문장 수
     sentences: list[SentenceOut]
 
 
@@ -351,3 +364,39 @@ def complete_draft_endpoint(
         )
     except DraftNotFound as exc:
         raise _http(status.HTTP_404_NOT_FOUND, DRAFT_NOT_FOUND_DETAIL) from exc
+
+
+class ConfirmSentenceIn(BaseModel):
+    version: DbId  # 화면이 읽은 초안 version. 다르면 409
+    confirmed: bool  # true = [확인함], false = [확인 풀기]
+
+
+@router.patch("/drafts/{draft_id}/sentences/{sentence_id}", response_model=DraftOut)
+def confirm_sentence_endpoint(
+    draft_id: int,
+    sentence_id: int,
+    body: ConfirmSentenceIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DraftOut:
+    """401 / 404 내 초안 · 이 초안의 문장 아님 / 409 다른 곳에서 먼저 바뀜(version).
+    '확인 필요'의 [확인함] · [확인 풀기](D-028). 완료 표시는 그대로(Q-028)."""
+    _check_ids(draft_id, detail=DRAFT_NOT_FOUND_DETAIL)
+    _check_ids(sentence_id, detail=SENTENCE_NOT_FOUND_DETAIL)
+    try:
+        return DraftOut.model_validate(
+            confirm_sentence(
+                db,
+                user_id=current_user.id,
+                draft_id=draft_id,
+                sentence_id=sentence_id,
+                version=body.version,
+                confirmed=body.confirmed,
+            )
+        )
+    except DraftNotFound as exc:
+        raise _http(status.HTTP_404_NOT_FOUND, DRAFT_NOT_FOUND_DETAIL) from exc
+    except SentenceNotFound as exc:
+        raise _http(status.HTTP_404_NOT_FOUND, SENTENCE_NOT_FOUND_DETAIL) from exc
+    except DraftConflict as exc:
+        raise _http(status.HTTP_409_CONFLICT, CONFLICT_DETAIL) from exc

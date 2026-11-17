@@ -626,6 +626,8 @@ class DraftSentence(Base):
       없으면 모두 비움 = '근거 없음'. evidence_origin은 누가 붙였는지(ai · user — [카드 연결]), 평가에서 나눠 센다.
       quote_start · quote_end는 붙일 때 그 칸 글 안의 위치. 카드를 지우면 card_id만 비고(SET NULL) 인용은 남아
       '카드 없음'으로 보인다.
+    - confirmed_claims: '확인 필요'(D-028 — 읽을 때 계산)를 [확인함]으로 껐을 때 걸려 있던 이유(ClaimCheck.key).
+      지금 이유와 같을 때만 꺼진 것으로 본다 — 카드가 바뀌어 이유가 달라지면 다시 경고(Q-029). 비면 확인 안 함.
     """
 
     __tablename__ = "draft_sentences"
@@ -649,6 +651,8 @@ class DraftSentence(Base):
     quote_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     quote_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     evidence_origin: Mapped[str | None] = mapped_column(String(16), nullable=True)  # ai · user
+    # [확인함](D-028, 버전 0010): 그때 걸려 있던 이유. 문장 글이나 근거가 바뀌면 비운다(update_draft)
+    confirmed_claims: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class DraftLog(Base):

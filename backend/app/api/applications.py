@@ -45,7 +45,7 @@ from app.services.application_service import (
     list_applications,
     update_application,
 )
-from app.services.draft_evidence import unsupported_counts
+from app.services.draft_evidence import warning_counts
 from app.services.posting_analysis import (
     AnalysisInProgress,
     OtherAIWorkInProgress,
@@ -159,13 +159,17 @@ class ApplicationDetailOut(ServiceOut):
     requirements: list[RequirementOut]
     # 자소서 초안 전체에서 근거 없는 문장 수(F-008 — '제출'로 바꿀 때 확인창). 공고 서비스가 초안을 몰라도 되게 라우터가 채운다(_detail_out)
     unsupported_sentence_count: int = 0
+    # 근거는 있지만 인용 밖 사실이 덧붙었을 수 있는 문장 수(D-028 '확인 필요' — 같은 확인창에 알림, 막지 않음)
+    needs_check_sentence_count: int = 0
 
 
 def _detail_out(db: Session, *, user_id: int, application_id: int) -> ApplicationDetailOut:
-    """공고 상세 + 자소서의 근거 없는 문장 수. 두 서비스를 라우터가 조합한다(공고 서비스 → 초안 의존을 없앰, F-008 3차 리뷰 R1)."""
+    """공고 상세 + 자소서의 근거 없는 · 확인 필요 문장 수. 두 서비스를 라우터가 조합한다(공고 서비스 → 초안 의존을 없앰, F-008 3차 리뷰 R1)."""
     detail = ApplicationDetailOut.model_validate(get_application_detail(db, user_id=user_id, application_id=application_id))
-    unsupported = sum(unsupported_counts(db, user_id=user_id, application_id=application_id).values())
-    return detail.model_copy(update={"unsupported_sentence_count": unsupported})
+    counts = warning_counts(db, user_id=user_id, application_id=application_id)
+    return detail.model_copy(
+        update={"unsupported_sentence_count": counts.unsupported, "needs_check_sentence_count": counts.needs_check}
+    )
 
 
 @router.post("/applications", response_model=ApplicationDetailOut, status_code=status.HTTP_201_CREATED)

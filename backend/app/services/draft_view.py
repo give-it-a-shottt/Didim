@@ -1,7 +1,8 @@
 """자소서 초안 읽기 — 문항별 초안 · 문장 · 근거(지금 카드와 다시 비교한 상태) · 내가 고친 비율 (F-008).
 
 draft_service.py(쓰기 흐름 · 고치기 · 완료)에서 나눴다(F-008 2차 리뷰 R1). AI를 부르지 않는다.
-근거 상태는 저장하지 않고 읽을 때마다 draft_evidence.evidence_status로 계산한다. 모든 조회에 user_id 조건(D-004).
+근거 상태는 저장하지 않고 읽을 때마다 draft_evidence.evidence_status로 계산한다. '확인 필요'(D-028)도 읽을 때
+draft_evidence.sentence_claims로 계산한다(저장된 [확인함] 이유와 비교 포함). 모든 조회에 user_id 조건(D-004).
 """
 
 from dataclasses import dataclass
@@ -15,7 +16,14 @@ from app.config import EDITED_PERCENT_EXACT_LIMIT
 from app.db.models import ApplicationQuestion, Card, Draft, DraftSentence, PostingRequirement, RequirementMatch
 from app.korea_time import now_utc
 from app.services.application_service import ApplicationNotFound, get_application_for_user
-from app.services.draft_evidence import EVIDENCE_BY_AI, EVIDENCE_OK, CardNow, evidence_status, load_cards_now
+from app.services.draft_evidence import (
+    EVIDENCE_BY_AI,
+    EVIDENCE_OK,
+    CardNow,
+    evidence_status,
+    load_cards_now,
+    sentence_claims,
+)
 
 
 class DraftNotFound(Exception):
@@ -50,6 +58,15 @@ class EvidenceView:
 
 
 @dataclass(frozen=True)
+class ClaimCheckView:
+    """'확인 필요'(D-028) — 근거는 ok인데 인용 밖 사실이 덧붙었을 수 있음. 규칙에 걸린 문장에만 있다."""
+
+    reasons: list[str]  # unknown_token(카드에 없는 숫자 · 영문 낱말) · result_without_record(결과 기록 없는 카드에 성과 표현)
+    unknown_tokens: list[str]
+    confirmed: bool  # 지금 이유를 [확인함]으로 껐는가
+
+
+@dataclass(frozen=True)
 class SentenceView:
     id: int
     position: int
@@ -58,6 +75,8 @@ class SentenceView:
     original_text: str | None
     evidence_status: str  # ok · none · card_gone · changed
     evidence: EvidenceView | None
+    claim_check: ClaimCheckView | None  # 규칙에 안 걸렸거나 근거가 ok가 아니면 None
+    needs_check: bool  # 화면의 '확인 필요'(draft_evidence.SentenceClaims.needs_check 그대로)
 
 
 @dataclass(frozen=True)
@@ -72,6 +91,7 @@ class DraftView:
     edited_percent: int  # AI 원문에서 내가 고친 비율(낱말 기준, 0~100)
     sentence_count: int
     unsupported_count: int  # 근거 상태가 ok가 아닌 문장 수
+    needs_check_count: int  # '확인 필요'이고 [확인함]을 누르지 않은 문장 수(D-028)
     sentences: list[SentenceView]
 
 
@@ -104,6 +124,7 @@ def _sentence_view(sentence: DraftSentence, cards: dict[int, CardNow]) -> Senten
             quote_source=sentence.quote_source,
             added_by=sentence.evidence_origin or EVIDENCE_BY_AI,
         )
+    claims = sentence_claims(sentence, cards, status)
     return SentenceView(
         id=sentence.id,
         position=sentence.position,
@@ -112,6 +133,12 @@ def _sentence_view(sentence: DraftSentence, cards: dict[int, CardNow]) -> Senten
         original_text=sentence.original_text,
         evidence_status=status,
         evidence=evidence,
+        claim_check=(
+            ClaimCheckView(reasons=claims.check.reasons, unknown_tokens=claims.check.unknown_tokens, confirmed=claims.confirmed)
+            if claims is not None
+            else None
+        ),
+        needs_check=claims is not None and claims.needs_check,
     )
 
 
@@ -129,6 +156,7 @@ def build_draft_view(draft: Draft, sentences: list[DraftSentence], cards: dict[i
         edited_percent=edited_percent(draft.ai_text, text),
         sentence_count=len(views),
         unsupported_count=sum(1 for item in views if item.evidence_status != EVIDENCE_OK),
+        needs_check_count=sum(1 for item in views if item.needs_check),
         sentences=views,
     )
 

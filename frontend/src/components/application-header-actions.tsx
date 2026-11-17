@@ -19,7 +19,7 @@ import {
   deleteApplication,
   updateApplicationStatus,
 } from "@/lib/applications";
-import { draftsQueryKey, fetchDrafts, fetchUnsupportedCount, formatTime } from "@/lib/drafts";
+import { draftsQueryKey, fetchDrafts, fetchWarningCounts, formatTime, submitWarning } from "@/lib/drafts";
 import { FOCUS_RING, SECONDARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
 
 const TABS = [
@@ -85,14 +85,14 @@ export function ApplicationStatusSelect({
   );
 }
 
-/** 상태 바꾸기. '제출'이면 근거 없는 문장 수를 새로 받아, 있으면 확인창 — 취소하면 바꾸지 않는다. */
+/** 상태 바꾸기. '제출'이면 근거 없는 · 확인 필요 문장 수를 새로 받아, 있으면 확인창 — 취소하면 바꾸지 않는다. */
 function useStatusChange(applicationId: number) {
   const router = useRouter();
   return useMutation({
     mutationFn: async (next: ApplicationStatus) => {
       if (next === "submitted") {
-        const unsupported = await fetchUnsupportedCount(applicationId);
-        if (unsupported > 0 && !window.confirm(`근거 없는 문장이 ${unsupported}개 있어요. 그래도 '제출'로 바꿀까요?`)) return;
+        const warning = submitWarning(await fetchWarningCounts(applicationId));
+        if (warning !== null && !window.confirm(warning)) return;
       }
       await updateApplicationStatus(applicationId, next);
     },

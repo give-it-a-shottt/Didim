@@ -56,3 +56,18 @@ def test_failed_posting_setup_marks_only_that_posting_and_goes_on(tmp_path: Path
     ]
     assert results[0].error_detail == "정답 카드에 원문 인용 칸이 없어요: ['e1']"
     assert results[2].sentences and saved == [2, 3]  # 실패한 공고도 결과 파일에 바로 남김
+
+
+def test_summary_lines_say_when_claim_checks_were_not_computed(capsys: pytest.CaptureFixture[str]) -> None:
+    """옛 결과 파일을 다시 채점하면 '확인 필요까지' 줄 대신 계산하지 않았다는 안내가 나온다(8차 리뷰 R3)."""
+    old = draft_eval.result_from_dict(
+        {
+            "file": "p01-backend.md", "index": 1, "kind": "answerable", "question": "문항", "char_limit": 500,
+            "sentences": [{"id": "p01-q1-s1", "text": "빌드를 단축했습니다.", "supported": True, "human": True}],
+        }
+    )
+    draft_eval._print_summary("nvidia", draft_eval.summarize([old]), [])
+    draft_eval._print_planted_summary(draft_eval.summarize_planted([old]))
+    out = capsys.readouterr().out
+    assert out.count(draft_eval.NOT_CHECKED_LINE) == 2
+    assert "'확인 필요'까지(D-028): 잡음" not in out

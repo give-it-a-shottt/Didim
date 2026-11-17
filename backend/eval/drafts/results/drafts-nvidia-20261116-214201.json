@@ -1,0 +1,1273 @@
+{
+  "mode": "ai",
+  "provider": "nvidia",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "complete": true,
+  "summary": {
+    "questions": 12,
+    "drafts_written": 12,
+    "sentences": 65,
+    "unsupported_sentences": 7,
+    "unsupported_per_draft": 0.58,
+    "fabricated": 5,
+    "fabricated_caught": 0,
+    "catch_rate": 0.0,
+    "labels_pending": 0,
+    "needs_check_sentences": 9,
+    "fabricated_warned": 4,
+    "warn_rate": 0.8,
+    "needs_check_not_fabricated": 5,
+    "fabricated_missed": 5,
+    "fabricated_missed_after_check": 1,
+    "unsupported_not_fabricated": 7,
+    "rule_only": {
+      "fabricated": 0,
+      "caught": 0,
+      "catch_rate": null,
+      "from_question": 7
+    },
+    "by_kind": {
+      "answerable": {
+        "sentences": 41,
+        "unsupported": 2,
+        "needs_check": 4,
+        "fabricated": 2,
+        "caught": 0,
+        "catch_rate": 0.0,
+        "warned": 1,
+        "warn_rate": 0.5
+      },
+      "trap": {
+        "sentences": 24,
+        "unsupported": 5,
+        "needs_check": 5,
+        "fabricated": 3,
+        "caught": 0,
+        "catch_rate": 0.0,
+        "warned": 3,
+        "warn_rate": 1.0
+      }
+    },
+    "drop_reasons": {
+      "no_evidence": 7
+    },
+    "over_limit": 0,
+    "failures": 0,
+    "retries": 0,
+    "seconds_avg": 51.3,
+    "seconds_max": 103.9,
+    "usage": {
+      "calls": 15,
+      "prompt_tokens": 19759,
+      "completion_tokens": 25135
+    }
+  },
+  "rate_limit_waits": [],
+  "questions": [
+    {
+      "file": "p01-backend.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "서비스의 성능이나 안정성 문제를 찾아 해결한 경험을 구체적으로 써 주세요.",
+      "char_limit": 500,
+      "chars": 429,
+      "cards_sent": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 48.6,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1677,
+        "completion_tokens": 3143
+      },
+      "sentences": [
+        {
+          "id": "p01-q1-s1",
+          "text": "목록 API가 N+1 문제로 301번 쿼리가 발생해 3초 이상 걸리던 것을 SQLAlchemy의 selectinload로 한 번에 태그를 로드하도록 수정했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "action",
+          "quote": "SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q1-s2",
+          "text": "수정 후 쿼리가 2번으로 줄고 응답 시간이 0.2초로 단축되어 시연 당일 목록이 바로 떴습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q1-s3",
+          "text": "액세스 토큰 만료 시 프론트의 axios 인터셉터에 401 처리 로직을 추가해 리프레시 토큰으로 재요청하도록 하고 동시 요청을 방지했습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다. 리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p01-q1-s4",
+          "text": "베이스 이미지를 python:3.12-slim으로 바꾸고 멀티 스테이지 빌드로 빌드 도구를 분리하며 .dockerignore에 테스트 폴더와 .git을 추가했습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "action",
+          "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고, 빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다. .dockerignore에 테스트 폴더와 .git을 넣었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q1-s5",
+          "text": "이미지 크기가 210MB로 줄어들고 배포 시간이 1분 안쪽으로 단축되었습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q1-s6",
+          "text": "CI 파이프라인에서 actions/cache를 이용해 잠금 파일 해시 기준 패키지 캐시를 저장해 빌드 시간을 단축했습니다.",
+          "supported": true,
+          "card": "c06-2",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": true,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "p01-backend.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "Kubernetes 환경에서 서비스를 운영하며 겪은 문제와 해결 과정을 써 주세요.",
+      "char_limit": 500,
+      "chars": 268,
+      "cards_sent": 4,
+      "drop_reasons": {
+        "no_evidence": 1
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 25.9,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1675,
+        "completion_tokens": 1543
+      },
+      "sentences": [
+        {
+          "id": "p01-q2-s1",
+          "text": "Kubernetes 환경에서의 직접 운영 경험은 없습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": "from_question",
+          "rule_tokens": [
+            "kubernetes"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q2-s2",
+          "text": "하지만 도커 이미지를 1.2GB에서 210MB로 줄여 배포 시간을 5분에서 1분 미만으로 단축한 경험이 있습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p01-q2-s3",
+          "text": "CI 파이프라인에서 의존성 캐시를 도입해 빌드 시간을 8분에서 크게 단축했습니다.",
+          "supported": true,
+          "card": "c06-2",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": true,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p01-q2-s4",
+          "text": "ORM 쿼리 N+1 문제를 selectinload로 해결해 목록 API 응답을 3초에서 0.2초로 개선했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다.",
+          "rule": "from_question",
+          "rule_tokens": [
+            "orm"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "unknown_token"
+          ]
+        },
+        {
+          "id": "p01-q2-s5",
+          "text": "JWT 액세스 토큰 만료 시 리프레시 토큰으로 자동 갱신하는 인터셉터를 구현해 로그인 유지 문제를 해결했습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다. 리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다.",
+          "rule": "from_question",
+          "rule_tokens": [
+            "jwt"
+          ],
+          "human": true,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "unknown_token",
+            "result_without_record"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "p02-frontend.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "외부 API 연동이나 네트워크 오류 같은 예외 상황을 처리하며 화면을 개선한 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 389,
+      "cards_sent": 5,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 35.0,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1907,
+        "completion_tokens": 2411
+      },
+      "sentences": [
+        {
+          "id": "p02-q1-s1",
+          "text": "스터디 프로젝트에서 기상청 단기예보 API를 연동해 기온과 강수 확률을 화면에 표시했습니다.",
+          "supported": true,
+          "card": "c07-1",
+          "slot": "situation",
+          "quote": "나는 기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": true,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p02-q1-s2",
+          "text": "API 응답 지연에 대비해 마지막으로 받은 예보를 10분간 캐시해 두고 먼저 보여 주는 방식으로 화면 로딩을 개선했습니다.",
+          "supported": true,
+          "card": "c07-1",
+          "slot": "action",
+          "quote": "응답이 느릴 때를 대비해 마지막으로 받은 예보를 10분 동안 저장해 두고 그 값을 먼저 보여 줬다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p02-q1-s3",
+          "text": "또 다른 프로젝트에서는 액세스 토큰 만료 시 401 응답을 axios 인터셉터에서 감지해 리프레시 토큰으로 재발급 후 원래 요청을 재시도하도록 구현했습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p02-q1-s4",
+          "text": "동시에 여러 리프레시 요청이 나가지 않도록 진행 중인 요청을 공유하는 로직을 추가했습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p02-q1-s5",
+          "text": "발표 시연 중 네트워크 장애에 대비해 API 응답을 JSON 파일로 저장해 두고 오프라인 모드에서 화면을 그릴 수 있게 만들었습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p02-q1-s6",
+          "text": "실제 발표 중 와이파이 끊김에도 시연 모드로 전환해 화면이 비지 않고 끝까지 동작하도록 했습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "result",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p02-frontend.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "TypeScript로 타입을 설계해 코드 품질을 높인 경험과 그 성과를 써 주세요.",
+      "char_limit": 500,
+      "chars": 35,
+      "cards_sent": 5,
+      "drop_reasons": {
+        "no_evidence": 1
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 20.9,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1902,
+        "completion_tokens": 945
+      },
+      "sentences": [
+        {
+          "id": "p02-q2-s1",
+          "text": "기록된 카드에는 TypeScript 타입 설계 경험이 없습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": "from_question",
+          "rule_tokens": [
+            "typescript"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p03-fullstack.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "문서화나 자동화로 함께 일하는 방식을 개선한 경험을 써 주세요.",
+      "char_limit": 600,
+      "chars": 479,
+      "cards_sent": 6,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 103.9,
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 1999,
+        "completion_tokens": 2118
+      },
+      "sentences": [
+        {
+          "id": "p03-q1-s1",
+          "text": "스터디 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠습니다.",
+          "supported": true,
+          "card": "c02-2",
+          "slot": "situation",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s2",
+          "text": "깃허브 저장소 하나에 주차별 폴더와 README 목차를 만들고, 기존 자료 14개를 옮기며 발표자가 PR로 올리는 규칙을 정했습니다.",
+          "supported": true,
+          "card": "c02-2",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞으로는 발표자가 PR로 올리는 규칙을 정했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s3",
+          "text": "사진 동아리 총무로 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조하다 3시간이 걸리고 실수가 있었습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "situation",
+          "quote": "사진 동아리 총무를 맡았을 때 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조했다. 부원이 45명이라 한 번 정산에 3시간쯤 걸렸고, 두 번은 미납자를 잘못 안내해서 사과한 적도 있다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s4",
+          "text": "은행 거래 내역 엑셀과 부원 명단을 이름·입금액으로 매칭하는 파이썬 스크립트를 작성하고, 이름이 겹치면 학번 끝 두 자리를 붙여달라고 안내했습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번 끝 두 자리를 붙여 달라고 공지했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s5",
+          "text": "그 후 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s6",
+          "text": "매 학기 신입 부원이 장비 대여 방법, 출사 일정, 회비 규칙을 단톡방에 같은 질문으로 계속 물어봤습니다.",
+          "supported": true,
+          "card": "c04-2",
+          "slot": "situation",
+          "quote": "매 학기 신입 부원이 들어오면 장비 대여 방법, 출사 일정, 회비 규칙을 단톡방에 같은 질문으로 계속 물어봤다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s7",
+          "text": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고 가입 확정 메시지에 링크를 넣었습니다.",
+          "supported": true,
+          "card": "c04-2",
+          "slot": "action",
+          "quote": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고, 가입 확정 메시지에 링크를 넣었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q1-s8",
+          "text": "다음 학기에는 단톡방에 같은 질문이 눈에 띄게 줄었습니다.",
+          "supported": true,
+          "card": "c04-2",
+          "slot": "result",
+          "quote": "다음 학기에는 단톡방에 올라오는 같은 질문이 눈에 띄게 줄었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p03-fullstack.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "결제 시스템을 개발하며 데이터 정합성을 지킨 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 406,
+      "cards_sent": 6,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 103.7,
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 1996,
+        "completion_tokens": 2394
+      },
+      "sentences": [
+        {
+          "id": "p03-q2-s1",
+          "text": "결제 시스템을 직접 개발한 적은 없지만, 액세스 토큰 만료 시 자동 갱신 인터셉터를 구현해 세션 데이터 정합성을 지킨 경험이 있습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q2-s2",
+          "text": "당시 액세스 토큰 만료가 30분인데 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었고, 이를 추가해 토큰을 다시 받고 원래 요청을 한 번 더 보내도록 했습니다.",
+          "supported": true,
+          "card": "c03-1",
+          "slot": "action",
+          "quote": "인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q2-s3",
+          "text": "동아리 회비 정산을 파이썬 스크립트로 자동화해 수작업 오류를 없애고 정산 시간을 3시간에서 10분으로 단축하며 데이터 정합성을 높였습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q2-s4",
+          "text": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p03-q2-s5",
+          "text": "배포 후 마크다운 표가 깨지는 버그를 발견 즉시 remark-gfm 플러그인을 추가하고 테스트 후 재배포해 데이터 표현 정합성을 복구한 경험도 있습니다.",
+          "supported": true,
+          "card": "c08-1",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p04-devops.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "배포 과정의 시간이나 비용을 줄인 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 450,
+      "cards_sent": 3,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 90.0,
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 1345,
+        "completion_tokens": 1830
+      },
+      "sentences": [
+        {
+          "id": "p04-q1-s1",
+          "text": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB로 커서 배포에 5분 넘게 걸리고 디스크가 부족했습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "situation",
+          "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s2",
+          "text": "베이스 이미지를 python:3.12-slim으로 변경하고 멀티 스테이지 빌드로 빌드 도구를 분리했으며 .dockerignore에 테스트 폴더와 .git을 추가했습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "action",
+          "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고, 빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다. .dockerignore에 테스트 폴더와 .git을 넣었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s3",
+          "text": "그 결과 이미지 크기가 210MB로 줄어들어 배포 시간이 1분 이내로 단축되었습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s4",
+          "text": "GitHub Actions CI가 매번 의존성을 처음부터 설치해 8분씩 소요되었습니다.",
+          "supported": true,
+          "card": "c06-2",
+          "slot": "situation",
+          "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다. 리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s5",
+          "text": "actions/cache를 이용해 패키지 캐시를 잠금 파일 해시 기준으로 저장하도록 개선했습니다.",
+          "supported": true,
+          "card": "c06-2",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p04-q1-s6",
+          "text": "발표 전날 학교 와이파이 장애로 API 호출이 실패할 위험이 있었습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "situation",
+          "quote": "발표 전날 밤 리허설에서 학교 와이파이가 끊겨 API 호출이 모두 실패했다. 본 발표에서도 같은 일이 생기면 화면이 텅 비어 버릴 상황이었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s7",
+          "text": "네트워크가 끊겼을 때 사용할 JSON 파일을 미리 저장하고 시연 모드를 구현해 대비했습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q1-s8",
+          "text": "실제 발표 중 와이파이가 끊겼으나 시연 모드로 전환해 무사히 마쳤고 팀은 장려상을 받았습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "result",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p04-devops.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "AWS 클라우드 인프라를 운영하며 장애를 감지하고 대응한 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 209,
+      "cards_sent": 3,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 35.8,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1353,
+        "completion_tokens": 2621
+      },
+      "sentences": [
+        {
+          "id": "p04-q2-s1",
+          "text": "도커 이미지 크기를 1.2GB에서 210MB로 줄였습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "situation",
+          "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q2-s2",
+          "text": "배포 시간도 5분에서 1분 안쪽으로 단축되었습니다.",
+          "supported": true,
+          "card": "c06-1",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q2-s3",
+          "text": "GitHub Actions에 패키지 캐시를 적용해 CI 빌드 시간을 단축했습니다.",
+          "supported": true,
+          "card": "c06-2",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": true,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p04-q2-s4",
+          "text": "시연 중 네트워크 장애 발생 시 JSON 폴백 모드로 화면을 계속 표시할 수 있도록 대체 경로를 마련했습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p04-q2-s5",
+          "text": "실제 발표 중 와이파이 끊김에도 폴백 모드로 전환해 시연을 마쳤습니다.",
+          "supported": true,
+          "card": "c07-2",
+          "slot": "result",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p05-data.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "반복되는 데이터 작업을 자동화하거나 쿼리 성능을 개선한 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 301,
+      "cards_sent": 3,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 46.9,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1498,
+        "completion_tokens": 2335
+      },
+      "sentences": [
+        {
+          "id": "p05-q1-s1",
+          "text": "목록 화면이 3초 넘게 걸리던 문제를 SQLAlchemy 관계에 selectinload를 붙여 태그를 한 번에 가져오도록 수정했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "action",
+          "quote": "SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고, 같은 실수를 막으려고 쿼리 수를 세는 테스트를 하나 추가했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q1-s2",
+          "text": "수정 후 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q1-s3",
+          "text": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짜서 월 정산 작업을 자동화했습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번 끝 두 자리를 붙여 달라고 공지했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q1-s4",
+          "text": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q1-s5",
+          "text": "기상청 단기예보 API 연동 시 마지막 응답을 10분간 캐시해 두어 반복 요청 시 빠르게 응답하도록 했습니다.",
+          "supported": true,
+          "card": "c07-1",
+          "slot": "action",
+          "quote": "응답이 느릴 때를 대비해 마지막으로 받은 예보를 10분 동안 저장해 두고 그 값을 먼저 보여 줬다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p05-data.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "Spark 등으로 대용량 데이터를 분산 처리해 본 경험과 성과를 써 주세요.",
+      "char_limit": 500,
+      "chars": 477,
+      "cards_sent": 3,
+      "drop_reasons": {
+        "no_evidence": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 54.6,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1495,
+        "completion_tokens": 3564
+      },
+      "sentences": [
+        {
+          "id": "p05-q2-s1",
+          "text": "Spark 등 분산 처리 프레임워크를 직접 사용해 본 적은 없지만, 대용량 데이터 처리와 성능 최적화를 위한 기초 역량을 다음 프로젝트들에서 길렀습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": "from_question",
+          "rule_tokens": [
+            "spark"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q2-s2",
+          "text": "북마크 목록 API에서 N+1 쿼리 문제를 발견해 SQLAlchemy의 selectinload로 태그를 한 번에 로드하도록 수정했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "action",
+          "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다. SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고, 같은 실수를 막으려고 쿼리 수를 세는 테스트를 하나 추가했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q2-s3",
+          "text": "수정 후 쿼리가 301회에서 2회로, 응답 시간이 3초에서 0.2초로 단축되어 시연 당일에도 즉시 로드되었습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q2-s4",
+          "text": "동아리 회비 정산 시 45명 분의 엑셀 거래 내역을 파이썬으로 자동 매칭하는 스크립트를 작성했습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번 끝 두 자리를 붙여 달라고 공지했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q2-s5",
+          "text": "이로써 정산 시간이 3시간에서 10분으로 단축되고 남은 임기 동안 미납 안내 실수가 사라졌습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p05-q2-s6",
+          "text": "기상청 예보 API 연동 시 마지막 응답을 10분간 캐시해 두어 반복 요청 시 응답 속도를 개선했습니다.",
+          "supported": true,
+          "card": "c07-1",
+          "slot": "action",
+          "quote": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다. 응답이 느릴 때를 대비해 마지막으로 받은 예보를 10분 동안 저장해 두고 그 값을 먼저 보여 줬다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": true,
+          "check_reasons": [
+            "result_without_record"
+          ]
+        },
+        {
+          "id": "p05-q2-s7",
+          "text": "이러한 SQL 튜닝, 정형 데이터 자동화, 캐시 적용 경험을 바탕으로 향후 Spark 환경에서도 데이터 파이프라인을 안정적으로 구축하겠습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": "from_question",
+          "rule_tokens": [
+            "spark"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p06-ai-service.md",
+      "index": 1,
+      "kind": "answerable",
+      "question": "Python으로 문제를 해결한 경험을 써 주세요.",
+      "char_limit": 500,
+      "chars": 476,
+      "cards_sent": 3,
+      "drop_reasons": {
+        "no_evidence": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 37.2,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1450,
+        "completion_tokens": 1850
+      },
+      "sentences": [
+        {
+          "id": "p06-q1-s1",
+          "text": "파이썬으로 성능 병목과 반복 업무를 자동화하며 문제를 해결한 경험이 있습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s2",
+          "text": "북마크 300개가 쌓인 테스트 계정에서 목록 API가 3초 넘게 걸려 시연 이틀 전 긴급히 원인을 분석했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "situation",
+          "quote": "북마크가 300개쯤 쌓인 테스트 계정으로 목록 화면을 열면 3초 넘게 걸렸다. 친구들에게 시연하기로 한 날이 이틀 남아서 그 전에 고쳐야 했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s3",
+          "text": "SQL 로그를 보니 쿼리가 301번 실행되는 N+1 문제였고, SQLAlchemy에 `selectinload`를 적용해 태그를 한 번에 조회하도록 수정하고 쿼리 수 검증 테스트를 추가했습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "action",
+          "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다. SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고, 같은 실수를 막으려고 쿼리 수를 세는 테스트를 하나 추가했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s4",
+          "text": "수정 후 쿼리는 2번으로 줄고 응답은 0.2초로 단축돼 시연 당일에도 즉시 로드됐습니다.",
+          "supported": true,
+          "card": "c01-1",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s5",
+          "text": "동아리 회비 정산도 파이썬 스크립트로 자동화했습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "situation",
+          "quote": "사진 동아리 총무를 맡았을 때 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조했다. 부원이 45명이라 한 번 정산에 3시간쯤 걸렸고, 두 번은 미납자를 잘못 안내해서 사과한 적도 있다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s6",
+          "text": "은행 거래 내역 엑셀과 부원 명단을 이름·입금액으로 매칭하는 스크립트를 작성하고, 동명이인은 학번 끝자리를 붙여 구분하도록 안내했습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번 끝 두 자리를 붙여 달라고 공지했다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s7",
+          "text": "이후 정산 시간이 10분 내로 줄었고 남은 임기 동안 미납 안내 실수는 한 번도 없었습니다.",
+          "supported": true,
+          "card": "c04-1",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        },
+        {
+          "id": "p06-q1-s8",
+          "text": "이런 실무·자동화 경험을 바탕으로 귀사에서도 파이썬으로 꼼꼼하고 빠르게 문제를 풀어가겠습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    },
+    {
+      "file": "p06-ai-service.md",
+      "index": 2,
+      "kind": "trap",
+      "question": "LLM API를 활용한 서비스를 만들고 프롬프트를 평가해 본 경험을 써 주세요.",
+      "char_limit": 600,
+      "chars": 59,
+      "cards_sent": 3,
+      "drop_reasons": {
+        "no_evidence": 1
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 13.5,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 1462,
+        "completion_tokens": 381
+      },
+      "sentences": [
+        {
+          "id": "p06-q2-s1",
+          "text": "제공된 경험 카드에는 LLM API를 활용한 서비스 개발 및 프롬프트 평가 경험이 기록되어 있지 않습니다.",
+          "supported": false,
+          "card": null,
+          "slot": null,
+          "quote": null,
+          "rule": "from_question",
+          "rule_tokens": [
+            "llm"
+          ],
+          "human": false,
+          "planted": null,
+          "needs_check": false,
+          "check_reasons": []
+        }
+      ]
+    }
+  ]
+}

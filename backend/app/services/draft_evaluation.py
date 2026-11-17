@@ -7,6 +7,7 @@
 
 AI 초안 평가에서 재는 것
 - 지어낸 문장을 검사가 잡은 비율: '지어냄'으로 판정한 문장 중 근거 검사를 못 넘어 '근거 없음'으로 경고된 비율.
+  (D-028 뒤) '확인 필요'까지 더한 비율도 같이 낸다 — 화면에 경고가 하나라도 붙으면 잡은 것.
 - 근거 없이 남은 문장 수: 저장된 AI 문장 중 근거가 없는 문장(화면에서 '근거 없음' 경고가 붙는 문장).
 - (진단) 검사를 통과했는데 지어낸 문장(놓친 것) · 지어내지 않았는데 근거 없음(경고만 늘림) · 문항 종류별 수 ·
   근거를 못 붙인 이유(draft_logs.drop_reasons와 같은 키) · 글자 수 제한을 넘은 초안.
@@ -22,7 +23,6 @@ AI 초안 평가에서 재는 것
 """
 
 import json
-import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
@@ -49,6 +49,8 @@ from app.korea_time import now_utc
 from app.llm import MockLLMClient
 from app.llm.base import LLMClient, LLMUsage, Message
 from app.services.application_service import QuestionInput, create_application
+from app.services.claim_check import numbers_in, words_in
+from app.services.draft_evidence import evidence_status, load_cards_now, sentence_claims
 from app.services.draft_service import (
     DraftPlan,
     DraftWriteOutcome,
@@ -202,16 +204,7 @@ def create_eval_application(
 
 # --- 규칙 판정 (채점 AI 없이) ---
 
-_NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
-_LATIN = re.compile(r"[A-Za-z][A-Za-z0-9+#]+")  # 두 글자 이상(C# · N+1 포함)
-
-
-def numbers_in(text: str) -> set[str]:
-    return {match.replace(",", "") for match in _NUMBER.findall(text)}
-
-
-def words_in(text: str) -> set[str]:
-    return {match.casefold() for match in _LATIN.findall(text)}
+# 숫자 · 영문 낱말은 서비스의 '확인 필요' 검사(claim_check, D-028)와 같은 함수로 뽑는다.
 
 
 @dataclass(frozen=True)
@@ -284,6 +277,15 @@ class SentenceRecord:
     rule_tokens: list[str] = field(default_factory=list)
     human: bool | None = None  # 사람 판정(true = 지어냄). 있으면 규칙보다 앞선다
     planted: str | None = None  # 심은 문장 평가에서 일부러 지어 넣은 문장의 종류(PLANT_*). 진짜 문장은 None
+    # '확인 필요'(D-028): 근거는 붙었지만 규칙에 걸림. 화면과 같은 함수(draft_evidence.sentence_claims)로 계산한다.
+    # None = 계산하지 않음(D-028 전 결과 파일) — 그런 파일은 '확인 필요까지' 수치를 내지 않는다(7차 리뷰 R3)
+    needs_check: bool | None = None
+    check_reasons: list[str] = field(default_factory=list)
+
+    @property
+    def warned(self) -> bool:
+        """화면에 경고가 붙는가('근거 없음' 또는 '확인 필요')."""
+        return not self.supported or bool(self.needs_check)
 
     @property
     def fabricated(self) -> bool:
@@ -385,8 +387,10 @@ def _record_saved(
     payload = SentPayload.from_messages(plan.messages)
     text, rows = _load_sentences(db, user_id=plan.user_id, question_id=plan.question_id)
     result.chars = len(text)
+    cards = load_cards_now(db, user_id=plan.user_id, card_ids={row.card_id for row in rows if row.card_id is not None})
     for row in rows:
         rule, tokens = rule_verdict(row.text, payload)
+        claims = sentence_claims(row, cards, evidence_status(row, cards))
         result.sentences.append(
             SentenceRecord(
                 id=sentence_id(result.file_name, result.index, row.position),
@@ -397,6 +401,8 @@ def _record_saved(
                 quote=row.quote,
                 rule=rule,
                 rule_tokens=tokens,
+                needs_check=claims is not None and claims.needs_check,
+                check_reasons=claims.check.reasons if claims is not None else [],
             )
         )
 
@@ -509,11 +515,24 @@ async def evaluate_planted_question(
     return result
 
 
+def _claims_checked(records: Sequence[SentenceRecord]) -> bool:
+    """'확인 필요'를 계산한 결과인가(D-028 전 결과 파일은 needs_check가 없다). 문장이 없으면 잴 것이 없어 False
+    — 0을 내면 계산한 것처럼 보인다(8차 리뷰 R3)."""
+    return bool(records) and all(record.needs_check is not None for record in records)
+
+
+def _if_checked[T](checked: bool, value: T) -> T | None:
+    """'확인 필요까지' 수치는 계산한 결과에서만 낸다(아니면 None — 근거 검사만의 수치와 헷갈리지 않게, 8차 리뷰 R1)."""
+    return value if checked else None
+
+
 def summarize_planted(results: Sequence[QuestionEvalResult]) -> dict[str, object]:
     records = [record for result in results for record in result.sentences]
     fakes = [record for record in records if record.planted is not None]
     genuine = [record for record in records if record.planted is None]
     caught = sum(1 for record in fakes if not record.supported)
+    warned = sum(1 for record in fakes if record.warned)
+    checked = _claims_checked(records)
     drops: Counter[str] = Counter()
     for result in results:
         drops.update(result.drop_reasons)
@@ -521,7 +540,14 @@ def summarize_planted(results: Sequence[QuestionEvalResult]) -> dict[str, object
     for kind in PLANT_TYPES:
         planted = [record for record in fakes if record.planted == kind]
         kind_caught = sum(1 for record in planted if not record.supported)
-        by_type[kind] = {"planted": len(planted), "caught": kind_caught, "catch_rate": _rate(kind_caught, len(planted))}
+        kind_warned = sum(1 for record in planted if record.warned)
+        by_type[kind] = {
+            "planted": len(planted),
+            "caught": kind_caught,
+            "catch_rate": _rate(kind_caught, len(planted)),
+            "warned": _if_checked(checked, kind_warned),  # '확인 필요'까지 더해 경고가 붙은 수(D-028)
+            "warn_rate": _if_checked(checked, _rate(kind_warned, len(planted))),
+        }
     return {
         "questions": len(results),
         "sentences": len(records),
@@ -529,10 +555,14 @@ def summarize_planted(results: Sequence[QuestionEvalResult]) -> dict[str, object
         "planted": len(fakes),
         "planted_caught": caught,
         "catch_rate": _rate(caught, len(fakes)),
+        "claims_checked": checked,  # false면 D-028 전 결과 — 아래 '확인 필요까지' 수치는 None
+        "planted_warned": _if_checked(checked, warned),  # '확인 필요'까지(D-028)
+        "warn_rate": _if_checked(checked, _rate(warned, len(fakes))),
         "by_type": by_type,
         # 진단: 진짜 문장(카드 인용을 그대로 쓴 문장)을 '근거 없음'으로 잘못 경고한 수 — 0이어야 한다
         "genuine": len(genuine),
         "genuine_flagged": sum(1 for record in genuine if not record.supported),
+        "genuine_needs_check": _if_checked(checked, sum(1 for record in genuine if record.needs_check)),  # 잘못 경고(D-028)
         "drop_reasons": dict(drops),
         "failures": sum(1 for result in results if result.error),
     }
@@ -548,12 +578,17 @@ def _rate(part: int, whole: int) -> float | None:
 def _counts(records: Sequence[SentenceRecord]) -> dict[str, object]:
     fabricated = [record for record in records if record.fabricated]
     caught = sum(1 for record in fabricated if not record.supported)
+    warned = sum(1 for record in fabricated if record.warned)
+    checked = _claims_checked(records)
     return {
         "sentences": len(records),
         "unsupported": sum(1 for record in records if not record.supported),
+        "needs_check": _if_checked(checked, sum(1 for record in records if record.needs_check)),
         "fabricated": len(fabricated),
         "caught": caught,
         "catch_rate": _rate(caught, len(fabricated)),
+        "warned": _if_checked(checked, warned),
+        "warn_rate": _if_checked(checked, _rate(warned, len(fabricated))),
     }
 
 
@@ -561,6 +596,9 @@ def summarize(results: Sequence[QuestionEvalResult]) -> dict[str, object]:
     records = [record for result in results for record in result.sentences]
     written = [result for result in results if result.sentences]
     fabricated = [record for record in records if record.fabricated]
+    caught = sum(1 for record in fabricated if not record.supported)
+    warned = sum(1 for record in fabricated if record.warned)
+    checked = _claims_checked(records)
     by_rule = [record for record in records if record.rule == RULE_INVENTED]
     drops: Counter[str] = Counter()
     usage = LLMUsage()
@@ -577,11 +615,21 @@ def summarize(results: Sequence[QuestionEvalResult]) -> dict[str, object]:
         "unsupported_sentences": unsupported,
         "unsupported_per_draft": round(unsupported / len(written), 2) if written else None,
         "fabricated": len(fabricated),
-        "fabricated_caught": sum(1 for record in fabricated if not record.supported),
-        "catch_rate": _rate(sum(1 for record in fabricated if not record.supported), len(fabricated)),
+        "fabricated_caught": caught,
+        "catch_rate": _rate(caught, len(fabricated)),
         "labels_pending": sum(1 for record in records if record.needs_human),
+        # D-028 '확인 필요'까지 더한 수치 — 화면에 경고가 하나라도 붙으면 잡은 것
+        "claims_checked": checked,  # false면 D-028 전 결과 — 아래 '확인 필요까지' 수치는 None
+        "needs_check_sentences": _if_checked(checked, sum(1 for record in records if record.needs_check)),
+        "fabricated_warned": _if_checked(checked, warned),
+        "warn_rate": _if_checked(checked, _rate(warned, len(fabricated))),
+        # 지어내지 않았는데 '확인 필요'(잘못 경고)
+        "needs_check_not_fabricated": _if_checked(
+            checked, sum(1 for record in records if record.needs_check and not record.fabricated)
+        ),
         # 진단
-        "fabricated_missed": sum(1 for record in fabricated if record.supported),  # 검사를 통과한 지어낸 문장
+        "fabricated_missed": sum(1 for record in fabricated if record.supported),  # 근거 검사를 통과한 지어낸 문장
+        "fabricated_missed_after_check": _if_checked(checked, len(fabricated) - warned),  # 경고가 하나도 없는 것
         "unsupported_not_fabricated": sum(1 for record in records if not record.supported and not record.fabricated),
         "rule_only": {
             "fabricated": len(by_rule),
@@ -641,6 +689,8 @@ def result_from_dict(raw: Mapping[str, Any]) -> QuestionEvalResult:
                 rule_tokens=list(item.get("rule_tokens") or []),
                 human=human,
                 planted=item.get("planted"),
+                needs_check=item.get("needs_check"),  # D-028 전 결과 파일에는 없다(None)
+                check_reasons=list(item.get("check_reasons") or []),
             )
         )
     usage = raw.get("usage") or {}

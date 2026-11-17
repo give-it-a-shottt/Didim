@@ -3,7 +3,7 @@
 // APL_02_002 오른쪽 칸: 요약([매칭 다시]) · 선택한 역량의 근거 · 공고 원문(고른 역량의 인용 자리 표시).
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AddRecordButton } from "@/components/import-records-dialog";
 import { SourceQuote } from "@/components/page-parts";
 import {
@@ -129,9 +129,53 @@ export function SelectedEvidence({ requirement, matched }: { requirement: Requir
   );
 }
 
+// 접기 안전 타이머의 여유 — 전환 시간(CSS --motion-duration)이 끝난 뒤 이만큼 더 기다려도 끝 신호가 없으면 바꾼다
+const COLLAPSE_FALLBACK_SLACK_MS = 100;
+
+/** 요소의 전환 시간(가장 긴 것, ms). "0.2s" · "200ms" · 여러 개("0.2s, 0s")를 읽는다. 움직임 줄이기면 0.
+ *  목록 길이가 다르면 CSS처럼 짧은 쪽을 되풀이한다(11차 리뷰 R3). */
+function transitionMs(element: Element): number {
+  const { transitionDuration, transitionDelay } = getComputedStyle(element);
+  const toMs = (value: string) => (value.trim().endsWith("ms") ? parseFloat(value) : parseFloat(value) * 1000) || 0;
+  const durations = transitionDuration.split(",").map(toMs);
+  const delays = transitionDelay.split(",").map(toMs);
+  const count = Math.max(durations.length, delays.length);
+  return Math.max(0, ...Array.from({ length: count }, (_, index) => durations[index % durations.length] + delays[index % delays.length]));
+}
+
 /** 공고 원문 — 고른 역량의 공고 인용 자리를 표시한다(근거 우선, 원칙 1). 공고는 내 기록이 아니라 인용 모양을 쓰지 않는다. */
 export function PostingText({ text, highlight }: { text: string; highlight: Requirement | null }) {
+  // expanded = 버튼 상태(펼침), showFull = 전체 글을 그리는가. 접을 때는 높이가 4줄로 줄어드는 전환이 끝난 뒤에
+  // 짧은 글(4줄 자르기)로 바꾼다 — 먼저 자르면 높이가 한 번에 바뀌어 부드럽게 접히지 않는다(사용자 요청 2026-11-17).
   const [expanded, setExpanded] = useState(false);
+  const [showFull, setShowFull] = useState(false);
+  const bodyRef = useRef<HTMLParagraphElement>(null);
+  const fallbackTimer = useRef<number | null>(null);
+  const clearFallback = () => {
+    if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = null;
+  };
+  useEffect(() => clearFallback, []); // 화면을 떠나면 타이머를 남기지 않는다
+  // 접기 끝: 전환 끝 신호 · 안전 타이머 중 먼저 오는 것(10차 리뷰 R1 · R3 — 끝 신호만 기다리면 전환이 끊길 때 전체 글이 남음)
+  const finishCollapse = () => {
+    clearFallback();
+    setShowFull(false);
+  };
+  const toggle = () => {
+    clearFallback();
+    if (!expanded) {
+      setExpanded(true);
+      setShowFull(true);
+      return;
+    }
+    setExpanded(false);
+    const ms = bodyRef.current ? transitionMs(bodyRef.current) : 0;
+    if (ms === 0) {
+      finishCollapse(); // 움직임 줄이기 설정 등 전환이 없으면 끝 신호도 오지 않는다 — 바로 바꾼다
+      return;
+    }
+    fallbackTimer.current = window.setTimeout(finishCollapse, ms + COLLAPSE_FALLBACK_SLACK_MS);
+  };
   const canMark =
     highlight !== null && text.slice(highlight.quoteStart, highlight.quoteEnd) === highlight.quote;
   const body = canMark ? (
@@ -150,15 +194,24 @@ export function PostingText({ text, highlight }: { text: string; highlight: Requ
       </h3>
       <p
         id="posting-body"
-        className={`text-body-3 whitespace-pre-wrap text-text-main ${expanded ? "max-h-120 overflow-y-auto" : "line-clamp-4"}`}
+        ref={bodyRef}
+        data-state={showFull ? "full" : "short"} // 전체 글 · 짧은 글 — 클래스만으로는 접는 중과 접힘을 못 가른다(테스트가 봄)
+        // 취소 신호(transitioncancel)는 쓰지 않는다 — 펼치는 전환 도중 접으면 '펼치기'가 취소되며 이 신호가 와서, 접기 끝으로
+        // 오해해 바로 짧은 글이 됐다(11차 리뷰 뒤 테스트로 찾음). 접는 전환이 끊기면 안전 타이머가 마무리한다.
+        onTransitionEnd={(event) => {
+          if (event.propertyName === "max-height" && !expanded) finishCollapse();
+        }}
+        className={`motion-height text-body-3 whitespace-pre-wrap text-text-main ${
+          expanded ? "max-h-120 overflow-y-auto" : showFull ? "max-h-4-lines overflow-hidden" : "max-h-4-lines line-clamp-4"
+        }`}
       >
-        {expanded ? body : canMark ? highlight.quote : text}
+        {showFull ? body : canMark ? highlight.quote : text}
       </p>
       <button
         type="button"
         aria-expanded={expanded}
         aria-controls="posting-body"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={toggle}
         className={`${TEXT_BUTTON} self-start`}
       >
         {expanded ? "원문 접기" : "원문 전체 보기"}

@@ -51,8 +51,10 @@ from app.services.draft_evidence import (
     ORIGIN_USER,
     QUOTE_SOURCES,
     CardNow,
+    evidence_status,
     find_in_card,
     load_cards_now,
+    sentence_claims,
 )
 from app.services.draft_view import (
     DraftNotFound,
@@ -110,6 +112,10 @@ class DraftWriteInProgress(Exception):
 
 class DraftConflict(Exception):
     """화면이 보낸 version이 지금 초안과 다르다(다른 탭이 먼저 저장했거나 다시 쓰기로 바뀜) — 저장하지 않는다."""
+
+
+class SentenceNotFound(Exception):
+    """이 초안에 없는 문장(다른 탭의 저장으로 번호가 바뀌었거나 지워짐)."""
 
 
 class InvalidDraftInput(Exception):
@@ -507,6 +513,10 @@ def _row_for_edit(
         row.card_id, row.slot, row.quote, row.quote_source = card_id, slot, quote, source
         row.quote_start, row.quote_end = start, start + len(quote)
         row.evidence_origin = EVIDENCE_BY_USER
+    # [확인함]은 '그 글 · 그 근거'를 확인한 것이다 — 글이나 근거가 바뀌면 다시 확인해야 한다(D-028, 사용자 선택 2026-11-16)
+    # 그대로인 문장은 저장된 [확인함]을 옮긴다(confirm_sentence로만 바꿈 — Q-028).
+    unchanged = old is not None and text == old.text and not item.unlink and item.link is None
+    row.confirmed_claims = old.confirmed_claims if old is not None and unchanged else None
     return row
 
 
@@ -517,6 +527,7 @@ def update_draft(
 
     - 기존 문장: 근거를 그대로 두고, 글이 AI 원래 문장과 다르면 origin=edited('내가 고침'), 같아지면 ai로 돌아간다.
     - 새 문장: origin=user, 근거 없음. [카드 연결](link)로 근거를 붙일 수 있다(evidence_origin=user).
+    - [확인함](D-028): 글 · 근거가 그대로인 기존 문장에서만 옮겨 온다. 고치면 '확인 필요'를 다시 계산한다.
     - 고치면 완료 표시를 지운다(다시 '작성 중'). version이 다르면 DraftConflict(저장 안 함).
     DraftNotFound / DraftConflict / InvalidDraftInput.
     """
@@ -581,3 +592,56 @@ def set_draft_completed(
         raise DraftNotFound
     db.commit()
     return get_draft(db, user_id=user_id, draft_id=draft_id)
+
+
+def confirm_sentence(
+    db: Session,
+    *,
+    user_id: int,
+    draft_id: int,
+    sentence_id: int,
+    version: int,
+    confirmed: bool,
+    now: datetime | None = None,
+) -> DraftView:
+    """'확인 필요'의 [확인함] · [확인 풀기](D-028). DraftNotFound / SentenceNotFound / DraftConflict.
+
+    - 문장 글 · 순서 · 근거는 그대로라 완료 표시를 건드리지 않는다(Q-028, 사용자 선택 2026-11-17).
+    - version은 올린다 — 옛 화면이 문장 목록을 저장(PUT)하며 확인을 덮어쓰지 않게 409로 막는다(update_draft와 같은 조건부 갱신).
+    - 확인할 때는 지금 걸려 있는 이유(ClaimCheck.key)를 저장한다. 읽을 때 이유가 달라졌으면 다시 경고(Q-029).
+      걸리지 않은 문장이면 저장할 이유가 없어 비운다(7차 리뷰 R3 — 처음부터 확인된 채로 남지 않게).
+    """
+    at = now if now is not None else now_utc()
+    draft, _question = load_draft_with_question(db, user_id=user_id, draft_id=draft_id)
+    if draft.version != version:
+        raise DraftConflict
+    sentence = db.scalar(
+        select(DraftSentence).where(
+            DraftSentence.id == sentence_id, DraftSentence.draft_id == draft.id, DraftSentence.user_id == user_id
+        )
+    )
+    if sentence is None:
+        raise SentenceNotFound
+    key = None
+    if confirmed:
+        cards = load_cards_now(db, user_id=user_id, card_ids={sentence.card_id} if sentence.card_id is not None else set())
+        claims = sentence_claims(sentence, cards, evidence_status(sentence, cards))
+        key = claims.check.key if claims is not None else None
+    bumped = db.execute(
+        update(Draft)
+        .where(Draft.id == draft.id, Draft.user_id == user_id, Draft.version == version)
+        .values(version=version + 1, updated_at=at)
+    ).rowcount
+    if bumped != 1:
+        db.rollback()
+        raise DraftConflict
+    changed = db.execute(
+        update(DraftSentence)
+        .where(DraftSentence.id == sentence.id, DraftSentence.draft_id == draft.id, DraftSentence.user_id == user_id)
+        .values(confirmed_claims=key)
+    ).rowcount
+    if changed != 1:  # 그 사이 문장이 사라짐 — version만 오른 채 200을 주지 않는다(8차 리뷰 R2, 지금 경로로는 안 생김)
+        db.rollback()
+        raise SentenceNotFound
+    db.commit()
+    return get_draft(db, user_id=user_id, draft_id=draft.id)

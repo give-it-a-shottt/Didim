@@ -3,8 +3,11 @@
 // APL_02_003 오른쪽 칸(Figma 18:258 '검사 · 근거', 너비 304): 요약("문장 9개 중 7개에 근거가 있어요") +
 // 고른 문장의 근거(Didim/검사 항목 — 카드 칸 글은 내 기록 원문이라 인용 모양) + 근거 없는 문장마다 [카드 연결] · [직접 고치기] · [지우기].
 // 근거 없음 설명은 AI 글이 아니라 근거 상태(서버가 다시 검사한 값)마다 정해 둔 문구다.
+// '확인 필요'(D-028)는 근거는 있지만 규칙에 걸린 문장 — 이유(카드에 없는 숫자 · 낱말 / 결과 기록 없는 카드에 성과 표현)마다
+// 정해 둔 문구 + [확인함] · [직접 고치기] · [지우기]. [확인함]을 누른 문장은 고른 근거 칸에 '확인함'과 [확인 풀기].
 
 import { Icon } from "@/components/icon";
+import { RequestErrorText } from "@/components/request-error";
 import { SLOT_LABELS } from "@/lib/cards";
 import type { Draft, DraftSentence, EvidenceStatus } from "@/lib/drafts";
 import { GHOST_BUTTON_S, SECONDARY_BUTTON_S, SECTION_TITLE, TEXT_BUTTON } from "@/lib/ui-classes";
@@ -26,6 +29,21 @@ function unsupportedHelp(sentence: DraftSentence): string {
   return "AI가 카드에서 근거를 찾지 못한 문장이에요. 기록에 있는 내용이면 카드를 연결하고, 없으면 고치거나 지우는 걸 권해요.";
 }
 
+/** '확인 필요' 설명 — 걸린 이유마다 정해 둔 문구(AI 글 아님). */
+function needsCheckHelp(sentence: DraftSentence): string[] {
+  const check = sentence.claimCheck;
+  if (check === null) return [];
+  const lines: string[] = [];
+  if (check.reasons.includes("unknown_token")) {
+    lines.push(`근거 카드에 없는 숫자 · 낱말이 있어요: ${check.unknownTokens.join(", ")}`);
+  }
+  if (check.reasons.includes("result_without_record")) {
+    lines.push("근거 카드에 결과 기록이 없는데, 문장이 줄였다 · 해결했다 같은 성과를 말하고 있어요.");
+  }
+  lines.push("기록에 있는 내용이면 [확인함]을, 아니면 고치거나 지워 주세요.");
+  return lines;
+}
+
 export function DraftAside({
   draft,
   selectedSentenceId,
@@ -36,6 +54,8 @@ export function DraftAside({
   onRemove,
   onLink,
   onUnlink,
+  onConfirm,
+  confirmError,
 }: {
   draft: Draft | null;
   selectedSentenceId: number | null;
@@ -46,6 +66,8 @@ export function DraftAside({
   onRemove: (sentenceId: number) => void;
   onLink: (sentenceId: number) => void;
   onUnlink: (sentenceId: number) => void;
+  onConfirm: (sentenceId: number, confirmed: boolean) => void; // '확인 필요'의 [확인함] · [확인 풀기]
+  confirmError: Error | null; // [확인함] 저장 실패
 }) {
   if (draft === null) {
     return (
@@ -61,6 +83,7 @@ export function DraftAside({
   const numbered = draft.sentences.map((sentence, index) => ({ sentence, number: index + 1 }));
   const selected = numbered.find((item) => item.sentence.id === selectedSentenceId) ?? null;
   const unsupported = numbered.filter((item) => item.sentence.evidenceStatus !== "ok");
+  const toCheck = numbered.filter((item) => item.sentence.needsCheck); // 서버가 근거가 ok인 문장에만 준다
   const supportedCount = draft.sentenceCount - draft.unsupportedCount;
 
   return (
@@ -76,6 +99,12 @@ export function DraftAside({
         {draft.unsupportedCount > 0 ? (
           <p className="text-body-3 text-warning-text">근거 없는 문장 {draft.unsupportedCount}개는 제출 전에 확인해 주세요.</p>
         ) : null}
+        {draft.needsCheckCount > 0 ? (
+          <p className="text-body-3 text-warning-text">
+            근거는 있지만 카드에 없는 내용이 덧붙었을 수 있는 문장 {draft.needsCheckCount}개를 확인해 주세요.
+          </p>
+        ) : null}
+        {confirmError ? <RequestErrorText error={confirmError} /> : null}
       </div>
 
       {selected && selected.sentence.evidenceStatus === "ok" ? (
@@ -87,7 +116,27 @@ export function DraftAside({
           onInsertAfter={() => onInsertAfter(selected.sentence.id)}
           onRemove={() => onRemove(selected.sentence.id)}
           onUnlink={() => onUnlink(selected.sentence.id)}
+          onUnconfirm={() => onConfirm(selected.sentence.id, false)}
         />
+      ) : null}
+
+      {toCheck.length > 0 ? (
+        <ul className="flex flex-col gap-3" aria-label="확인 필요 문장">
+          {toCheck.map(({ sentence, number }) => (
+            <li key={sentence.id}>
+              <NeedsCheckItem
+                sentence={sentence}
+                number={number}
+                selected={sentence.id === selectedSentenceId}
+                busy={busy}
+                onSelect={() => onSelectSentence(sentence.id)}
+                onConfirm={() => onConfirm(sentence.id, true)}
+                onEdit={() => onEdit(sentence.id)}
+                onRemove={() => onRemove(sentence.id)}
+              />
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {unsupported.length > 0 ? (
@@ -124,6 +173,7 @@ function SelectedEvidence({
   onInsertAfter,
   onRemove,
   onUnlink,
+  onUnconfirm,
 }: {
   sentence: DraftSentence;
   number: number;
@@ -132,6 +182,7 @@ function SelectedEvidence({
   onInsertAfter: () => void;
   onRemove: () => void;
   onUnlink: () => void;
+  onUnconfirm: () => void;
 }) {
   const evidence = sentence.evidence;
   if (evidence === null) return null;
@@ -154,6 +205,14 @@ function SelectedEvidence({
       </blockquote>
       {sentence.origin === "edited" && sentence.originalText ? (
         <p className="text-body-4 text-text-sub-weak">내가 고침 · 원래 문장: {sentence.originalText}</p>
+      ) : null}
+      {sentence.claimCheck?.confirmed ? (
+        <p className="flex flex-wrap items-center gap-x-2 text-body-4 text-text-sub-weak">
+          확인함 · 문장을 고치면 다시 검사해요
+          <button type="button" onClick={onUnconfirm} disabled={busy} className={TEXT_BUTTON}>
+            확인 풀기
+          </button>
+        </p>
       ) : null}
       {/* 글자 버튼 사이에 짧은 세로 구분선(글자 높이보다 짧게 — 사용자 화면 확인 2026-11-14).
           구분선은 뒤 버튼과 한 덩어리라 줄이 바뀌면 같이 내려가고, 줄 맨 앞에 온 구분선은 안쪽 줄을 왼쪽으로 밀어(-ml-2.75 =
@@ -227,6 +286,52 @@ function UnsupportedItem({
         </button>
         <button type="button" onClick={onInsertAfter} disabled={busy} className={GHOST_BUTTON_S}>
           뒤에 문장 넣기
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** 확인 필요 문장(D-028): 경고 아이콘 + "문장 3 · 확인 필요", 이유 설명, [확인함] · [직접 고치기] · [지우기]. 근거 칩은 그대로다. */
+function NeedsCheckItem({
+  sentence,
+  number,
+  selected,
+  busy,
+  onSelect,
+  onConfirm,
+  onEdit,
+  onRemove,
+}: {
+  sentence: DraftSentence;
+  number: number;
+  selected: boolean;
+  busy: boolean;
+  onSelect: () => void;
+  onConfirm: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <section aria-label={`문장 ${number} · 확인 필요`} className={`${ITEM} border-warning-text ${selected ? "bg-warning-bg" : ""}`}>
+      <button type="button" onClick={onSelect} className={`${TEXT_BUTTON} self-start text-warning-text`}>
+        <Icon name="warning" size={16} />
+        <span className="font-semibold">문장 {number} · 확인 필요</span>
+      </button>
+      {needsCheckHelp(sentence).map((line) => (
+        <p key={line} className="text-body-3 text-text-sub">
+          {line}
+        </p>
+      ))}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={onConfirm} disabled={busy} className={SECONDARY_BUTTON_S}>
+          확인함
+        </button>
+        <button type="button" onClick={onEdit} disabled={busy} className={GHOST_BUTTON_S}>
+          직접 고치기
+        </button>
+        <button type="button" onClick={onRemove} disabled={busy} className={GHOST_BUTTON_S}>
+          지우기
         </button>
       </div>
     </section>

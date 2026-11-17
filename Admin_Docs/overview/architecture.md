@@ -103,7 +103,7 @@ backend/                  FastAPI (uv)
 | 공고 추가 모달: 열림 · 입력 칸 · 문항 줄 | 컴포넌트 안(`useState`, `add-application-dialog.tsx`) | 모달 하나에서만 쓰는 입력값이라서. 저장은 `useMutation`, 성공하면 `?analyze=1`로 분석 탭으로 이동 | F-007 |
 | 분석 바로 시작 신호(`?analyze=1`) | 주소 | 모달 → 분석 탭으로 '방금 추가했음'을 넘기는 한 번짜리 신호. 시작한 뒤 주소에서 지워 새로 고쳐도 AI를 다시 부르지 않는다 | F-007 |
 | ① 역량 뽑기 · ② 매칭(진행 중 · 오류) | TanStack Query `useMutation`(`posting-analysis.tsx`) + 성공 뒤 `router.refresh()` | 서버 수정이라서. ① 성공(역량 1개 이상)이면 ②를 이어서 부른다. ②만 실패하면 ① 결과(서버 컴포넌트가 다시 받음)는 그대로. 자동 재시도 끔 | F-007 |
-| 고른 요구 역량(오른쪽 근거 칸) · 공고 원문 펼침 | 컴포넌트 안(`useState`, `posting-analysis.tsx` · `posting-aside.tsx`의 PostingText) | 이 화면 하나에서만 쓰는 표시 상태라서 | F-007 |
+| 고른 요구 역량(오른쪽 근거 칸) · 공고 원문 펼침 | 컴포넌트 안(`useState`, `posting-analysis.tsx` · `posting-aside.tsx`의 PostingText) | 이 화면 하나에서만 쓰는 표시 상태라서. 원문은 펼침(버튼)과 전체 글 표시를 둘로 나눔 — 접을 때 높이 전환이 끝난 뒤 짧은 글로 바꾸려고(2026-11-17). 접기 안전 타이머는 `useRef`(그리는 데 쓰지 않는 값 — 다시 펼치거나 화면을 떠나면 지움, T-011) | F-007 |
 | 자소서 탭: 문항 · 초안 · 근거 | 처음은 서버 컴포넌트(`[id]/draft/page.tsx`, `lib/drafts-data.ts` — Suspense 안), 그 뒤 TanStack Query `useQuery`(`draft-workspace.tsx`, `initialData`) | 문장 하나를 적용할 때마다 서버가 version을 올려서, 응답을 바로 캐시에 넣어야(`setQueryData`) 다음 적용이 409가 나지 않는다. `router.refresh()`를 기다리면 그 사이 옛 version으로 보낸다. 다시 받기 실패는 한 번만 다시 시도(`retry: 1`)하고 알림 + [다시 불러오기]. '마지막 검사'는 서버 시각(`checked_at`, 저장 뒤엔 저장 시각) — 브라우저 시각을 쓰면 hydration이 어긋날 수 있어서 | F-008 |
 | 초안 쓰기 · 문장 고치기 · 완료 · 문항 저장 · 카드 연결 | TanStack Query `useMutation`(`draft-workspace.tsx`) | 서버 수정이라서. 성공하면 응답을 캐시에 넣거나(고치기 · 완료 · 문항) 다시 받는다(초안 쓰기). 409 · 404면 다시 받는다. 부품에는 `RequestState`(진행 중 · 오류 · 실행 함수)만 내려 TanStack Query를 몰라도 되게 | F-008 |
 | 고른 문항 · 고른 문장 · 고치는 문장 · 카드 연결 창 · 문항 고치기 입력 · 카드 검색어 | 컴포넌트 안(`useState`) | 이 화면 하나에서만 쓰는 표시 · 입력 상태라서 | F-008 |

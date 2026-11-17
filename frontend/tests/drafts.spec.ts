@@ -155,6 +155,108 @@ test("제출로 바꾸기: 근거 없는 문장이 있으면 확인창을 띄우
   await expect(page.getByRole("button", { name: "제출로 바꾸기" })).toHaveCount(0);
 });
 
+test("확인 필요(D-028): 근거 칩은 그대로 두고 경고하며, [확인함]으로 끄고(완료 표시는 그대로) · 풀고 · 고치면 다시 뜨고, 제출 확인창에도 알린다", async ({
+  context,
+  page,
+}) => {
+  await logIn(context);
+  await page.goto("/applications/923/draft");
+  const aside = page.getByRole("complementary", { name: "검사 · 근거" });
+  const checkItem = aside.getByRole("region", { name: "문장 2 · 확인 필요" });
+
+  // 근거 칩(카드 제목)과 '확인 필요'가 같이 보인다 — 근거 없음과 다르다
+  await expect(sentence(page, 2)).toContainText("useEffect로 구독 정리");
+  await expect(sentence(page, 2)).toContainText("확인 필요");
+  await expect(sentence(page, 2)).toHaveAccessibleName(/^문장 2 · 확인 필요:/);
+  await expect(aside).toContainText("문장 2개 중 2개에 근거가 있어요");
+  await expect(aside).toContainText("근거는 있지만 카드에 없는 내용이 덧붙었을 수 있는 문장 1개를 확인해 주세요.");
+  await expect(checkItem).toContainText("근거 카드에 없는 숫자 · 낱말이 있어요: 40");
+  await expect(checkItem).toContainText("근거 카드에 결과 기록이 없는데");
+
+  // 제출 확인창에 같이 알린다(막지는 않음 — 취소하면 그대로)
+  const messages: string[] = [];
+  page.once("dialog", (dialog) => {
+    messages.push(dialog.message());
+    void dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "제출로 바꾸기" }).click();
+  await expect
+    .poll(() => messages)
+    .toEqual(["카드에 없는 내용이 덧붙었을 수 있는 '확인 필요' 문장이 1개 있어요. 그래도 '제출'로 바꿀까요?"]);
+
+  // [확인함] → 경고가 사라지고, 고른 근거 칸에 '확인함' · [확인 풀기]. 완료 표시는 그대로(Q-028)
+  await editor(page).getByRole("button", { name: "이 문항 완료" }).click();
+  await expect(editor(page).getByRole("button", { name: "완료 풀기" })).toBeVisible();
+  await checkItem.getByRole("button", { name: "확인함" }).click();
+  await expect(checkItem).toHaveCount(0);
+  await expect(editor(page).getByRole("button", { name: "완료 풀기" })).toBeVisible();
+  await expect(sentence(page, 2)).not.toContainText("확인 필요");
+  await sentence(page, 2).click();
+  const evidence = aside.getByRole("region", { name: "선택한 문장 2의 근거" });
+  await expect(evidence).toContainText("확인함 · 문장을 고치면 다시 검사해요");
+
+  // 다른 문장을 고쳐도 확인은 그대로(서버가 그대로인 문장의 확인을 옮겨 둠)
+  await sentence(page, 1).click();
+  await aside.getByRole("region", { name: "선택한 문장 1의 근거" }).getByRole("button", { name: "직접 고치기" }).click();
+  await page.getByLabel("고칠 문장").fill("React 화면의 구독 정리를 맡았습니다.");
+  await page.getByRole("button", { name: "이 문장 적용" }).click();
+  await expect(sentence(page, 1)).toContainText("내가 고침");
+  await expect(sentence(page, 2)).not.toContainText("확인 필요");
+
+  // [확인 풀기] → 다시 경고
+  await sentence(page, 2).click();
+  await evidence.getByRole("button", { name: "확인 풀기" }).click();
+  await expect(checkItem).toBeVisible();
+
+  // 확인한 뒤 그 문장을 고치면 다시 검사 — 여전히 걸리면 경고가 돌아온다
+  await checkItem.getByRole("button", { name: "확인함" }).click();
+  await expect(checkItem).toHaveCount(0);
+  await expect(evidence).toContainText("확인함"); // 문장 2는 아직 골라져 있다(누르면 선택이 풀림)
+  await evidence.getByRole("button", { name: "직접 고치기" }).click();
+  await page.getByLabel("고칠 문장").fill("구독을 정리해 메모리를 40% 아꼈습니다.");
+  await page.getByRole("button", { name: "이 문장 적용" }).click();
+  await expect(checkItem).toBeVisible();
+});
+
+test("응답 모양이 틀리면(배포가 어긋난 서버): 제출 전 개수는 오류 문구, '확인 필요' 모양이 틀린 초안은 불러오지 못했다고 알린다", async ({
+  context,
+  page,
+}) => {
+  await logIn(context);
+  await page.goto("/applications/924/draft");
+  const status = page.getByLabel("상태");
+  await page.getByRole("button", { name: "제출로 바꾸기" }).click();
+  await expect(page.getByText("서버 응답을 읽지 못했어요. 잠시 뒤 다시 시도해 주세요.")).toBeVisible();
+  await expect(status).not.toHaveValue("submitted"); // 확인하지 못했으면 바꾸지 않는다
+
+  await page.goto("/applications/925/draft");
+  await expect(page.getByRole("alert").filter({ hasText: "자소서를 불러오지 못했어요" })).toBeVisible();
+});
+
+test("[확인함]이 실패하면 문구를 보여 주고 새로 받는다 — 먼저 바뀜(409)은 다시 누르면 되고, 없는 문장(404)은 경고가 남는다", async ({
+  context,
+  page,
+}) => {
+  await logIn(context);
+  const aside = page.getByRole("complementary", { name: "검사 · 근거" });
+  const checkItem = aside.getByRole("region", { name: "문장 2 · 확인 필요" });
+
+  await page.goto("/applications/926/draft");
+  await checkItem.getByRole("button", { name: "확인함" }).click();
+  await expect(aside.getByText("다른 곳에서 이 초안이 먼저 바뀌었어요. 새로고침한 뒤 다시 고쳐 주세요.")).toBeVisible();
+  // 409면 화면이 초안을 새로 받는다 — 다른 탭이 고친 글이 보여야 새 version이 캐시에 들어간 것(9차 리뷰 R3: 응답 헤더만 기다리면 틈이 남음)
+  await expect(sentence(page, 1)).toContainText("다른 탭에서 고친 문장입니다.");
+  await expect(checkItem).toBeVisible(); // 저장되지 않았다
+  await checkItem.getByRole("button", { name: "확인함" }).click(); // 새로 받은 version으로 다시 — 이번엔 된다
+  await expect(checkItem).toHaveCount(0);
+  await expect(aside.getByText("다른 곳에서 이 초안이 먼저 바뀌었어요.", { exact: false })).toHaveCount(0);
+
+  await page.goto("/applications/927/draft");
+  await checkItem.getByRole("button", { name: "확인함" }).click();
+  await expect(aside.getByText("문장을 찾을 수 없어요.", { exact: false })).toBeVisible();
+  await expect(checkItem).toBeVisible();
+});
+
 test("문항 고치기: 문항을 더하고, 초안 있는 문항을 지우면 확인창 뒤 초안도 같이 지운다", async ({ context, page }) => {
   await logIn(context);
   await page.goto("/applications/917/draft");

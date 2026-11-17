@@ -4,7 +4,7 @@ import { isNullableNumber, isNullableString, isObject } from "@/lib/json";
 
 // 근거 달린 자소서 초안(F-008) 응답 모양 · 확인 함수 · 브라우저 요청. 서버 컴포넌트(lib/drafts-data.ts)와 브라우저가 같이 쓴다.
 // 서버: backend/app/api/drafts.py. 근거는 항상 내 카드 칸 글(원문 인용 · 내 답)이고, 근거 상태는 서버가 읽을 때마다
-// 지금 카드와 다시 비교한 값이다(AI 없음 — 사용자 확인 2026-11-14).
+// 지금 카드와 다시 비교한 값이다(AI 없음 — 사용자 확인 2026-11-14). '확인 필요'(D-028)도 서버가 읽을 때 규칙으로 계산한다.
 
 export type EvidenceStatus = "ok" | "none" | "card_gone" | "changed";
 export type QuoteSource = "quote" | "answer"; // 카드 칸의 원문 인용 · 내 답
@@ -26,6 +26,14 @@ export type Evidence = {
   addedBy: "ai" | "user"; // user = [카드 연결]
 };
 
+/** '확인 필요'에 걸린 이유(D-028): 카드에 없는 숫자 · 영문 낱말 · 결과 기록이 없는 카드에 성과 표현. */
+const CLAIM_REASONS = ["unknown_token", "result_without_record"] as const;
+export type ClaimReason = (typeof CLAIM_REASONS)[number];
+
+/** 근거는 ok인데 인용 밖 사실이 덧붙었을 수 있는 문장(D-028). 규칙에 걸린 문장에만 있다.
+ *  confirmed = 지금 걸린 이유를 [확인함]으로 껐는가(카드가 바뀌어 이유가 달라지면 서버가 false로 준다 — Q-029). */
+export type ClaimCheck = { reasons: ClaimReason[]; unknownTokens: string[]; confirmed: boolean };
+
 export type DraftSentence = {
   id: number;
   position: number;
@@ -34,6 +42,8 @@ export type DraftSentence = {
   originalText: string | null; // AI가 쓴 원래 문장
   evidenceStatus: EvidenceStatus;
   evidence: Evidence | null;
+  claimCheck: ClaimCheck | null;
+  needsCheck: boolean; // 화면에 '확인 필요'를 보여 줄 문장 — 서버가 정한 값(규칙에 걸렸고 지금 이유를 확인하지 않음)
 };
 
 export type Draft = {
@@ -47,6 +57,7 @@ export type Draft = {
   editedPercent: number;
   sentenceCount: number;
   unsupportedCount: number;
+  needsCheckCount: number; // '확인 필요'이고 [확인함]을 누르지 않은 문장 수
   sentences: DraftSentence[];
 };
 
@@ -116,6 +127,21 @@ function toEvidence(value: unknown): Evidence | null | undefined {
   };
 }
 
+function toClaimCheck(value: unknown): ClaimCheck | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (
+    !isObject(value) ||
+    !Array.isArray(value.reasons) ||
+    !value.reasons.every((item) => (CLAIM_REASONS as readonly unknown[]).includes(item)) ||
+    !Array.isArray(value.unknown_tokens) ||
+    !value.unknown_tokens.every((item) => typeof item === "string") ||
+    typeof value.confirmed !== "boolean"
+  ) {
+    return undefined; // 모양이 틀림
+  }
+  return { reasons: value.reasons as ClaimReason[], unknownTokens: value.unknown_tokens as string[], confirmed: value.confirmed };
+}
+
 function toSentence(value: unknown): DraftSentence | null {
   if (
     !isObject(value) ||
@@ -126,12 +152,15 @@ function toSentence(value: unknown): DraftSentence | null {
     !ORIGINS.includes(value.origin) ||
     !isNullableString(value.original_text) ||
     typeof value.evidence_status !== "string" ||
-    !EVIDENCE_STATUSES.includes(value.evidence_status)
+    !EVIDENCE_STATUSES.includes(value.evidence_status) ||
+    typeof value.needs_check !== "boolean"
   ) {
     return null;
   }
   const evidence = toEvidence(value.evidence);
   if (evidence === undefined) return null;
+  const claimCheck = toClaimCheck(value.claim_check);
+  if (claimCheck === undefined) return null;
   return {
     id: value.id,
     position: value.position,
@@ -140,6 +169,8 @@ function toSentence(value: unknown): DraftSentence | null {
     originalText: value.original_text,
     evidenceStatus: value.evidence_status as EvidenceStatus,
     evidence,
+    claimCheck,
+    needsCheck: value.needs_check,
   };
 }
 
@@ -156,6 +187,7 @@ export function toDraft(value: unknown): Draft | null {
     typeof value.edited_percent !== "number" ||
     typeof value.sentence_count !== "number" ||
     typeof value.unsupported_count !== "number" ||
+    typeof value.needs_check_count !== "number" ||
     !Array.isArray(value.sentences)
   ) {
     return null;
@@ -173,6 +205,7 @@ export function toDraft(value: unknown): Draft | null {
     editedPercent: value.edited_percent,
     sentenceCount: value.sentence_count,
     unsupportedCount: value.unsupported_count,
+    needsCheckCount: value.needs_check_count,
     sentences: sentences as DraftSentence[],
   };
 }
@@ -278,9 +311,22 @@ export async function updateDraft(draft: Draft, sentences: SentenceEdit[]): Prom
   return saved;
 }
 
-/** 지금 초안의 문장 목록을 그대로 옮긴 편집 목록(여기서 한 문장만 바꿔 보낸다). */
+/** 지금 초안의 문장 목록을 그대로 옮긴 편집 목록(여기서 한 문장만 바꿔 보낸다). [확인함]은 서버가 그대로인 문장에 옮겨 둔다. */
 export function editsOf(draft: Draft): SentenceEdit[] {
   return draft.sentences.map((item) => ({ id: item.id, text: item.text }));
+}
+
+/** '확인 필요'의 [확인함] · [확인 풀기](D-028). 문장 글 · 번호 · 완료 표시는 그대로이고 version만 오른다(Q-028). */
+export async function confirmSentence(draft: Draft, sentenceId: number, confirmed: boolean): Promise<Draft> {
+  const body = await apiRequest(
+    "PATCH",
+    `/api/drafts/${draft.id}/sentences/${sentenceId}`,
+    "확인 표시를 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    { version: draft.version, confirmed },
+  );
+  const saved = toDraft(body);
+  if (saved === null) throw new ApiRequestError(BAD_RESPONSE);
+  return saved;
 }
 
 export async function setDraftCompleted(draftId: number, completed: boolean): Promise<Draft> {
@@ -310,9 +356,26 @@ export async function replaceQuestions(applicationId: number, questions: Questio
   return drafts;
 }
 
-/** '제출'로 바꾸기 직전에 근거 없는 문장 수를 새로 받는다(서버가 지금 카드와 다시 비교한 값). */
-export async function fetchUnsupportedCount(applicationId: number): Promise<number> {
+export type WarningCounts = { unsupported: number; needsCheck: number };
+
+/** '제출'로 바꾸기 직전에 근거 없는 · 확인 필요 문장 수를 새로 받는다(서버가 지금 카드와 다시 비교한 값). */
+export async function fetchWarningCounts(applicationId: number): Promise<WarningCounts> {
   const body = await apiRequest("GET", `/api/applications/${applicationId}`, "지원 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.");
-  if (!isObject(body) || typeof body.unsupported_sentence_count !== "number") throw new ApiRequestError(BAD_RESPONSE);
-  return body.unsupported_sentence_count;
+  if (
+    !isObject(body) ||
+    typeof body.unsupported_sentence_count !== "number" ||
+    typeof body.needs_check_sentence_count !== "number"
+  ) {
+    throw new ApiRequestError(BAD_RESPONSE);
+  }
+  return { unsupported: body.unsupported_sentence_count, needsCheck: body.needs_check_sentence_count };
+}
+
+/** 제출 확인창 문구. 경고가 없으면 null(확인창 없이 바꾼다). 막지는 않는다(D-028 설계 의도 ④). */
+export function submitWarning(counts: WarningCounts): string | null {
+  const parts = [
+    counts.unsupported > 0 ? `근거 없는 문장이 ${counts.unsupported}개` : null,
+    counts.needsCheck > 0 ? `카드에 없는 내용이 덧붙었을 수 있는 '확인 필요' 문장이 ${counts.needsCheck}개` : null,
+  ].filter(Boolean);
+  return parts.length === 0 ? null : `${parts.join(", ")} 있어요. 그래도 '제출'로 바꿀까요?`;
 }

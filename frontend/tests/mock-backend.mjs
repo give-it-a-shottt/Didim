@@ -243,7 +243,7 @@ const MOCK_APPLICATIONS = new Map(
     mockApplication(907, "실패회사", "개발자", { status: "ready" }),
     // --- 자소서(F-008) 전용 공고. 모두 카드 801과 매칭됨(912만 매칭 없음). 테스트마다 다른 공고 ---
     ...[
-      [910, "초안회사"], [911, "쓰기회사"], [913, "실패쓰기회사"], [914, "제출회사"], [915, "고치기회사"], [916, "연결회사"], [917, "문항회사"], [918, "충돌회사"], [919, "목록실패회사"], [920, "완료실패회사"], [921, "다시받기실패회사"], [922, "문항충돌회사"],
+      [910, "초안회사"], [911, "쓰기회사"], [913, "실패쓰기회사"], [914, "제출회사"], [915, "고치기회사"], [916, "연결회사"], [917, "문항회사"], [918, "충돌회사"], [919, "목록실패회사"], [920, "완료실패회사"], [921, "다시받기실패회사"], [922, "문항충돌회사"], [923, "확인회사"], [924, "개수모양회사"], [925, "확인모양회사"], [926, "확인충돌회사"], [927, "확인없음회사"],
     ].map(([id, company]) => mockApplication(id, company, "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z", requirements: matchedRequirements(id) })),
     mockApplication(912, "카드없는회사", "개발자", { extracted_at: "2026-11-12T03:00:00Z", matched_at: "2026-11-12T03:01:00Z" }),
     // --- 면접 연습(F-009): 930 카드 832(역량 2개) · 834(질문 없음) 매칭 / 931 분석 전 ---
@@ -274,15 +274,23 @@ const EVIDENCE_801 = {
   card_id: 801, card_title: "useEffect로 구독 정리", note_title: "React 정리", slot: "situation",
   quote: "useEffect는 그려진 뒤 부수 효과를 실행해요.", quote_source: "quote", added_by: "ai",
 };
-const draftSentence = (id, position, text, evidence) => ({
+const draftSentence = (id, position, text, evidence, claimCheck = null) => ({
   id, position, text, origin: "ai", original_text: text, evidence_status: evidence ? "ok" : "none", evidence,
+  claim_check: claimCheck, // '확인 필요'(D-028) — 서버는 읽을 때 규칙으로 계산한다. 가짜는 처음 값을 들고 다닌다
+  needs_check: false, // withCounts가 채운다
 });
+// 가짜 서버의 '확인 필요' — 진짜 서버(draft_evidence.SentenceClaims.needs_check: 근거가 ok이고 규칙에 걸렸고 지금 이유를
+// 확인하지 않음)와 같은 뜻. 서버 규칙이 바뀌면 backend tests/test_drafts.py의 test_needs_check_is_decided_by_the_server와
+// 대조해 같이 고친다(9차 리뷰 R1).
+const needsCheck = (item) => item.evidence_status === "ok" && item.claim_check !== null && !item.claim_check.confirmed;
 const withCounts = (draft) => {
   const text = draft.sentences.map((item) => item.text).join(" ");
   const changed = draft.sentences.filter((item) => item.origin !== "ai").length;
+  const sentences = draft.sentences.map((item) => ({ ...item, needs_check: needsCheck(item) }));
   return {
-    ...draft, chars: Array.from(text).length, sentence_count: draft.sentences.length,
+    ...draft, sentences, chars: Array.from(text).length, sentence_count: draft.sentences.length,
     unsupported_count: draft.sentences.filter((item) => item.evidence_status !== "ok").length,
+    needs_check_count: draft.sentences.filter(needsCheck).length,
     edited_percent: draft.sentences.length ? Math.round((changed / draft.sentences.length) * 100) : 0,
   };
 };
@@ -300,9 +308,28 @@ const MOCK_DRAFTS = new Map(
     ]),
   ]),
 );
+// 924: 상세에 needs_check_sentence_count가 없는 서버(배포가 어긋남) — 제출 확인창 앞에서 오류 문구(7차 리뷰 R3)
+MOCK_DRAFTS.set(9240, mockDraft(924, [draftSentence(92401, 0, "React 화면에서 구독을 정리하는 일을 맡았습니다.", EVIDENCE_801)]));
+// 925: claim_check 모양이 틀린 초안 — 자소서를 불러오지 못했다는 오류(7차 리뷰 R3)
+MOCK_DRAFTS.set(9250, mockDraft(925, [
+  draftSentence(92501, 0, "React 화면에서 구독을 정리하는 일을 맡았습니다.", EVIDENCE_801, { reasons: ["weird"], unknown_tokens: [], confirmed: false }),
+]));
+// 923: 근거는 있지만 카드에 없는 숫자 · 성과를 덧붙인 문장(D-028 '확인 필요')
+// 926: [확인함] 첫 요청이 409(다른 탭이 먼저 바꿈) · 927: [확인함]이 404(문장이 사라짐) — 실패 경로(8차 리뷰 R3)
+const CONFIRM_CONFLICT_APP = 926;
+const CONFIRM_GONE_APP = 927;
+const confirmConflicted = new Set();
+for (const id of [923, CONFIRM_CONFLICT_APP, CONFIRM_GONE_APP]) {
+  MOCK_DRAFTS.set(id * 10, mockDraft(id, [
+    draftSentence(id * 100 + 1, 0, "React 화면에서 구독을 정리하는 일을 맡았습니다.", EVIDENCE_801),
+    draftSentence(id * 100 + 2, 1, "구독을 정리해 메모리 사용량을 40% 줄였습니다.", EVIDENCE_801, {
+      reasons: ["unknown_token", "result_without_record"], unknown_tokens: ["40"], confirmed: false,
+    }),
+  ]));
+}
 let nextSentenceId = 990_000;
 const draftsCalls = new Map(); // 921: 공고별 자소서 목록 요청 수(첫 번째만 성공)
-const unsupportedOf = (item) => item.questions.reduce((sum, question) => sum + (MOCK_DRAFTS.get(question.id)?.unsupported_count ?? 0), 0);
+const countOf = (item, key) => item.questions.reduce((sum, question) => sum + (MOCK_DRAFTS.get(question.id)?.[key] ?? 0), 0);
 const draftsView = (item) => ({
   application_id: item.id, analysis_done: item.matched_at !== null,
   matched_card_ids: [...new Set(item.requirements.flatMap((requirement) => requirement.matches.map((m) => m.card_id)))],
@@ -345,6 +372,37 @@ function matchedRequirements(id) {
 
 /** 자소서 API(F-008). 처리했으면 true. */
 function handleDrafts(req, res, url, body) {
+  // [확인함] · [확인 풀기](D-028): 문장 번호 · 완료 표시 그대로, version만 올림. 걸리지 않은 문장은 저장할 것이 없음
+  const confirmMatch = req.method === "PATCH" ? url.pathname.match(/^\/api\/drafts\/(\d+)\/sentences\/(\d+)$/) : null;
+  if (confirmMatch) {
+    const draft = [...MOCK_DRAFTS.values()].find((item) => item.id === Number(confirmMatch[1]));
+    const target = draft?.sentences.find((item) => item.id === Number(confirmMatch[2]));
+    if (!draft || !target || draft.question_id === CONFIRM_GONE_APP * 10) {
+      sendJson(res, 404, { detail: "문장을 찾을 수 없어요. 다른 곳에서 초안이 바뀌었을 수 있어요. 새로고침한 뒤 다시 시도해 주세요." });
+      return true;
+    }
+    if (draft.question_id === CONFIRM_CONFLICT_APP * 10 && !confirmConflicted.has(draft.id)) {
+      confirmConflicted.add(draft.id); // 다른 탭이 첫 문장을 먼저 고친 것처럼 바꾸고 409 — 화면이 새로 받은 걸 테스트가 볼 수 있게
+      const [first, ...rest] = draft.sentences;
+      MOCK_DRAFTS.set(draft.question_id, withCounts({
+        ...draft, version: draft.version + 1, sentences: [{ ...first, text: "다른 탭에서 고친 문장입니다.", origin: "edited" }, ...rest],
+      }));
+      sendJson(res, 409, { detail: "다른 곳에서 이 초안이 먼저 바뀌었어요. 새로고침한 뒤 다시 고쳐 주세요." });
+      return true;
+    }
+    if (body.version !== draft.version) {
+      sendJson(res, 409, { detail: "다른 곳에서 이 초안이 먼저 바뀌었어요. 새로고침한 뒤 다시 고쳐 주세요." });
+      return true;
+    }
+    const sentences = draft.sentences.map((item) =>
+      item.id === target.id && item.claim_check ? { ...item, claim_check: { ...item.claim_check, confirmed: Boolean(body.confirmed) } } : item,
+    );
+    const saved = withCounts({ ...draft, sentences, version: draft.version + 1, updated_at: "2026-11-14T06:32:00Z" });
+    MOCK_DRAFTS.set(draft.question_id, saved);
+    sendJson(res, 200, saved);
+    return true;
+  }
+
   const draftMatch = url.pathname.match(/^\/api\/drafts\/(\d+)$/);
   if (draftMatch) {
     const draft = [...MOCK_DRAFTS.values()].find((item) => item.id === Number(draftMatch[1]));
@@ -388,8 +446,13 @@ function handleDrafts(req, res, url, body) {
         const text = String(edit.text ?? "").trim();
         let sentence = old
           ? { ...old, id: nextSentenceId++, position, text, origin: old.origin === "user" ? "user" : text === old.original_text ? "ai" : "edited" }
-          : { id: nextSentenceId++, position, text, origin: "user", original_text: null, evidence_status: "none", evidence: null };
-        if (edit.unlink) sentence = { ...sentence, evidence_status: "none", evidence: null };
+          : { id: nextSentenceId++, position, text, origin: "user", original_text: null, evidence_status: "none", evidence: null, claim_check: null };
+        // [확인함]은 글 · 근거가 그대로인 문장에만 옮겨 온다(서버 update_draft와 같은 규칙). 가짜는 고쳐도 걸린 채로 둔다
+        if (sentence.claim_check) {
+          const unchanged = old && text === old.text && !edit.unlink && !edit.link;
+          sentence = { ...sentence, claim_check: { ...sentence.claim_check, confirmed: Boolean(unchanged && old.claim_check?.confirmed) } };
+        }
+        if (edit.unlink) sentence = { ...sentence, evidence_status: "none", evidence: null, claim_check: null };
         if (edit.link) {
           const card = MOCK_CARDS.get(edit.link.card_id);
           const field = card?.fields.find((item) => item.slot === edit.link.slot);
@@ -543,7 +606,13 @@ function handleApplications(req, res, url, rawBody) {
   }
   const action = match[2];
   if (!action && req.method === "GET") {
-    sendJson(res, 200, { ...item, unsupported_sentence_count: unsupportedOf(item) });
+    const detail = {
+      ...item,
+      unsupported_sentence_count: countOf(item, "unsupported_count"),
+      needs_check_sentence_count: countOf(item, "needs_check_count"),
+    };
+    if (item.id === 924) delete detail.needs_check_sentence_count; // 배포가 어긋난 서버 흉내
+    sendJson(res, 200, detail);
     return;
   }
   if (!action && (req.method === "PATCH" || req.method === "DELETE") && item.id === 907) {
@@ -923,7 +992,7 @@ const server = http.createServer((req, res) => {
   // 903: 분석 전 → 뽑기 성공, 매칭 503(뽑은 역량은 남음) / 904: 뽑기 429 / 905: 지울 공고 / 906: ① 직후(상세 늦음 · 매칭 3초) / 907: 상태 · 지우기 500 / 950~: [공고 추가]로 만든 공고(902처럼)
   // 면접 연습(F-009): 930 카드 832(질문 3 · 역량 2) · 834(질문 없음) 매칭 · 931 분석 전 · 932 매칭 없음 · 933 질문 없는 카드만 ·
   // 934 탭 500 · 935 느린 메모 — 카드 831 만들기 성공 · 833 만들기 503 · 835 만든 뒤 다시 받기 500
-  // 자소서(F-008): 910 초안 있음 · 911 [초안 쓰기] 1.5초 · 912 매칭 카드 없음 · 913 쓰기 503 · 914 제출 확인 · 915 고치기 · 916 카드 연결 · 917 문항 고치기 · 918 저장 409 · 422 · 919 목록 500 · 920 완료 500 · 921 쓰기 404 뒤 다시 받기 500 · 922 문항 409 · 422
+  // 자소서(F-008): 910 초안 있음 · 911 [초안 쓰기] 1.5초 · 912 매칭 카드 없음 · 913 쓰기 503 · 914 제출 확인 · 915 고치기 · 916 카드 연결 · 917 문항 고치기 · 918 저장 409 · 422 · 919 목록 500 · 920 완료 500 · 921 쓰기 404 뒤 다시 받기 500 · 922 문항 409 · 422 · 923 확인 필요(D-028) · 924 상세 개수 모양 틀림 · 925 claim_check 모양 틀림 · 926 [확인함] 409 한 번 · 927 [확인함] 404
   if (url.pathname === "/api/applications" || url.pathname.startsWith("/api/applications/") || url.pathname.startsWith("/api/drafts/")) {
     if (!isLoggedIn(req)) {
       sendJson(res, 401, { detail: "로그인이 필요해요." });

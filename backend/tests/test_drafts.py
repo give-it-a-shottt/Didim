@@ -8,6 +8,7 @@
 ④ 다시 검사: 카드 칸 글이 바뀌거나 카드가 지워지면 '근거 없음'(AI 없음).
 ⑤ 고치기: 문장 단위(고침 · 되돌림 · 새 문장 · 지우기 · [카드 연결] · 근거 떼기), version 충돌 409, 완료 표시.
 ⑥ 문항 목록 저장(추가 · 수정 · 삭제 · 순서), 공고 상세의 근거 없는 문장 수.
+⑨ '확인 필요'(D-028): 빈 칸을 '기록 없음'으로 보냄, 규칙에 걸린 문장 경고 · [확인함](완료 표시 유지 · 이유가 바뀌면 다시) · 고치면 다시 계산 · 결과 칸을 채우면 풀림.
 """
 
 import asyncio
@@ -854,6 +855,7 @@ def test_draft_routes_need_login(client: TestClient, db_session: Session, ready:
     assert client.put(f"/api/applications/{app_id}/questions", json={"questions": []}).status_code == 401
     assert client.put("/api/drafts/1", json={"version": 1, "sentences": [{"text": "a"}]}).status_code == 401
     assert client.patch("/api/drafts/1", json={"completed": True}).status_code == 401
+    assert client.patch("/api/drafts/1/sentences/1", json={"version": 1, "confirmed": True}).status_code == 401
 
 
 def test_frontend_draft_constants_match_the_server() -> None:
@@ -884,3 +886,273 @@ def test_complete_after_the_draft_was_replaced_is_not_found(
         other.commit()
     with pytest.raises(draft_service.DraftNotFound):
         draft_service.set_draft_completed(db_session, user_id=ready["user_id"], draft_id=stale.id, completed=True)
+
+
+# --- ⑨ '확인 필요' (D-028) — 근거는 ok인데 인용 밖 사실이 덧붙었을 수 있는 문장 ---
+
+
+def _card_without_result(db: Session, user_id: int, title: str = "Redis 이전") -> Card:
+    """행동 칸에만 원문 인용이 있고 결과 칸은 비어 있는 카드(기록에 결과 없음)."""
+    card = Card(user_id=user_id, note_id=None, title=title, status=CARD_STATUS_SAVED)
+    for slot in CARD_SLOTS:
+        if slot == "action":
+            card.fields.append(CardField(user_id=user_id, slot=slot, quote=ACTION_QUOTE, quote_start=0, quote_end=len(ACTION_QUOTE)))
+        else:
+            card.fields.append(CardField(user_id=user_id, slot=slot, question="?"))
+    db.add(card)
+    db.commit()
+    return card
+
+
+ADDED_RESULT = "로그인한 사용자는 Redis 리스트로 옮겨 응답 시간을 40% 단축했습니다."
+PLAIN = "로그인한 사용자는 Redis 리스트로 옮겼습니다."
+
+
+@pytest.fixture()
+def unrecorded(
+    client: TestClient, db_session: Session, test_settings: Settings, use_mock: typing.Callable[[MockLLMClient], MockLLMClient]
+) -> dict[str, typing.Any]:
+    """결과 칸이 빈 카드 하나에 매칭된 공고 + AI가 결과를 덧붙인 문장 하나 · 그대로 옮긴 문장 하나로 쓴 초안."""
+    user_id = _login(client, db_session, test_settings, "checker")
+    application_id = _application(db_session, user_id)
+    card = _card_without_result(db_session, user_id)
+    _match(db_session, user_id, application_id, card.id)
+    info: dict[str, typing.Any] = {
+        "user_id": user_id,
+        "application_id": application_id,
+        "card_id": card.id,
+        "question_id": _question_ids(db_session, application_id)[0],
+    }
+    quote = "로그인한 사용자는 Redis 리스트로 옮기고"
+    mock = use_mock(
+        MockLLMClient(
+            [
+                _reply(
+                    {"text": ADDED_RESULT, "card_id": card.id, "slot": "action", "quote": quote},
+                    {"text": PLAIN, "card_id": card.id, "slot": "action", "quote": quote},
+                )
+            ]
+        )
+    )
+    assert _write(client, info).status_code == 201
+    info["mock"] = mock
+    return info
+
+
+def _confirm(client: TestClient, draft: dict[str, typing.Any], sentence_id: int, confirmed: bool = True):  # noqa: ANN202
+    return client.patch(
+        f"/api/drafts/{draft['id']}/sentences/{sentence_id}", json={"version": draft["version"], "confirmed": confirmed}
+    )
+
+
+def _set_result_field(db: Session, card_id: int, answer: str | None) -> None:
+    db.execute(update(CardField).where(CardField.card_id == card_id, CardField.slot == "result").values(answer=answer))
+    db.commit()
+
+
+def test_empty_fields_are_sent_as_not_recorded(unrecorded: dict[str, typing.Any]) -> None:
+    """빈 칸도 빼지 않고 '기록 없음'으로 보낸다 — 결과가 비면 AI가 짐작해 채우지 않게(D-028 프롬프트)."""
+    payload = json.loads(unrecorded["mock"].calls[0][-1].content)
+    fields = {item["slot"]: item for item in payload["cards"][0]["fields"]}
+    assert set(fields) == set(CARD_SLOTS)
+    assert fields["result"] == {"slot": "result", "status": "기록 없음"}
+    assert fields["action"] == {"slot": "action", "quote": ACTION_QUOTE}
+    assert "기록 없음" in unrecorded["mock"].calls[0][0].content  # 시스템 규칙도 이 표시를 설명한다
+
+
+def test_added_result_on_an_unrecorded_card_needs_check(client: TestClient, unrecorded: dict[str, typing.Any]) -> None:
+    draft = _first_draft(client, unrecorded)
+    added, plain = draft["sentences"]
+    assert [added["evidence_status"], plain["evidence_status"]] == ["ok", "ok"]  # 근거 검사는 둘 다 통과
+    assert added["claim_check"] == {
+        "reasons": ["unknown_token", "result_without_record"],
+        "unknown_tokens": ["40"],
+        "confirmed": False,
+    }
+    assert plain["claim_check"] is None
+    assert (draft["unsupported_count"], draft["needs_check_count"]) == (0, 1)
+    detail = client.get(f"/api/applications/{unrecorded['application_id']}").json()
+    assert (detail["unsupported_sentence_count"], detail["needs_check_sentence_count"]) == (0, 1)
+
+
+def test_confirm_keeps_completion_and_sentence_ids(client: TestClient, unrecorded: dict[str, typing.Any]) -> None:
+    """[확인함]은 글을 고친 게 아니라 완료 표시 · 문장 번호를 그대로 둔다(Q-028). version은 올린다(옛 화면 저장 409)."""
+    draft = _first_draft(client, unrecorded)
+    done = client.patch(f"/api/drafts/{draft['id']}", json={"completed": True}).json()
+    added = done["sentences"][0]
+
+    confirmed = _confirm(client, done, added["id"])
+    assert confirmed.status_code == 200
+    body = confirmed.json()
+    assert body["completed_at"] == done["completed_at"]
+    assert body["version"] == done["version"] + 1
+    assert [item["id"] for item in body["sentences"]] == [item["id"] for item in done["sentences"]]
+    assert body["sentences"][0]["claim_check"]["confirmed"] is True
+    assert body["needs_check_count"] == 0
+    assert client.get(f"/api/applications/{unrecorded['application_id']}").json()["needs_check_sentence_count"] == 0
+
+    # 옛 화면(옛 version)의 문장 저장은 409 — 확인을 덮어쓰지 않는다
+    stale = _put(client, done, [{"id": item["id"], "text": item["text"]} for item in done["sentences"]])
+    assert stale.status_code == 409
+
+    # [확인 풀기]
+    undone = _confirm(client, body, added["id"], confirmed=False).json()
+    assert undone["sentences"][0]["claim_check"]["confirmed"] is False
+    assert undone["needs_check_count"] == 1
+    assert undone["completed_at"] == done["completed_at"]
+
+
+def test_confirm_survives_saving_other_sentences_but_not_editing_this_one(
+    client: TestClient, unrecorded: dict[str, typing.Any]
+) -> None:
+    draft = _first_draft(client, unrecorded)
+    confirmed = _confirm(client, draft, draft["sentences"][0]["id"]).json()
+    added, plain = confirmed["sentences"]
+
+    # 다른 문장을 고쳐 저장해도 그대로인 문장의 확인은 옮겨 온다
+    other = _put(client, confirmed, [{"id": added["id"], "text": added["text"]}, {"id": plain["id"], "text": "Redis로 옮겼습니다."}])
+    assert other.status_code == 200, other.text
+    kept = other.json()
+    assert kept["sentences"][0]["claim_check"]["confirmed"] is True
+
+    # 확인한 문장을 고치면 다시 계산한다 — 여전히 걸리면 경고가 돌아온다
+    first, second = kept["sentences"]
+    edited = _put(
+        client, kept, [{"id": first["id"], "text": "Redis 리스트로 옮겨 응답 시간을 40% 줄였습니다."}, {"id": second["id"], "text": second["text"]}]
+    ).json()
+    assert edited["sentences"][0]["claim_check"]["confirmed"] is False
+    assert edited["needs_check_count"] == 1
+
+    # 근거를 다시 붙여도 확인은 다시
+    again = _confirm(client, edited, edited["sentences"][0]["id"]).json()
+    first, second = again["sentences"]
+    link = {"card_id": unrecorded["card_id"], "slot": "action", "quote_source": "quote"}
+    relinked = _put(
+        client, again, [{"id": first["id"], "text": first["text"], "link": link}, {"id": second["id"], "text": second["text"]}]
+    ).json()
+    assert relinked["sentences"][0]["claim_check"]["confirmed"] is False
+
+
+def test_confirm_is_undone_when_the_card_changes_the_reasons(
+    client: TestClient, db_session: Session, unrecorded: dict[str, typing.Any]
+) -> None:
+    """[확인함]은 그때 걸린 이유를 확인한 것 — 카드가 바뀌어 이유가 달라지면 다시 경고한다(Q-029)."""
+    draft = _first_draft(client, unrecorded)
+    _confirm(client, draft, draft["sentences"][0]["id"])
+
+    _set_result_field(db_session, unrecorded["card_id"], "응답 시간이 줄었다.")  # 결과 기록이 생김 → R3는 풀리고 R1(40)만 남음
+    changed = _first_draft(client, unrecorded)
+    assert changed["sentences"][0]["claim_check"] == {"reasons": ["unknown_token"], "unknown_tokens": ["40"], "confirmed": False}
+    assert changed["needs_check_count"] == 1
+
+    _set_result_field(db_session, unrecorded["card_id"], None)  # 처음 이유로 돌아오면 그때의 확인이 다시 맞는다
+    assert _first_draft(client, unrecorded)["sentences"][0]["claim_check"]["confirmed"] is True
+
+
+def test_confirming_a_sentence_that_is_not_flagged_stores_nothing(
+    client: TestClient, db_session: Session, unrecorded: dict[str, typing.Any]
+) -> None:
+    """걸리지 않은 문장의 [확인함]은 저장할 이유가 없다 — 나중에 걸리면 처음부터 경고로 보인다(7차 리뷰 R3)."""
+    draft = _first_draft(client, unrecorded)
+    plain = draft["sentences"][1]
+    response = _confirm(client, draft, plain["id"])
+    assert response.status_code == 200
+    assert response.json()["sentences"][1]["claim_check"] is None
+    row = db_session.scalars(select(DraftSentence).where(DraftSentence.text == PLAIN)).one()
+    assert row.confirmed_claims is None
+
+
+def test_confirm_rejects_stale_versions_and_other_sentences(
+    client: TestClient, db_session: Session, test_settings: Settings, unrecorded: dict[str, typing.Any], ready: dict[str, int],
+    use_mock: typing.Callable[[MockLLMClient], MockLLMClient],
+) -> None:
+    _login(client, db_session, test_settings, "checker")  # 두 fixture가 각각 로그인한다 — 초안 주인으로 다시
+    draft = _first_draft(client, unrecorded)
+    sentence_id = draft["sentences"][0]["id"]
+    assert _confirm(client, {**draft, "version": draft["version"] + 5}, sentence_id).status_code == 409
+    assert _confirm(client, draft, 999_999).status_code == 404
+    assert _confirm(client, draft, 2**31).status_code == 404  # DB 범위 밖은 DB에 묻기 전에
+
+    # 남의 초안 · 남의 문장(D-004): ready 사용자로 로그인해 내 초안 번호에 남의 문장 번호를 넣어도 404
+    _login(client, db_session, test_settings, "writer")
+    use_mock(MockLLMClient([_good_reply(ready["card_id"])]))
+    _write(client, ready)
+    mine = _first_draft(client, ready)
+    assert _confirm(client, draft, sentence_id).status_code == 404  # 남의 초안
+    assert _confirm(client, mine, sentence_id).status_code == 404  # 내 초안 + 남의 문장
+    row = db_session.scalars(select(DraftSentence).where(DraftSentence.id == sentence_id)).one()
+    assert row.confirmed_claims is None
+
+
+def test_confirm_body_must_have_a_version_and_a_bool(client: TestClient, unrecorded: dict[str, typing.Any]) -> None:
+    """본문 오류는 422(8차 리뷰 R3) — version 범위 밖 · 빠짐, confirmed가 불리언이 아님."""
+    draft = _first_draft(client, unrecorded)
+    url = f"/api/drafts/{draft['id']}/sentences/{draft['sentences'][0]['id']}"
+    assert client.patch(url, json={"confirmed": True}).status_code == 422
+    assert client.patch(url, json={"version": 0, "confirmed": True}).status_code == 422
+    assert client.patch(url, json={"version": draft["version"], "confirmed": "네"}).status_code == 422
+    assert _first_draft(client, unrecorded)["version"] == draft["version"]  # 아무것도 바뀌지 않음
+
+
+def test_needs_check_is_decided_by_the_server(client: TestClient, unrecorded: dict[str, typing.Any]) -> None:
+    """화면은 서버가 준 needs_check를 그대로 쓴다 — 판단은 SentenceClaims.needs_check 한 곳(8차 리뷰 R1)."""
+    draft = _first_draft(client, unrecorded)
+    assert [item["needs_check"] for item in draft["sentences"]] == [True, False]
+    confirmed = _confirm(client, draft, draft["sentences"][0]["id"]).json()
+    assert [item["needs_check"] for item in confirmed["sentences"]] == [False, False]
+    assert confirmed["sentences"][0]["claim_check"] is not None  # 걸린 이유는 그대로 보여 준다
+
+
+def test_filling_the_result_field_later_clears_the_warning(
+    client: TestClient, db_session: Session, unrecorded: dict[str, typing.Any]
+) -> None:
+    """'확인 필요'는 저장하지 않고 읽을 때 계산한다 — 카드에 결과를 적으면 저절로 풀린다(숫자 40도 카드에 생김)."""
+    _set_result_field(db_session, unrecorded["card_id"], "응답 시간이 40% 줄었다.")
+    draft = _first_draft(client, unrecorded)
+    assert [item["claim_check"] for item in draft["sentences"]] == [None, None]
+    assert draft["needs_check_count"] == 0
+
+
+def test_new_or_linked_sentences_are_checked_too(client: TestClient, unrecorded: dict[str, typing.Any]) -> None:
+    draft = _first_draft(client, unrecorded)
+    added, plain = draft["sentences"]
+    link = {"card_id": unrecorded["card_id"], "slot": "action", "quote_source": "quote"}
+    saved = _put(
+        client,
+        draft,
+        [
+            {"id": added["id"], "text": added["text"]},
+            {"text": "Redis로 옮겨 이탈률을 낮추는 데 성공했습니다.", "link": link},  # [카드 연결] 근거도 검사
+            {"id": plain["id"], "text": plain["text"]},
+        ],
+    ).json()
+    linked = saved["sentences"][1]
+    assert linked["evidence"]["added_by"] == "user"
+    assert linked["claim_check"] == {"reasons": ["result_without_record"], "unknown_tokens": [], "confirmed": False}
+    assert saved["needs_check_count"] == 2
+
+
+def test_confirm_rolls_back_the_version_when_the_sentence_vanishes_midway(
+    db_session: Session, unrecorded: dict[str, typing.Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """version을 올린 뒤 문장 갱신이 0줄이면(그 사이 문장이 사라짐) 둘 다 되돌리고 SentenceNotFound(9차 리뷰 R3).
+    지금 서버 경로로는 안 생겨서, 확인 이유를 계산하는 사이에 같은 세션에서 문장을 지워 만든다."""
+    draft = db_session.scalars(select(Draft).where(Draft.user_id == unrecorded["user_id"])).one()
+    draft_id, version = draft.id, draft.version
+    sentence_id = db_session.scalars(
+        select(DraftSentence.id).where(DraftSentence.draft_id == draft_id).order_by(DraftSentence.position)
+    ).first()
+    original = draft_service.sentence_claims
+
+    def vanish(row, cards, status):  # noqa: ANN001, ANN202
+        db_session.execute(delete(DraftSentence).where(DraftSentence.id == row.id))
+        return original(row, cards, status)
+
+    monkeypatch.setattr(draft_service, "sentence_claims", vanish)
+    with pytest.raises(draft_service.SentenceNotFound):
+        draft_service.confirm_sentence(
+            db_session, user_id=unrecorded["user_id"], draft_id=draft_id, sentence_id=sentence_id, version=version, confirmed=True
+        )
+    db_session.expire_all()
+    assert db_session.get(Draft, draft_id).version == version  # version 올린 것도 되돌림
+    assert db_session.get(DraftSentence, sentence_id) is not None  # 같은 거래 안의 삭제도 되돌림

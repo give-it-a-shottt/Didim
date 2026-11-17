@@ -146,7 +146,7 @@ function CardPicker({
               <button
                 type="button"
                 onClick={() => onPick(card.id)}
-                className={`flex w-full flex-col gap-1 rounded-card border border-line-regular bg-bg-default p-3 text-left hover:bg-bg-hover ${FOCUS_RING}`}
+                className={`motion-lift flex w-full flex-col gap-1 rounded-card border border-line-regular bg-bg-default p-3 text-left hover:bg-bg-hover ${FOCUS_RING}`}
               >
                 <span className="text-body-3 font-semibold text-text-main">{card.title}</span>
                 <span className="text-body-4 text-text-sub">
@@ -206,7 +206,7 @@ function FieldPicker({
                 type="button"
                 disabled={busy}
                 onClick={() => onPick(option.slot, option.source)}
-                className={`flex w-full flex-col gap-2 rounded-card border border-line-regular bg-bg-default p-3 text-left hover:bg-bg-hover disabled:cursor-not-allowed ${FOCUS_RING}`}
+                className={`motion-lift flex w-full flex-col gap-2 rounded-card border border-line-regular bg-bg-default p-3 text-left hover:bg-bg-hover disabled:cursor-not-allowed ${FOCUS_RING}`}
               >
                 <span className="text-body-4 font-medium text-text-sub">
                   {SLOT_LABELS[option.slot]} · {option.source === "quote" ? "원문 인용" : "내 답"}

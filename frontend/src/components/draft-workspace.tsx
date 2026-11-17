@@ -20,6 +20,7 @@ import {
   type EvidenceLink,
   type QuestionEdit,
   type SentenceEdit,
+  confirmSentence,
   draftsQueryKey,
   editsOf,
   fetchDrafts,
@@ -72,6 +73,7 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
     onSuccess: () => {
       setSelectedSentenceId(null);
       setEditTarget(null);
+      confirm.reset(); // 새 초안이라 지난 [확인함] 실패 문구는 지운다(9차 리뷰 R3)
       return refetch();
     },
     onError: refetchIfStale,
@@ -81,6 +83,7 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
     mutationFn: ({ target, edits }: { target: Draft; edits: SentenceEdit[] }) => updateDraft(target, edits),
     onSuccess: (saved, { edits }) => {
       putDraft(saved);
+      confirm.reset(); // 지난 [확인함] 실패 문구는 새 초안을 받았으니 지운다(8차 리뷰 R3)
       setEditTarget(null);
       setLinkSentenceId(null);
       // 저장하면 문장 번호가 새로 매겨진다 — 고른 문장을 같은 자리(편집 목록 순서)의 새 번호로 다시 고른다(3차 리뷰 R1)
@@ -93,9 +96,20 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
     onError: refetchIfStale,
   });
 
+  // [확인함] · [확인 풀기](D-028) — 문장 번호 · 완료 표시가 그대로라 고른 문장도 그대로 둔다(Q-028)
+  const confirm = useMutation({
+    mutationFn: ({ target, sentenceId, confirmed }: { target: Draft; sentenceId: number; confirmed: boolean }) =>
+      confirmSentence(target, sentenceId, confirmed),
+    onSuccess: putDraft,
+    onError: refetchIfStale,
+  });
+
   const complete = useMutation({
     mutationFn: ({ draftId, completed }: { draftId: number; completed: boolean }) => setDraftCompleted(draftId, completed),
-    onSuccess: putDraft,
+    onSuccess: (saved) => {
+      putDraft(saved);
+      confirm.reset();
+    },
     onError: refetchIfStale,
   });
 
@@ -104,6 +118,7 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
       replaceQuestions(applicationId, edits, removedIds),
     onSuccess: (next) => {
       queryClient.setQueryData(queryKey, next);
+      confirm.reset();
       if (!next.questions.some((item) => item.id === selectedQuestionId)) setSelectedQuestionId(next.questions[0]?.id ?? null);
     },
     onError: refetchIfStale, // 다른 탭이 문항을 먼저 바꿈(409) — 새 목록을 받아 다시 고치게
@@ -114,6 +129,8 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
     setSelectedSentenceId(null);
     setEditTarget(null);
     save.reset();
+    // 요청 중에 reset하면 isPending이 바로 false가 돼 저장 · 완료 막기가 풀린다 — 끝난 요청의 문구만 지운다(9차 리뷰 R3)
+    if (!confirm.isPending) confirm.reset();
   };
 
   const saveEdits = (edits: SentenceEdit[]) => {
@@ -188,9 +205,10 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
             emptyQuestionId: write.data && !write.data.written && writeVars ? writeVars.questionId : null,
             run: (questionId, overwrite) => write.mutate({ questionId, overwrite }),
           }}
-          save={{ pending: save.isPending, error: save.error, run: saveEdits }}
+          // [확인함]이 날아가는 동안 문장 저장 · 완료를 막는다 — 응답 순서에 따라 캐시가 옛 내용으로 덮이지 않게(8차 리뷰 R3)
+          save={{ pending: save.isPending || confirm.isPending, error: save.error, run: saveEdits }}
           complete={{
-            pending: complete.isPending,
+            pending: complete.isPending || confirm.isPending,
             error: complete.error,
             run: (draftId, completed) => complete.mutate({ draftId, completed }),
           }}
@@ -199,7 +217,7 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
           draft={draft}
           selectedSentenceId={selectedSentenceId}
           onSelectSentence={setSelectedSentenceId}
-          busy={save.isPending}
+          busy={save.isPending || confirm.isPending || complete.isPending || write.isPending}
           onEdit={(sentenceId) => {
             setSelectedSentenceId(sentenceId);
             setEditTarget({ kind: "edit", sentenceId });
@@ -208,6 +226,10 @@ export function DraftWorkspace({ initialDrafts, cards }: { initialDrafts: Applic
           onRemove={removeSentence}
           onLink={setLinkSentenceId}
           onUnlink={(sentenceId) => saveOne(sentenceId, { unlink: true })}
+          onConfirm={(sentenceId, confirmed) => {
+            if (draft !== null) confirm.mutate({ target: draft, sentenceId, confirmed });
+          }}
+          confirmError={confirm.error}
         />
         <CardLinkDialog
           sentence={linkSentence}

@@ -27,7 +27,8 @@ from sqlalchemy.orm import Session
 from app.config import CARD_SLOTS, INTERVIEW_MAX_QUOTE_CHARS, INTERVIEW_MIN_QUOTE_CHARS
 from app.llm import MockLLMClient
 from app.llm.base import LLMClient, LLMUsage, Message
-from app.services.draft_evaluation import SentText, numbers_in, sent_payload, words_in
+from app.services.claim_check import numbers_in, words_in
+from app.services.draft_evaluation import SentText, sent_payload
 from app.services.eval_retry import RetryPolicy, run_ai_step
 from app.services.interview_service import (
     InterviewPlan,

@@ -14,7 +14,7 @@ export function CardTile({ card }: { card: CardSummary }) {
     <li className="min-w-0">
       <Link
         href={cardHref(card.id)}
-        className={`flex h-full flex-col gap-3 rounded-card border border-line-regular bg-bg-default p-5 hover:bg-bg-hover ${FOCUS_RING}`}
+        className={`motion-lift flex h-full flex-col gap-3 rounded-card border border-line-regular bg-bg-default p-5 hover:bg-bg-hover ${FOCUS_RING}`}
       >
         <span className="text-body-4 text-text-sub">{card.noteTitle ?? "원문 없음"}</span>
         <span className="text-body-1 font-medium wrap-break-word text-text-main">{card.title}</span>
