@@ -5,6 +5,11 @@
 
 // Focus = 2px 링(바탕과 2px 띄움). Figma: 0 0 0 2px bg/default, 0 0 0 4px primary/default
 export const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-default";
+/** 입력 칸(글 칸 · 글 상자 · select) 포커스: 바깥에 테두리를 한 겹 더 그리지 않고 칸의 테두리 색을 브랜드 색으로
+ *  부드럽게 바꾼다(사용자 요청 2026-11-17). 버튼 · 링크 · 카드는 그대로 FOCUS_RING. */
+export const INPUT_FOCUS = "motion-border outline-none focus:border-primary-default";
+/** 입력 칸을 감싼 상자(돋보기 + 글 칸 등)가 안쪽 칸의 포커스를 테두리 색으로 보여 줄 때. */
+export const INPUT_FOCUS_WITHIN = "motion-border focus-within:border-primary-default";
 
 const BUTTON_BASE = `inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-button disabled:cursor-not-allowed ${FOCUS_RING}`;
 const SIZE_M = "h-10 min-w-18 gap-1.5 px-4 text-body-1 font-semibold";

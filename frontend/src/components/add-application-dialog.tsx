@@ -22,9 +22,9 @@ import {
   applicationHref,
   createApplication,
 } from "@/lib/applications";
-import { FOCUS_RING, GHOST_BUTTON, PRIMARY_BUTTON, TEXT_BUTTON } from "@/lib/ui-classes";
+import { GHOST_BUTTON, INPUT_FOCUS, PRIMARY_BUTTON, TEXT_BUTTON } from "@/lib/ui-classes";
 
-const INPUT = `h-12 w-full rounded-input border border-line-input bg-bg-default px-4 text-title-4 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${FOCUS_RING}`;
+const INPUT = `h-12 w-full rounded-input border border-line-input bg-bg-default px-4 text-title-4 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${INPUT_FOCUS}`;
 const LABEL = "text-body-2 font-semibold text-text-main";
 const HELP = "text-body-3 text-text-sub-weak";
 
@@ -168,7 +168,7 @@ function ApplicationForm({ onClose, onBusyChange }: { onClose: () => void; onBus
           maxLength={POSTING_TEXT_MAX_CHARS}
           aria-describedby={`${ids}-posting-help ${ids}-posting-tip`}
           placeholder="자격 요건 · 우대 사항이 들어간 부분을 붙여 넣으면 더 정확해요"
-          className={`h-30 w-full resize-y rounded-input border border-line-input bg-bg-default p-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${FOCUS_RING}`}
+          className={`h-30 w-full resize-y rounded-input border border-line-input bg-bg-default p-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${INPUT_FOCUS}`}
         />
         <p id={`${ids}-posting-help`} className={HELP}>
           {/* 설계 원칙 6: AI에 무엇을 보내는지 알린다 */}
@@ -230,7 +230,7 @@ function ApplicationForm({ onClose, onBusyChange }: { onClose: () => void; onBus
               maxLength={APPLICATION_QUESTION_MAX_CHARS}
               aria-label={`${index + 1}번 문항`}
               placeholder="지원 동기"
-              className={`h-10 min-w-0 flex-1 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${FOCUS_RING}`}
+              className={`h-10 min-w-0 flex-1 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${INPUT_FOCUS}`}
             />
             <input
               type="number"
@@ -241,7 +241,7 @@ function ApplicationForm({ onClose, onBusyChange }: { onClose: () => void; onBus
               onChange={(event) => updateQuestion(item.key, { charLimit: event.target.value })}
               aria-label={`${index + 1}번 문항 글자 수`}
               placeholder="700"
-              className={`h-10 w-20 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${FOCUS_RING}`}
+              className={`h-10 w-20 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main placeholder:text-text-sub-weak hover:border-line-input-hover ${INPUT_FOCUS}`}
             />
             <span className="text-body-3 text-text-sub">자</span>
           </div>

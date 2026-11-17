@@ -23,7 +23,7 @@ import {
   SLOT_LABELS,
   saveCard,
 } from "@/lib/cards";
-import { FOCUS_RING, GHOST_BUTTON, GHOST_BUTTON_S, PRIMARY_BUTTON } from "@/lib/ui-classes";
+import { GHOST_BUTTON, GHOST_BUTTON_S, INPUT_FOCUS, PRIMARY_BUTTON } from "@/lib/ui-classes";
 
 export function CardReviewButton({
   cardIds,
@@ -215,7 +215,7 @@ function CandidateForm({ card, onDone }: { card: CardDetail; onDone: (saved?: nu
             onChange={(event) => setTitle(event.target.value)}
             maxLength={CARD_TITLE_MAX_CHARS}
             required
-            className={`h-10 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+            className={`h-10 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main hover:border-line-input-hover ${INPUT_FOCUS}`}
           />
         </div>
 

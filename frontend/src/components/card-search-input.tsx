@@ -3,6 +3,7 @@
 // 카드 제목 검색 칸(Figma Input — 검색 아이콘 + 글 칸, 높이 40). 자소서 탭 왼쪽 카드 목록과 [카드 연결] 창이 같이 쓴다(2차 리뷰 R1).
 
 import { useId } from "react";
+import { INPUT_FOCUS_WITHIN } from "@/lib/ui-classes";
 import { Icon } from "@/components/icon";
 
 export function CardSearchInput({
@@ -18,7 +19,7 @@ export function CardSearchInput({
 }) {
   const id = useId();
   return (
-    <div className="flex h-10 items-center gap-1.5 rounded-input border border-line-input bg-bg-default px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-default">
+    <div className={`flex h-10 items-center gap-1.5 rounded-input border border-line-input bg-bg-default px-3 ${INPUT_FOCUS_WITHIN}`}>
       <Icon name="search" size={20} className="text-icon-sub" />
       <label htmlFor={id} className="sr-only">
         카드 검색

@@ -9,7 +9,7 @@ import { EmptyState, PageBody, PageHeader } from "@/components/page-parts";
 import { noteKindLabel } from "@/lib/import-records";
 import { getTodayReviews, getWrongAnswers } from "@/lib/quiz-data";
 import { listNotes, MAX_SEARCH_QUERY_CHARS, searchRecords } from "@/lib/records";
-import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, LIST_ROW, PRIMARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
+import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, INPUT_FOCUS_WITHIN, LIST_ROW, PRIMARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "기록 · 복습",
@@ -148,7 +148,7 @@ function SearchForm({ query }: { query: string }) {
     <Form action="/records" role="search" aria-label="기록 검색" className="w-full sm:w-70">
       <label
         htmlFor="record-search"
-        className={`flex h-10 items-center gap-1.5 rounded-input border border-line-input bg-bg-default px-3 hover:border-line-input-hover has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary-default`}
+        className={`flex h-10 items-center gap-1.5 rounded-input border border-line-input bg-bg-default px-3 hover:border-line-input-hover ${INPUT_FOCUS_WITHIN}`}
       >
         <Icon name="search" size={20} className="text-icon-main" />
         <span className="sr-only">기록 검색어</span>

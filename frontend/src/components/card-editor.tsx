@@ -38,17 +38,7 @@ import {
 import { ApiRequestError } from "@/lib/api-request";
 import { INTERVIEW_MAX_QUESTIONS, INTERVIEW_MIN_QUESTIONS, type InterviewQuestion } from "@/lib/interview";
 import { evidenceHref } from "@/lib/quiz";
-import {
-  BADGE_LINE,
-  CARD,
-  CARD_LABEL,
-  FOCUS_RING,
-  GHOST_BUTTON,
-  PRIMARY_BUTTON,
-  SECONDARY_BUTTON,
-  SOURCE_LINK,
-  TEXT_BUTTON,
-} from "@/lib/ui-classes";
+import { BADGE_LINE, CARD, CARD_LABEL, FOCUS_RING, GHOST_BUTTON, INPUT_FOCUS, PRIMARY_BUTTON, SECONDARY_BUTTON, SOURCE_LINK, TEXT_BUTTON } from "@/lib/ui-classes";
 
 type Drafts = Record<CardSlot, string>;
 
@@ -212,7 +202,7 @@ export function CardEditor({ initial }: { initial: CardDetail }) {
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={CARD_TITLE_MAX_CHARS}
                 required
-                className={`h-10 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+                className={`h-10 rounded-input border border-line-input bg-bg-default px-3 text-body-1 text-text-main hover:border-line-input-hover ${INPUT_FOCUS}`}
               />
             </div>
 

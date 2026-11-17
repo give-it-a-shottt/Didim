@@ -11,7 +11,7 @@ import { RequestErrorText } from "@/components/request-error";
 import { APPLICATION_MAX_QUESTIONS, APPLICATION_QUESTION_CHAR_LIMIT_MAX, APPLICATION_QUESTION_MAX_CHARS } from "@/lib/applications";
 import { type CardSummary, cardHref, filterCardsByTitle, formatCardDate } from "@/lib/cards";
 import { type DraftQuestion, type QuestionEdit, type RequestState, charCountLabel, questionStage } from "@/lib/drafts";
-import { BADGE_SOFT, FOCUS_RING, SECTION_TITLE, GHOST_BUTTON_S, SECONDARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
+import { BADGE_SOFT, FOCUS_RING, GHOST_BUTTON_S, INPUT_FOCUS, SECONDARY_BUTTON_S, SECTION_TITLE, TEXT_BUTTON } from "@/lib/ui-classes";
 
 /** 문항 목록 저장 요청: run(고친 문항, 지울 기존 문항 번호, 성공하면 부를 함수) + 오류 지우기. */
 export type QuestionsSave = RequestState<(edits: QuestionEdit[], removedIds: number[], onDone: () => void) => void> & {
@@ -181,7 +181,7 @@ function QuestionForm({
             maxLength={APPLICATION_QUESTION_MAX_CHARS}
             rows={2}
             onChange={(event) => update(row.key, { text: event.target.value })}
-            className={`w-full resize-y rounded-input border border-line-input bg-bg-default px-3 py-2 text-body-2 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+            className={`w-full resize-y rounded-input border border-line-input bg-bg-default px-3 py-2 text-body-2 text-text-main hover:border-line-input-hover ${INPUT_FOCUS}`}
           />
           <div className="flex items-center gap-2">
             <label htmlFor={`${ids}-limit-${row.key}`} className="text-body-3 text-text-sub">
@@ -196,7 +196,7 @@ function QuestionForm({
               value={row.charLimit}
               placeholder="없음"
               onChange={(event) => update(row.key, { charLimit: event.target.value })}
-              className={`h-8 w-20 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+              className={`h-8 w-20 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${INPUT_FOCUS}`}
             />
             <div className="flex-1" />
             <button

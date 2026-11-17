@@ -20,7 +20,7 @@ import {
   updateApplicationStatus,
 } from "@/lib/applications";
 import { draftsQueryKey, fetchDrafts, fetchWarningCounts, formatTime, submitWarning } from "@/lib/drafts";
-import { FOCUS_RING, SECONDARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
+import { FOCUS_RING, INPUT_FOCUS, SECONDARY_BUTTON_S, TEXT_BUTTON } from "@/lib/ui-classes";
 
 const TABS = [
   { segment: "analysis", label: "공고 분석" },
@@ -72,7 +72,7 @@ export function ApplicationStatusSelect({
           value={status}
           disabled={change.isPending}
           onChange={(event) => change.mutate(event.target.value as ApplicationStatus)}
-          className={`select-picker h-8 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${FOCUS_RING}`}
+          className={`select-picker h-8 rounded-input border border-line-input bg-bg-default px-2 text-body-2 text-text-main hover:border-line-input-hover ${INPUT_FOCUS}`}
         >
           {APPLICATION_STATUSES.map((value) => (
             <option key={value} value={value}>

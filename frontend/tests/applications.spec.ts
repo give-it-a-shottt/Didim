@@ -162,70 +162,87 @@ test("없는 공고 · 이상한 공고 주소는 찾을 수 없다고 나온다
 });
 
 // 공고 원문 접기 안전 타이머의 여유 — posting-aside.tsx의 COLLAPSE_FALLBACK_SLACK_MS와 같은 값(바꾸면 같이 바꾼다, 12차 리뷰 R1).
-// 전환 시간은 테스트가 화면(computed style)에서 직접 읽는다 — CSS 토큰 --motion-duration이 바뀌어도 따라간다.
 const COLLAPSE_FALLBACK_SLACK_MS = 100;
+// 갈래를 시간에 기대지 않고 가르려고 전환을 길게 늘린다(12차 리뷰 R3) — 안전 타이머는 이 값 + 여유 뒤에야 터진다
+const LONG_MOTION_MS = 5000;
 
-test("공고 원문: 펼치면 전체 글, 접으면 높이가 줄어든 뒤 4줄 자르기로 돌아온다(끝 신호 · 안전 타이머, 펼치는 중 접기, 움직임 줄이기면 바로)", async ({
-  context,
-  page,
-}) => {
+test("공고 원문: 끝 신호 · 안전 타이머 · 펼치는 중 접기 · 화면 떠남 · 움직임 줄이기에서 모두 짧은 글로 끝난다", async ({ context, page }) => {
   await logIn(context);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.goto("/applications/901/analysis");
   const body = page.locator("#posting-body");
   const openButton = page.getByRole("button", { name: "원문 전체 보기" });
   const closeButton = page.getByRole("button", { name: "원문 접기" });
   const state = () => body.getAttribute("data-state");
-  const transitionMs = () =>
-    body.evaluate((element) => {
-      const value = getComputedStyle(element).transitionDuration.split(",")[0].trim();
-      return value.endsWith("ms") ? parseFloat(value) : parseFloat(value) * 1000;
-    });
-  const motionMs = await transitionMs();
-  expect(motionMs).toBeGreaterThan(0); // 움직임이 있는 기본 화면
-  const timerMs = motionMs + COLLAPSE_FALLBACK_SLACK_MS; // 안전 타이머가 터지는 때
+  const setMotion = (style: { duration?: string; property?: string }) =>
+    body.evaluate((element, value) => {
+      const target = element as HTMLElement;
+      target.style.transitionDuration = value.duration ?? "";
+      target.style.transitionProperty = value.property ?? "";
+    }, style);
+  const sendTransition = (type: "transitionend" | "transitioncancel") =>
+    body.evaluate(
+      (element, eventType) => element.dispatchEvent(new TransitionEvent(eventType, { propertyName: "max-height", bubbles: true })),
+      type,
+    );
+  const fallbackMs = LONG_MOTION_MS + COLLAPSE_FALLBACK_SLACK_MS;
 
   await expect(body).toHaveAttribute("data-state", "short");
   await expect(body).toHaveClass(/line-clamp-4/);
+
+  // ① 끝 신호: 실제 전환은 끄고(시간은 5초로 남김) 끝 신호만 보낸다 — 타이머(5.1초)보다 훨씬 먼저 짧은 글이면 끝 신호로 바뀐 것
+  await setMotion({ duration: `${LONG_MOTION_MS}ms`, property: "none" });
   await openButton.click();
-  await expect(closeButton).toHaveAttribute("aria-expanded", "true");
   await expect(body).toHaveAttribute("data-state", "full");
   await expect(body).toHaveClass(/max-h-120/);
-
-  // ① 끝 신호: 누른 직후에는 전체 글을 둔 채 높이만 줄이고(시간 창에 기대지 않게 바로 읽음), 전환이 끝나면 짧은 글로
   await closeButton.click();
-  expect(await state()).toBe("full");
+  expect(await state()).toBe("full"); // 접는 중에는 전체 글을 둔 채 높이만 줄인다
   expect(await body.getAttribute("class")).toContain("max-h-4-lines overflow-hidden");
-  await expect(body).toHaveAttribute("data-state", "short");
+  await sendTransition("transitionend");
+  await expect(body).toHaveAttribute("data-state", "short", { timeout: fallbackMs / 5 });
   await expect(body).toHaveClass(/line-clamp-4/);
 
-  // ② 접는 도중 다시 펼치면 앞서 건 타이머 · 늦은 끝 신호가 다시 접지 않는다 — 전체 글이 그대로(11차 리뷰 R3)
+  // ② 취소 신호로는 바뀌지 않고, 신호가 없으면 안전 타이머가 바꾼다
+  await openButton.click();
+  await closeButton.click();
+  await sendTransition("transitioncancel");
+  await page.waitForTimeout(fallbackMs / 5);
+  expect(await state()).toBe("full");
+  await expect(body).toHaveAttribute("data-state", "short", { timeout: fallbackMs * 2 });
+
+  // ③ 접는 도중 다시 펼치면 앞서 건 타이머 · 늦은 끝 신호가 다시 접지 않는다
   await openButton.click();
   await closeButton.click();
   await openButton.click();
-  await page.waitForTimeout(timerMs + motionMs); // 안전 타이머가 터질 때를 넉넉히 넘긴 뒤에도
+  await sendTransition("transitionend"); // 늦게 온 접기 끝 신호
+  await page.waitForTimeout(500);
   expect(await state()).toBe("full");
   await expect(closeButton).toHaveAttribute("aria-expanded", "true");
 
-  // ③ 취소 신호(transitioncancel)로는 바꾸지 않고, 신호가 없으면 안전 타이머가 바꾼다 — 펼치는 중에 접으면 '펼치기'의
-  //    취소 신호가 와서 접기 끝으로 오해했다. 실제 전환은 끄고(시간은 200ms로 남겨 둠) 신호만 보내 확인한다
-  await closeButton.click(); // ②에서 펼쳐 둔 것을 먼저 다 접고
-  await expect(body).toHaveAttribute("data-state", "short");
-  await openButton.click();
-  await body.evaluate((element) => {
-    (element as HTMLElement).style.transitionProperty = "none";
-  });
+  // ④ 펼치는 중 접기(실제 전환 5초): 브라우저가 '펼치기'를 취소하고(transitioncancel) 진행된 만큼만 되돌린다 —
+  //    누른 직후에는 전체 글이고(취소 신호로 바로 접히지 않음), 되돌림의 끝 신호로 타이머보다 먼저 짧은 글이 된다
   await closeButton.click();
-  await body.evaluate((element) =>
-    element.dispatchEvent(new TransitionEvent("transitioncancel", { propertyName: "max-height", bubbles: true })),
-  );
-  await page.waitForTimeout(timerMs / 3); // 안전 타이머보다 이르게
+  await setMotion({}); // 실제 전환을 다시 켬
+  await setMotion({ duration: `${LONG_MOTION_MS}ms` });
+  await expect(body).toHaveAttribute("data-state", "short", { timeout: fallbackMs * 2 });
+  await openButton.click();
+  await page.waitForTimeout(100); // 펼치는 전환이 시작되도록
+  await closeButton.click();
   expect(await state()).toBe("full");
-  await expect(body).toHaveAttribute("data-state", "short", { timeout: timerMs * 3 }); // 안전 타이머
-  await body.evaluate((element) => {
-    (element as HTMLElement).style.transitionProperty = "";
-  });
+  await expect(body).toHaveAttribute("data-state", "short", { timeout: fallbackMs / 2 });
+  await setMotion({});
 
-  // ④ 움직임 줄이기: 전환 시간이 0이라 신호가 없다 — 누르자마자 짧은 글
+  // ⑤ 화면 떠남: 접는 중(타이머가 걸린 채) 다른 탭으로 옮겨도 오류가 없다(타이머는 화면을 떠날 때 지운다)
+  await openButton.click();
+  await closeButton.click();
+  await page.getByRole("navigation", { name: "지원 상세 탭" }).getByRole("link", { name: "자소서" }).click();
+  await expect(page).toHaveURL(/\/applications\/901\/draft$/);
+  await page.waitForTimeout(COLLAPSE_FALLBACK_SLACK_MS * 5);
+  expect(pageErrors).toEqual([]);
+
+  // ⑥ 움직임 줄이기: 전환 시간이 0이라 신호가 없다 — 누르자마자 짧은 글
+  await page.goto("/applications/901/analysis");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openButton.click();
   expect(await body.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe("0s");
