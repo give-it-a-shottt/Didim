@@ -35,7 +35,7 @@ def search_records(
     """user_id의 기록 조각을 찾는다. 검색이 끝나면 로그를 남긴다(D-005).
 
     검색 방식을 못 쓰면 SearchUnavailableError, 시간 상한을 넘으면 SearchTimeoutError(세션은 이미 rollback됨).
-    두 경우 모두 로그는 남기지 않는다. 샘플 체험 세션(save_log=False)도 남기지 않는다 — 샘플은 읽기만 한다(F-010 1차 R2).
+    두 경우 모두 로그는 남기지 않는다. 샘플 체험 세션(save_log=False)도 남기지 않는다 — 샘플은 읽기만 한다.
     """
     query_text = text.strip()
     terms = extract_terms(query_text)

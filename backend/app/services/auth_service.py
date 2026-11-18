@@ -138,7 +138,7 @@ def create_session_token(
 
 
 def is_sample_user(user: User) -> bool:
-    """샘플 체험 계정인지(계정 기준). 세션 토큰의 sample 표시와 늘 같아야 한다 — get_current_user가 맞춰 본다(F-010 1차 R1 · R2)."""
+    """샘플 체험 계정인지(계정 기준). 세션 토큰의 sample 표시와 늘 같아야 한다 — get_current_user가 맞춰 본다."""
     return user.google_sub == SAMPLE_GOOGLE_SUB
 
 

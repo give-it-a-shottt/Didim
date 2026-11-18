@@ -228,11 +228,11 @@ def test_resume_with_only_reruns_that_step(tmp_path: Path) -> None:
     assert [e["key"] for e in summary["evals"]] == [s.key for s in STEPS]  # type: ignore[index]
 
 
-# --- F-010 1차 리뷰 반영 ---
+# --- 실패 · 보안 경로 ---
 
 
 def test_failed_rescore_keeps_the_previous_numbers(tmp_path: Path) -> None:
-    """다시 채점이 실패하면 이전 수치를 지우지 않는다(R3)."""
+    """다시 채점이 실패하면 이전 수치를 지우지 않는다."""
     runner, _ = _fake_runner(tmp_path, {"drafts_ai": {"warn_rate": 0.8, "labels_pending": 0}})
     out = tmp_path / "run-1.json"
     eval_all.run_all(OPTIONS, out, runner=runner, sizes=SIZES)
@@ -250,7 +250,7 @@ def test_rescore_skips_entries_that_are_not_objects(tmp_path: Path) -> None:
 
 
 def test_collect_failure_paths(tmp_path: Path) -> None:
-    """결과를 못 읽는 경우마다 'failed'와 이유를 남긴다(R3)."""
+    """결과를 못 읽는 경우마다 'failed'와 이유를 남긴다."""
     step = STEP_BY_KEY["quiz"]
     assert eval_all.collect(step, 0, None)["error"] == "결과 파일 경로를 받지 못했어요."
     assert "읽지 못했어요" in str(eval_all.collect(step, 0, str(tmp_path / "없음.json"))["error"])
@@ -267,7 +267,7 @@ def test_collect_failure_paths(tmp_path: Path) -> None:
 
 
 def test_run_all_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
-    """하위 프로세스를 띄우지 못해도(OSError) 그 단계만 실패로 두고 계속한다(R3)."""
+    """하위 프로세스를 띄우지 못해도(OSError) 그 단계만 실패로 두고 계속한다."""
     runner, _ = _fake_runner(tmp_path, {})
 
     def flaky(command: list[str]) -> tuple[int, str | None]:
@@ -281,7 +281,7 @@ def test_run_all_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
 
 
 def test_resume_clears_finished_at_until_done(tmp_path: Path) -> None:
-    """이어 하는 동안 요약은 '끝나지 않음' — 다시 멈춰도 끝난 회차로 보이지 않는다(R3)."""
+    """이어 하는 동안 요약은 '끝나지 않음' — 다시 멈춰도 끝난 회차로 보이지 않는다."""
     out = tmp_path / "run-1.json"
     saved = {"version": 1, "run_id": "1", "data": SIZES, "provider": "nvidia", "finished_at": "2026-11-17T00:00:00+09:00", "evals": []}
     seen: list[object] = []
@@ -296,7 +296,7 @@ def test_resume_clears_finished_at_until_done(tmp_path: Path) -> None:
 
 
 def test_rescore_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
-    """다시 채점에서 하위 프로세스를 못 띄워도 그 칸만 실패로 두고(이전 수치 유지) 나머지는 계속한다(2차 R3)."""
+    """다시 채점에서 하위 프로세스를 못 띄워도 그 칸만 실패로 두고(이전 수치 유지) 나머지는 계속한다."""
     runner, _ = _fake_runner(tmp_path, {"drafts_ai": {"warn_rate": 0.8}, "interview_ai": {"premise_rate": 0.0}})
     out = tmp_path / "run-1.json"
     eval_all.run_all(OPTIONS, out, runner=runner, sizes=SIZES)

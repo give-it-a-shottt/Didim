@@ -13,6 +13,7 @@ DB_CONNECT_TIMEOUT_SECONDS = 5
 # 샘플 체험 계정(D-025 · D-029). 구글 sub는 숫자라 이 값과 겹치지 않는다 — 구글 로그인으로는 이 계정이 될 수 없다.
 SAMPLE_GOOGLE_SUB = "didim-sample"
 # 샘플 시드가 채우는 동안의 임시 계정(F-010). 공개되지 않고 어떤 토큰으로도 로그인할 수 없다(get_current_user가 401).
+# 이것만 config에 둔 이유: 인증(deps)도 읽기 때문. 시드만 쓰는 상수(상한 · 이메일)는 app/services/sample_seed.py에 있다.
 SAMPLE_SEEDING_SUB = "didim-sample-seeding"
 
 # 사용자 기본 하루 AI 호출 상한 (didim-design.md SET_01_001 기준 30회)

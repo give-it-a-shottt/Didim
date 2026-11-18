@@ -85,7 +85,7 @@ def _old_sample_with_note(db: Session) -> int:
 
 
 def test_promote_swaps_in_the_new_sample_in_one_step(db_session: Session) -> None:
-    """임시 계정을 다 채운 뒤 한 번에: 옛 샘플(과 딸린 데이터) 지움 · 임시 계정이 샘플 · 상한 0(2차 R2)."""
+    """임시 계정을 다 채운 뒤 한 번에: 옛 샘플(과 딸린 데이터) 지움 · 임시 계정이 샘플 · 상한 0."""
     _old_sample_with_note(db_session)
     staging = new_staging_user(db_session)
     assert db_session.get(User, staging).google_sub == SAMPLE_SEEDING_SUB  # type: ignore[union-attr]
@@ -125,11 +125,11 @@ def test_seed_from_the_repo_run_matches_the_result_files(db_session: Session) ->
     assert names and not all(len(name) > 25 for name in names)
 
 
-# --- F-010 1차 리뷰 반영 ---
+# --- 실패 · 보안 경로 ---
 
 
 def test_seed_leaves_the_sample_with_no_ai_budget(db_session: Session) -> None:
-    """시드가 끝나면 공개 샘플 계정의 하루 AI 상한은 0(R2 — 가드에 빈틈이 생겨도 AI를 못 부르게)."""
+    """시드가 끝나면 공개 샘플 계정의 하루 AI 상한은 0(가드에 빈틈이 생겨도 AI를 못 부르게)."""
     runs = list_summaries(EVAL_SUMMARY_DIR)
     if not runs:
         pytest.skip("레포에 평가 회차 요약이 없어요.")
@@ -158,7 +158,7 @@ def _assert_old_sample_kept(db: Session, old_id: int) -> None:
 
 
 def test_failed_seed_keeps_the_old_sample_and_drops_the_half_filled_one(db_session: Session, tmp_path: Path) -> None:
-    """중간에 실패해도 공개 중인 샘플은 그대로, 반쯤 채운 임시 계정과 딸린 데이터는 지운다(2차 R2 · R3)."""
+    """중간에 실패해도 공개 중인 샘플은 그대로, 반쯤 채운 임시 계정과 딸린 데이터는 지운다."""
     old_id = _old_sample_with_note(db_session)
     with pytest.raises(SeedError, match="지금 샘플은 그대로예요"):
         asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
@@ -167,13 +167,13 @@ def test_failed_seed_keeps_the_old_sample_and_drops_the_half_filled_one(db_sessi
 
 @pytest.mark.parametrize("signal", [KeyboardInterrupt, asyncio.CancelledError])
 def test_interrupted_seed_cleans_up_and_reraises(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, signal: type[BaseException]) -> None:
-    """중단 · 취소는 일반 실패로 바꾸지 않고 그대로 올린다 — 정리는 한다(2차 R3)."""
+    """중단 · 취소는 일반 실패로 바꾸지 않고 그대로 올린다 — 정리는 한다."""
     from app.services import sample_seed
 
     old_id = _old_sample_with_note(db_session)
 
     async def stop(db: Session, _report: object, *, user_id: int, **_kwargs: object) -> None:
-        # 반쯤 채운 상태를 만든 뒤 멈춘다 — 정리가 데이터까지 지우는지 보려고(3차 R3)
+        # 반쯤 채운 상태를 만든 뒤 멈춘다 — 정리가 데이터까지 지우는지 보려고
         content = "# 반쯤\n\n본문"
         create_note_for_user(db, user_id=user_id, title="반쯤", content=content, chunks=split_markdown(content))
         raise signal
@@ -184,11 +184,12 @@ def test_interrupted_seed_cleans_up_and_reraises(db_session: Session, tmp_path: 
     _assert_old_sample_kept(db_session, old_id)
 
 
-# --- F-010 3차 리뷰 반영 ---
+# --- 실패 · 보안 경로 ---
 
 
 def test_inner_seed_error_keeps_its_advice(db_session: Session, tmp_path: Path) -> None:
-    """시드가 직접 낸 SeedError의 할 일 안내가 일반 문구에 묻히지 않는다(3차 R3 · R1)."""
+    """시드가 직접 낸 SeedError의 할 일 안내가 일반 문구에 묻히지 않고, 옛 샘플은 그대로다."""
+    old_id = _old_sample_with_note(db_session)
     sources = _broken_sources(tmp_path)
     postings = json.loads(sources.postings.read_text(encoding="utf-8"))
     for item in postings["postings"]:
@@ -198,10 +199,11 @@ def test_inner_seed_error_keeps_its_advice(db_session: Session, tmp_path: Path) 
     with pytest.raises(SeedError) as caught:
         asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=SeedSources(sources.quiz, no_saved, sources.drafts, sources.interview)))
     assert "매칭 평가를 다시 돌려 주세요" in str(caught.value) and "지금 샘플은 그대로예요" in str(caught.value)
+    _assert_old_sample_kept(db_session, old_id)
 
 
 def test_failed_promote_rolls_back_the_old_sample_delete(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """바꿔 끼우기가 옛 샘플을 지운 뒤 실패해도 되돌려져 옛 샘플이 남는다(3차 R3)."""
+    """바꿔 끼우기가 옛 샘플을 지운 뒤 실패해도 되돌려져 옛 샘플이 남는다."""
     from app.services import sample_seed
 
     old_id = _old_sample_with_note(db_session)
@@ -230,7 +232,7 @@ def test_promote_without_staging_account_changes_nothing(db_session: Session) ->
 
 
 def test_cleanup_failure_is_reported_without_hiding_the_cause(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """정리도 실패하면 원래 이유와 함께 알리고, 중단 신호는 그대로 올린다(3차 R3)."""
+    """정리도 실패하면 원래 이유와 함께 알린다(정리 함수는 가짜 — 이 테스트는 문구만 본다)."""
     from app.services import sample_seed
 
     monkeypatch.setattr(sample_seed, "_discard_staging", lambda db: "OperationalError")
@@ -242,7 +244,17 @@ def test_cleanup_failure_is_reported_without_hiding_the_cause(db_session: Sessio
     with pytest.raises(SeedError) as caught:
         asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
     message = str(caught.value)
-    assert "ValueError" in message and "임시 계정 정리도 실패했어요(OperationalError)" in message
+    assert "ValueError" in message and "지금 샘플은 그대로예요" in message
+    assert "임시 계정 정리도 실패했어요(OperationalError)" in message
+
+
+def test_interrupt_is_not_turned_into_seed_error_even_if_cleanup_fails(
+    db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """정리가 실패해도 중단 신호는 SeedError로 바뀌지 않는다(실제 정리 · 데이터 삭제는 test_interrupted_seed_cleans_up_and_reraises가 증명)."""
+    from app.services import sample_seed
+
+    monkeypatch.setattr(sample_seed, "_discard_staging", lambda db: "OperationalError")
 
     async def interrupt(*_args: object, **_kwargs: object) -> None:
         raise KeyboardInterrupt
@@ -263,7 +275,7 @@ def test_discard_staging_reports_its_own_failure(db_session: Session, monkeypatc
 
 
 def test_mismatches_report_counts_that_differ() -> None:
-    """저장 개수가 결과와 다르면 mismatches에 남는다(R3) — 인용이 어느 조각에도 없으면 조각 번호 0(검사가 버림)."""
+    """저장 개수가 결과와 다르면 mismatches에 남는다 — 인용이 어느 조각에도 없으면 조각 번호 0(검사가 버림)."""
     chunks = [SimpleNamespace(id=7, content="다른 글")]
     saved = [{"kind": "ox", "question": "q", "choices": ["O", "X"], "answer_index": 0, "explanation": "e", "quote": "없는 문장"}]
     assert quiz_reply(saved, chunks)["quizzes"][0]["chunk_id"] == 0  # type: ignore[index]

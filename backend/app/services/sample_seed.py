@@ -8,7 +8,7 @@
 - 자소서: 초안 평가처럼 정답지 매칭을 깔고 초안을 다시 들려준 뒤, 역량 줄을 지우고 AI 공고 분석(역량 뽑기 · 매칭)을
   다시 들려준다 — 분석 탭은 AI 결과(리포트 매칭 수치), 초안은 초안 평가와 같은 카드 묶음(사용자 선택 2026-11-18).
 - 새 데이터는 공개되지 않는 임시 계정(google_sub SAMPLE_SEEDING_SUB)에 채우고, 다 채운 뒤 한 commit에서 옛 샘플을
-  지우고(모든 표가 ON DELETE CASCADE) 임시 계정을 샘플로 바꿔 끼우며 하루 AI 상한을 0으로 둔다(F-010 2차 R2 · R3).
+  지우고(모든 표가 ON DELETE CASCADE) 임시 계정을 샘플로 바꿔 끼우며 하루 AI 상한을 0으로 둔다.
   그래서 시드 도중 · 실패 · 강제 종료에도 반쯤 채운 샘플이 공개되지 않고, 옛 샘플은 바꿔 끼우는 순간까지 그대로다.
   채우는 동안의 임시 계정 상한은 넉넉히(60번 넘게 상한 확인을 지나감). 남은 임시 계정은 다음 시드가 처음에 지운다.
 """
@@ -66,7 +66,7 @@ from app.services.quiz_generation import (
 SAMPLE_EMAIL = "sample@didim.local"
 SAMPLE_NAME = "샘플 지원자"
 SAMPLE_DAILY_LIMIT = 10_000  # 임시 계정에 채우는 동안만 — 60번 넘게 상한 확인을 지나간다
-SAMPLE_DAILY_LIMIT_AFTER = 0  # 시드가 끝나면 0 — 읽기 전용 가드에 빈틈이 생겨도 공개 계정으로 AI를 못 부르게(F-010 1차 R2)
+SAMPLE_DAILY_LIMIT_AFTER = 0  # 시드가 끝나면 0 — 읽기 전용 가드에 빈틈이 생겨도 공개 계정으로 AI를 못 부르게
 
 # 요약 파일의 평가 칸 → 시드가 읽는 결과 파일
 SOURCE_KEYS = {"quiz": "quiz", "postings": "postings", "drafts": "drafts_ai", "interview": "interview_ai"}
@@ -334,11 +334,11 @@ async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> S
     except Exception as exc:
         cleanup_error = _discard_staging(db)
         note = f" 임시 계정 정리도 실패했어요({cleanup_error}) — 다음 시드가 지워요." if cleanup_error else ""
-        # 시드가 직접 낸 SeedError는 할 일 안내('매칭 평가를 다시 돌려 주세요' 등)를 그대로 보여 준다(F-010 3차 R3 · R1)
+        # 시드가 직접 낸 SeedError는 할 일 안내('매칭 평가를 다시 돌려 주세요' 등)를 그대로 보여 준다
         reason = str(exc) if isinstance(exc, SeedError) else f"샘플을 넣다가 멈췄어요({type(exc).__name__})."
         raise SeedError(f"{reason} 지금 샘플은 그대로예요.{note}") from exc
     except BaseException:
-        _discard_staging(db)  # 중단 · 취소는 그대로 올린다(F-010 2차 R3)
+        _discard_staging(db)  # 중단 · 취소는 그대로 올린다
         raise
     return report
 

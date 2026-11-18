@@ -174,7 +174,7 @@ def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, size
         # --only로 고른 단계는 'ok'여도 다시 돌려 그 칸을 바꾼다(예: 결과 파일 모양을 바꾼 뒤 매칭만 다시)
         evals = [e for e in evals if str(e.get("key")) not in options.only]
         summary["resumed_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
-        summary["finished_at"] = None  # 이어 하다 또 멈추면 '끝난 회차'로 보이지 않게(F-010 1차 R3)
+        summary["finished_at"] = None  # 이어 하다 또 멈추면 '끝난 회차'로 보이지 않게
     else:
         summary = {
             "version": SUMMARY_VERSION,
@@ -196,7 +196,7 @@ def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, size
         print(f"\n=== [{index}/{len(steps)}] {step.title} ===", flush=True)
         try:
             code, result_path = runner(build_command(step, options))
-        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — 이 단계만 실패로 두고 계속(F-010 1차 R3)
+        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — 이 단계만 실패로 두고 계속
             print(f"{step.title}: 실행하지 못했어요({type(exc).__name__}).", flush=True)
             code, result_path = 1, None
         evals = _ordered([*evals, collect(step, code, result_path)])
@@ -230,12 +230,12 @@ def rescore(path: Path, *, runner: Runner = run_streaming) -> int:
         print(f"\n=== {step.title} 다시 채점 ===", flush=True)
         try:
             code, _ = runner([sys.executable, "-m", f"scripts.{step.module}", "--score", result_file])
-        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — run_all과 같이 그 칸만 실패(F-010 2차 R3)
+        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — run_all과 같이 그 칸만 실패
             print(f"{step.title}: 실행하지 못했어요({type(exc).__name__}).", flush=True)
             code = 1
         rescored = collect(step, code, result_file)
         if rescored["status"] == "failed":
-            # 채점이 실패하면 이전 수치를 지우지 않는다 — 판정을 고친 뒤 다시 돌리면 된다(F-010 1차 R3)
+            # 채점이 실패하면 이전 수치를 지우지 않는다 — 판정을 고친 뒤 다시 돌리면 된다
             print(f"{step.title} 다시 채점 실패: {rescored.get('error')} — 이전 수치를 그대로 둬요.")
             failed = True
             continue
@@ -265,7 +265,7 @@ def print_summary(summary: dict[str, object]) -> None:
     print("\n=== 회차 요약 ===")
     evals = summary.get("evals")
     for entry in evals if isinstance(evals, list) else []:
-        # README · 화면과 같은 표시 규칙(eval_report.format_value — F-010 1차 R1)
+        # README · 화면과 같은 표시 규칙(eval_report.format_value)
         parts = [f"{metric['label']} {format_value(metric, entry['labels_pending'])}" for metric in entry["metrics"]]
         status = "" if entry["status"] == "ok" else f" [{entry['status']}: {entry.get('error') or '중간에 멈춤'}]"
         print(f"- {entry['title']}{status}: " + " · ".join(parts))

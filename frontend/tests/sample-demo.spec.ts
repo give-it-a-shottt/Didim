@@ -46,7 +46,7 @@ test("일반 로그인 세션에는 샘플 알림이 없다", async ({ context, 
 });
 
 test("샘플 데이터가 아직 없으면(503) 체험 대신 안내 문구를 보여 준다", async ({ page }) => {
-  // F-010 1차 리뷰 R3: 시드 전 · 시드 실패 뒤에는 샘플 사용자가 없어 서버가 503을 준다
+  // 시드 전 · 시드 실패 뒤에는 샘플 사용자가 없어 서버가 503을 준다
   await page.route("**/api/demo/session", (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "준비 안 됨" }) }),
   );

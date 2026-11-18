@@ -58,7 +58,7 @@ def get_current_user(
         )
 
     user = get_user_by_id(db, user_id)
-    # 샘플 시드의 임시 계정은 예약 계정 — 어떤 토큰으로도 열리지 않는다(F-010 3차 R2)
+    # 샘플 시드의 임시 계정은 예약 계정 — 어떤 토큰으로도 열리지 않는다
     if user is None or user.google_sub == SAMPLE_SEEDING_SUB:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,7 +66,7 @@ def get_current_user(
         )
 
     # 샘플 표시가 있는 토큰은 샘플 계정이어야 하고, 샘플 계정은 샘플 표시가 있는 토큰으로만 열린다. 시드가 샘플 계정을 다시 만들며
-    # 번호가 다른 사람에게 가는 DB(SQLite 등)에서 옛 샘플 토큰이 그 사람으로 열리지 않게 한다(F-010 1차 R2). 위에서 서명을 이미 확인해
+    # 번호가 다른 사람에게 가는 DB(SQLite 등)에서 옛 샘플 토큰이 그 사람으로 열리지 않게 한다. 위에서 서명을 이미 확인해
     # 설정 오류는 나지 않는다.
     token_is_sample = is_sample_session_token(session_token, settings.session_secret)
     account_is_sample = is_sample_user(user)
@@ -80,7 +80,7 @@ def get_current_user(
 
 
 def set_session_cookie(response: Response, token: str, settings: Settings) -> None:
-    """세션 쿠키 옵션은 여기 한 곳 — 구글 로그인 콜백과 샘플 체험 열기가 같이 쓴다(F-010 1차 R1)."""
+    """세션 쿠키 옵션은 여기 한 곳 — 구글 로그인 콜백과 샘플 체험 열기가 같이 쓴다."""
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,

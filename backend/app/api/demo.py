@@ -5,7 +5,7 @@
 샘플 데이터는 시드 스크립트가 넣는다. 아직 없으면 503으로 알린다.
 
 다른 사이트가 이 주소로 form을 보내 방문자를 몰래 로그아웃시키지 못하게, 브라우저가 붙이는 Sec-Fetch-Site가
-same-origin · none이 아니면 403(F-010 1차 R2). 머리말이 없는 요청(오래된 브라우저 · 테스트 · curl)은 그대로 받는다.
+same-origin · none이 아니면 403. 머리말이 없는 요청(오래된 브라우저 · 테스트 · curl)은 그대로 받는다.
 """
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
