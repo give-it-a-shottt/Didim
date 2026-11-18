@@ -12,8 +12,10 @@
 | GET | /api/health | 서버가 살아 있는지 확인. 로그인 없이 `{"status": "ok"}` | 세팅 | 테스트 통과(2026-11-08) |
 | GET | /api/auth/google/login | 구글 로그인 화면으로 이동(위조 방지 `state` 함께 저장) | F-001 | 테스트 통과(2026-11-09) |
 | GET | /api/auth/google/callback | 구글 로그인 콜백 처리, 계정 확인·생성 후 `httpOnly` 세션 쿠키 발급 → 성공 `/home`, 실패 `/login?error=...` | F-001 | 테스트 통과(2026-11-09) |
-| GET | /api/auth/me | 로그인한 내 정보(`{ id, email, name }`) 반환(200), 비로그인 `401` | F-001 | 테스트 통과(2026-11-09) |
-| POST | /api/auth/logout | 세션 쿠키 삭제(`204`) | F-001 | 테스트 통과(2026-11-09) |
+| GET | /api/auth/me | 로그인한 내 정보(`{ id, email, name, is_sample }`) 반환(200), 비로그인 `401`. `is_sample`은 샘플 체험 계정이면 true(F-010) | F-001 · F-010 | 테스트 통과(2026-11-09 · 2026-11-17) |
+| POST | /api/auth/logout | 세션 쿠키 삭제(`204`). 샘플 세션의 [체험 끝내기]도 이것 | F-001 | 테스트 통과(2026-11-09) |
+| POST | /api/demo/session | 로그인 없이. 샘플 사용자 세션 쿠키를 지금 쿠키 자리에 발급(`204`, 로그인 중이면 로그아웃됨). 샘플 사용자가 없으면 `503`. 샘플 세션은 읽기만 — 쓰기 · AI 호출 · 노션 연결은 미들웨어가 `403` | F-010 | 테스트 통과(2026-11-17) |
+| GET | /api/report | 로그인 없이. 평가 회차 요약(`backend/eval/summary/run-*.json`)을 새 회차부터 최대 10개 `{ runs: [{ run_id, started_at, model, commit, data, evals: [{ key, title, status, labels_pending, metrics: [{ key, label, kind, value }] }] }] }`. 판정 대기 수치는 `value: null`. 모양이 틀린 회차는 건너뜀 | F-010 | 테스트 통과(2026-11-17) |
 | POST | /api/notes/import | 마크다운 파일 가져오기. 요청: multipart `files`(여러 개, 최대 20 · 파일당 1MB · 합계 20MB) + `kind`(`study` 기본 · `project`). 응답 200: `{ summary: { notes, chunks, duplicates, failed }, imported: [{ filename, note_id, title, chunk_count }], duplicates: [{ filename, existing_note_id, existing_title }], failed: [{ filename, reason }] }` — 일부 실패해도 200(실패 이유: 확장자 · 1MB 초과 · UTF-8 아님 · 빈 파일 · 제목만 있음 · 조각 2,000개 초과 · 저장 실패). 오류: 400 파일 없음 · 개수 초과 · 주소에 제어 문자, 401 비로그인 · 쿠키 위조 · 만료(본문을 받기 전), 413 요청 21MB · 파일 합계 20MB 초과(본문을 받기 전 · 받는 중), 422 `kind` 값 틀림 | F-002 | 테스트 통과 · 프록시 거쳐 직접 실행(2026-11-10) |
 | GET | /api/notes | 내 노트 목록(기록 · 복습 홈). 응답 200: `{ total, notes: [{ id, title, kind, created_at, chunk_count, quiz_count }] }` — 최근 올린 것부터 최대 200개(`total`은 전체 개수), 원문은 넣지 않음. 오류: 401 비로그인 | F-004 | 테스트 통과 · 직접 실행(사용자 확인, 2026-11-11) |
 | GET | /api/notes/{note_id} | 노트 상세. 응답 200: `{ id, title, kind, source, created_at, content, chunks: [{ id, position, heading_path, start_offset, end_offset }] }` — 위치는 원문의 파이썬 글자(코드 포인트) 단위. 오류: 401 비로그인, 404 없거나 다른 사용자의 노트 · 번호가 1~2,147,483,647 밖, 422 `note_id`가 숫자 아님 | F-003 | 테스트 통과 · 프록시 거쳐 직접 실행(2026-11-10) |

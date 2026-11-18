@@ -25,6 +25,22 @@
     "p06-ai-service.md": [
       {"kind": "answerable", "text": "Python으로 문제를 해결한 경험을 써 주세요.", "char_limit": 500},
       {"kind": "trap", "text": "LLM API를 활용한 서비스를 만들고 프롬프트를 평가해 본 경험을 써 주세요.", "char_limit": 600}
+    ],
+    "p07-java-backend.md": [
+      {"kind": "answerable", "text": "동시에 많은 요청이 몰리는 상황에서 데이터 정합성을 지킨 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "MSA 환경에서 서비스 간 장애 전파를 막은 경험을 써 주세요.", "char_limit": 500}
+    ],
+    "p08-frontend-a11y.md": [
+      {"kind": "answerable", "text": "사용자 접근성이나 사용성을 높이려고 화면을 개선한 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "React Native로 앱을 개발해 출시한 경험과 성과를 써 주세요.", "char_limit": 500}
+    ],
+    "p09-startup-fullstack.md": [
+      {"kind": "answerable", "text": "팀을 이끌거나 다른 직군과 협업하며 문제를 해결한 경험을 써 주세요.", "char_limit": 600},
+      {"kind": "trap", "text": "GraphQL API를 설계해 프론트엔드와 협업한 경험을 써 주세요.", "char_limit": 500}
+    ],
+    "p10-platform-backend.md": [
+      {"kind": "answerable", "text": "느린 처리를 비동기로 바꾸거나 동시 요청 문제를 해결한 경험을 써 주세요.", "char_limit": 500},
+      {"kind": "trap", "text": "WebSocket으로 실시간 기능을 만들고 운영한 경험을 써 주세요.", "char_limit": 500}
     ]
   }
 }

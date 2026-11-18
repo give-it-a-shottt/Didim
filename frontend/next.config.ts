@@ -32,6 +32,12 @@ const nextConfig: NextConfig = {
         destination: "/applications/:id/analysis",
         permanent: false,
       },
+      // 평가 리포트는 회원 화면(/settings/report)에서 공개 페이지로 옮겼다(F-010, D-029)
+      {
+        source: "/settings/report",
+        destination: "/report",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

@@ -117,6 +117,7 @@ Admin_Docs/
 | [D-026](decisions/D-026-pretendard-only.md) | 글꼴은 Pretendard 하나(내 기록 원문의 명조를 없앰 — 인용은 줄 · 낫표 · 출처로 표시) | [통과] |
 | [D-027](decisions/D-027-nvidia-free-api-main.md) | 메인 AI를 NVIDIA 무료 API로(메인 Nemotron 3 Ultra · 예비 Nemotron 3.5 Bolt, .env로 고름, EXAONE은 비교용) | [통과] |
 | [D-028](decisions/D-028-added-fact-check.md) | 자소서 근거 검사가 '덧붙인 사실'도 의심(빈 칸을 '기록 없음'으로 알림 + 규칙 R1 · R3 → '확인 필요' 표시, AI 추가 호출 없음) | [통과] 만듦(2026-11-16) |
+| [D-029](decisions/D-029-sample-session-public-report.md) | 샘플 체험은 샘플 계정 세션으로 기존 화면을 둘러봄(쓰기 · AI 호출은 서버가 막음), 샘플 · 평가 리포트는 로그인 없이 공개(리포트 `/report`) | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |

@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Icon } from "@/components/icon";
-import { FOCUS_RING } from "@/lib/ui-classes";
+import { FOCUS_RING, TEXT_BUTTON } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "로그인",
@@ -93,6 +94,11 @@ export default function Aut01001Page({
           >
             Google로 계속하기
           </a>
+
+          {/* 샘플 체험 입구(DEM_01_001, D-029) — 로그인 없이 가상 지원자 기록으로 둘러보기 */}
+          <Link href="/demo" className={`self-center ${TEXT_BUTTON}`}>
+            로그인 없이 샘플로 둘러보기
+          </Link>
 
           <div className="flex flex-col gap-2 rounded-card border border-line-light bg-bg-light p-4">
             <h2 className="text-body-2 font-semibold text-text-main">

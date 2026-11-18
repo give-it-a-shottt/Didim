@@ -21,6 +21,7 @@ from app.services.posting_evaluation import (
     evaluate_posting,
     key_spans,
     parse_posting_key,
+    result_to_dict,
     score_posting,
     summarize,
 )
@@ -141,6 +142,13 @@ def test_evaluate_posting_runs_the_real_flow_and_retries(db_session: Session, tm
     assert k8s.found and k8s.matched == []
     assert result.usage.calls == 3
     assert db_session.scalar(select(func.count()).select_from(Card)) == 1
+    # 저장된 역량 · 매칭 줄을 결과에 남긴다 — 샘플 시드가 AI 답으로 다시 들려줄 수 있게(F-010)
+    assert result.saved == [
+        {"name": "React", "kind": "required", "quote": "React 화면 개발 경험",
+         "matches": [{"card": "e1", "slot": "action", "quote": "React.memo로 카드를 감쌌다.", "reason": "React 경험이에요."}]},
+        {"name": "쿠버네티스", "kind": "preferred", "quote": "쿠버네티스 운영 경험", "matches": []},
+    ]
+    assert result_to_dict(result)["saved"] == result.saved
 
 
 # --- 평가의 실패 경로(F-007 3차 R3): 실패한 공고가 점수에 어떻게 들어가는지 · 선점이 풀리는지 고정 ---

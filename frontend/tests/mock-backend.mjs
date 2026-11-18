@@ -1088,6 +1088,28 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // 평가 리포트(F-010): 로그인 없이. 회차 두 개 — 최근 회차에는 판정 대기 · 실패 칸이 있다
+  if (req.method === "GET" && req.url === "/api/report") {
+    const metric = (key, label, kind, value) => ({ key, label, kind, value });
+    const run = (runId, model, quizDrop, pending) => ({
+      run_id: runId, started_at: `${runId.slice(0, 4)}-${runId.slice(4, 6)}-${runId.slice(6, 8)}T10:00:00+09:00`,
+      finished_at: null, provider: "nvidia", model, commit: "abc1234",
+      data: { experiences: 20, postings: 10, draft_questions: 20 },
+      evals: [
+        { key: "quiz", title: "퀴즈", status: "ok", error: null, model, labels_pending: 0,
+          metrics: [metric("drop_rate", "버려진 문제 비율", "rate", quizDrop)] },
+        { key: "drafts_ai", title: "자소서 · AI 초안", status: "ok", error: null, model, labels_pending: pending,
+          metrics: [metric("warn_rate", "지어낸 문장 경고율", "rate", pending ? null : 0.8),
+            metric("unsupported_per_draft", "초안당 근거 없는 문장", "per", 0.58)] },
+        { key: "cards", title: "경험 카드", status: runId.startsWith("20261117") ? "failed" : "ok", error: null, model,
+          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("found_rate", "심은 경험 찾은 비율", "rate", 0.5)] },
+      ],
+    });
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ runs: [run("20261117-090000", "ultra", 0.02, 3), run("20261116-090000", "exaone", 0.1, 0)] }));
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/api/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok" }));
@@ -1103,6 +1125,8 @@ const server = http.createServer((req, res) => {
           id: 1,
           email: "didim@example.com",
           name: "이디딤",
+          // 샘플 체험 세션(F-010, D-029): 정상 토큰 + "-sample" — 다른 가짜 응답은 로그인으로 그대로 본다
+          is_sample: cookieHeader.includes(`didim_session=${VALID_TOKEN}-sample`),
         }),
       );
       return;
@@ -1141,6 +1165,13 @@ const server = http.createServer((req, res) => {
         }),
       );
     });
+    return;
+  }
+
+  // 샘플 체험 열기(F-010): 샘플 세션 쿠키로 바꿔 끼운다
+  if (req.method === "POST" && req.url === "/api/demo/session") {
+    res.writeHead(204, { "Set-Cookie": `didim_session=${VALID_TOKEN}-sample; Path=/; HttpOnly; SameSite=Lax` });
+    res.end();
     return;
   }
 

@@ -2,7 +2,7 @@
 (F-006 완료 기준 7, D-005).
 
 backend 폴더에서:
-    uv run --env-file .env python -m scripts.card_eval exaone             # 경험 노트 8개 + 경험 없는 노트 10개
+    uv run --env-file .env python -m scripts.card_eval exaone             # 경험 노트 14개 + 경험 없는 노트 10개
     uv run --env-file .env python -m scripts.card_eval exaone --limit 1   # 앞에서부터 노트 1개로 먼저 시험
     (퀴즈 평가와 같이 호출 사이 기본 20초, 500 · 429면 60초 쉬고 2번까지 다시 — 느려도 끝까지)
 

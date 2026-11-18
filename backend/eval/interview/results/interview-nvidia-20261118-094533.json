@@ -1,0 +1,1288 @@
+{
+  "mode": "ai",
+  "provider": "nvidia",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "complete": true,
+  "summary": {
+    "cards": 20,
+    "cards_written": 20,
+    "received": 82,
+    "saved": 81,
+    "premise": 0,
+    "premise_rate": 0.0,
+    "premise_per_card": 0.0,
+    "labels_pending": 0,
+    "premise_by_rule": 1,
+    "drop_reasons": {
+      "quote_not_found": 1
+    },
+    "failures": 0,
+    "retries": 0,
+    "seconds_avg": 15.1,
+    "seconds_max": 39.9,
+    "usage": {
+      "calls": 20,
+      "prompt_tokens": 13877,
+      "completion_tokens": 19344
+    }
+  },
+  "rate_limit_waits": [],
+  "cards": [
+    {
+      "card": "c01-1",
+      "title": "목록 API가 느려진 문제",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 10.0,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 745,
+        "completion_tokens": 808
+      },
+      "questions": [
+        {
+          "id": "c01-1-q1",
+          "question": "시연 일정이 촉박한 상황에서 성능 문제를 처음 인지하게 된 계기가 무엇이었나요?",
+          "slot": "situation",
+          "quote": "북마크가 300개쯤 쌓인 테스트 계정으로 목록 화면을 열면 3초 넘게 걸렸다. 친구들에게 시연하기로 한 날이 이틀 남아서 그 전에 고쳐야 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c01-1-q2",
+          "question": "SQL 로그를 통해 N+1 문제가 발생하고 있음을 어떻게 확인하셨나요?",
+          "slot": "action",
+          "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c01-1-q3",
+          "question": "selectinload를 적용한 후 쿼리 수를 검증하는 테스트를 어떻게 구성하셨나요?",
+          "slot": "action",
+          "quote": "SQLAlchemy 관계에 `selectinload`를 붙여 태그를 한 번에 가져오도록 바꿨고, 같은 실수를 막으려고 쿼리 수를 세는 테스트를 하나 추가했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c01-1-q4",
+          "question": "개선 후 쿼리 수와 응답 시간이 어떻게 변화했는지 확인하신 방법은 무엇인가요?",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c02-1",
+      "title": "내가 맡은 일: 상품 목록 렌더링 개선",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 14.7,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 758,
+        "completion_tokens": 1032
+      },
+      "questions": [
+        {
+          "id": "c02-1-q1",
+          "question": "필터를 바꿀 때마다 페이지가 버벅였던 상황을 더 자세히 설명해 주실 수 있나요?",
+          "slot": "situation",
+          "quote": "스터디에서 같이 만드는 쇼핑몰 연습 앱에서 상품 목록 페이지가 필터를 바꿀 때마다 버벅였다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-1-q2",
+          "question": "React DevTools Profiler로 녹화했을 때 어떤 부분을 보고 120개 카드 전부 리렌더링된다는 걸 확인하셨나요?",
+          "slot": "action",
+          "quote": "React DevTools Profiler로 녹화해 보니 필터 하나를 바꿔도 상품 카드 120개가 전부 다시 그려지고 있었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-1-q3",
+          "question": "`React.memo`와 `useCallback`을 적용하신 구체적인 코드 변경 과정을 말씀해 주시겠어요?",
+          "slot": "action",
+          "quote": "카드 컴포넌트를 `React.memo`로 감싸고 핸들러를 `useCallback`으로 고정했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-1-q4",
+          "question": "필터 변경 시 렌더링 시간이 180ms에서 40ms로 줄어든 수치를 어떻게 검증하셨나요?",
+          "slot": "result",
+          "quote": "Profiler 기준으로 필터 변경 한 번의 렌더링 시간이 180ms에서 40ms로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c02-2",
+      "title": "스터디 발표 자료 정리",
+      "fields_sent": 2,
+      "received": 5,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 27.5,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 642,
+        "completion_tokens": 1086
+      },
+      "questions": [
+        {
+          "id": "c02-2-q1",
+          "question": "자료가 여러 플랫폼에 흩어져 있었을 때, 어떤 기준으로 어떤 자료가 가장 찾기 힘들었는지 궁금합니다.",
+          "slot": "situation",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-2-q2",
+          "question": "자료가 분산된 상황에서 팀원들이 겪은 구체적인 불편함은 무엇이었나요?",
+          "slot": "situation",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-2-q3",
+          "question": "깃허브 저장소로 자료를 모으자고 제안하게 된 계기는 무엇이었나요?",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞으로는 발표자가 PR로 올리는 규칙을 정했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-2-q4",
+          "question": "주차별 폴더와 README 목차를 설계할 때 어떤 점을 고려했는지 설명해 주시겠어요?",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞으로는 발표자가 PR로 올리는 규칙을 정했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c02-2-q5",
+          "question": "자료 14개를 직접 옮기는 과정에서 발생한 어려움과 이를 어떻게 해결했는지 듣고 싶습니다.",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞으로는 발표자가 PR로 올리는 규칙을 정했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c03-1",
+      "title": "로그인이 30분마다 풀리던 버그",
+      "fields_sent": 2,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 16.6,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 720,
+        "completion_tokens": 1381
+      },
+      "questions": [
+        {
+          "id": "c03-1-q1",
+          "question": "QA 시트에 3건 올라온 제보가 어떤 경로로 접수되었고, 당시 인증 부분을 어떻게 인지하게 되었나요?",
+          "slot": "situation",
+          "quote": "4명이 같이 만드는 스터디 모집 앱에서, 글을 쓰다가 30분쯤 지나면 로그인이 풀려 작성 중인 글이 날아간다는 제보가 QA 시트에 3건 올라왔다. 인증 쪽은 내가 맡은 부분이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c03-1-q2",
+          "question": "작성 중인 글이 날아간다는 현상이 사용자 경험에 어떤 영향을 주었는지, 그리고 이를 확인하기 위해 어떤 추가 조사를 했는지 궁금합니다.",
+          "slot": "situation",
+          "quote": "4명이 같이 만드는 스터디 모집 앱에서, 글을 쓰다가 30분쯤 지나면 로그인이 풀려 작성 중인 글이 날아간다는 제보가 QA 시트에 3건 올라왔다. 인증 쪽은 내가 맡은 부분이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c03-1-q3",
+          "question": "axios 인터셉터에 리프레시 로직을 추가할 때, 401 응답을 감지하고 토큰을 갱신한 뒤 원래 요청을 재시도하는 과정에서 고려한 예외 상황은 무엇이었나요?",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다. 인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다. 리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c03-1-q4",
+          "question": "리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다고 하셨는데, 이 공유 메커니즘을 구현하기 위해 어떤 동기화 기법을 사용했는지 설명해 주실 수 있나요?",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다. 인터셉터에 401이면 토큰을 다시 받고 원래 요청을 한 번 더 보내는 로직을 넣었다. 리프레시 요청이 동시에 여러 번 나가지 않도록 진행 중인 요청 하나를 공유하게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c04-1",
+      "title": "회비 정산 자동화",
+      "fields_sent": 3,
+      "received": 5,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 14.2,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 724,
+        "completion_tokens": 948
+      },
+      "questions": [
+        {
+          "id": "c04-1-q1",
+          "question": "매달 통장 거래 내역과 입금 내역을 손으로 대조하는 과정에서 어떤 점이 가장 힘들었나요?",
+          "slot": "situation",
+          "quote": "사진 동아리 총무를 맡았을 때 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-1-q2",
+          "question": "미납자를 잘못 안내했던 두 차례 경험이 이후 업무 방식에 어떤 영향을 주었나요?",
+          "slot": "situation",
+          "quote": "부원이 45명이라 한 번 정산에 3시간쯤 걸렸고, 두 번은 미납자를 잘못 안내해서 사과한 적도 있다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-1-q3",
+          "question": "파이썬 스크립트를 작성할 때 이름과 입금액으로 매칭하는 로직을 어떻게 설계했나요?",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-1-q4",
+          "question": "이름이 겹치는 부원에게 학번 끝 두 자리를 붙여달라고 공지한 배경은 무엇이었나요?",
+          "slot": "action",
+          "quote": "이름이 겹치는 부원은 입금자명 뒤에 학번 끝 두 자리를 붙여 달라고 공지했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-1-q5",
+          "question": "정산 시간이 10분으로 단축된 후, 남은 임기 동안 미납 안내 실수가 없었던 비결은 무엇이라고 생각하나요?",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c04-2",
+      "title": "신입 부원 안내 문서",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 8.4,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 657,
+        "completion_tokens": 740
+      },
+      "questions": [
+        {
+          "id": "c04-2-q1",
+          "question": "신입 부원들이 매 학기 같은 질문을 반복하게 된 구체적인 계기가 무엇이었나요?",
+          "slot": "situation",
+          "quote": "매 학기 신입 부원이 들어오면 장비 대여 방법, 출사 일정, 회비 규칙을 단톡방에 같은 질문으로 계속 물어봤다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-2-q2",
+          "question": "자주 묻는 질문 20개를 어떻게 선정하고 정리했는지 과정을 설명해 주시겠습니까?",
+          "slot": "action",
+          "quote": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고, 가입 확정 메시지에 링크를 넣었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-2-q3",
+          "question": "노션 안내 페이지를 만들 때 어떤 구조나 카테고리로 정보를 배치했나요?",
+          "slot": "action",
+          "quote": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고, 가입 확정 메시지에 링크를 넣었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c04-2-q4",
+          "question": "질문 수가 줄어든 것을 어떻게 확인했고, 어떤 지표로 눈에 띄게 줄었다고 판단했나요?",
+          "slot": "result",
+          "quote": "다음 학기에는 단톡방에 올라오는 같은 질문이 눈에 띄게 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c05-1",
+      "title": "하루 한 문제 습관",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 15.4,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 690,
+        "completion_tokens": 1011
+      },
+      "questions": [
+        {
+          "id": "c05-1-q1",
+          "question": "그 당시 문제를 읽고 어디서부터 시작해야 할지 막막했던 구체적인 순간을 더 자세히 설명해 주시겠어요?",
+          "slot": "situation",
+          "quote": "8월에 처음 본 코딩테스트에서 2문제 중 하나도 못 풀었다. 문제를 읽고 어디서부터 손대야 할지 모르는 상태였다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c05-1-q2",
+          "question": "하루 한 문제씩 풀기로 한 규칙을 세우게 된 계기와 그 규칙을 지키기 위해 어떤 자기 관리 방법을 쓰셨나요?",
+          "slot": "action",
+          "quote": "9월 1일부터 프로그래머스 문제를 하루 한 문제씩 풀고, 못 푼 문제는 다른 사람 풀이를 본 뒤 다음 날 빈 화면에서 다시 짜 보는 규칙을 세웠다. 풀이마다 왜 이 자료구조를 골랐는지 세 줄로 적었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c05-1-q3",
+          "question": "풀이를 보고 다음 날 빈 화면에서 다시 짜 보는 과정에서, 자료구조 선택 이유를 세 줄로 정리하신 것이 문제 해결 능력에 어떤 영향을 주었는지 궁금합니다.",
+          "slot": "action",
+          "quote": "9월 1일부터 프로그래머스 문제를 하루 한 문제씩 풀고, 못 푼 문제는 다른 사람 풀이를 본 뒤 다음 날 빈 화면에서 다시 짜 보는 규칙을 세웠다. 풀이마다 왜 이 자료구조를 골랐는지 세 줄로 적었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c05-1-q4",
+          "question": "60일 연속으로 문제를 풀며 느낀 가장 큰 변화나 배운 점을 모의 테스트 결과와 연결해 말씀해 주실 수 있나요?",
+          "slot": "result",
+          "quote": "60일 동안 하루도 빠지지 않았고, 10월 말 모의 테스트에서는 3문제 중 2문제를 풀었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c06-1",
+      "title": "도커 이미지 크기 줄이기",
+      "fields_sent": 3,
+      "received": 5,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 12.6,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 697,
+        "completion_tokens": 928
+      },
+      "questions": [
+        {
+          "id": "c06-1-q1",
+          "question": "이미지 크기가 1.2GB로 커진 원인을 어떻게 파악하셨나요?",
+          "slot": "situation",
+          "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-1-q2",
+          "question": "python:3.12-slim으로 베이스 이미지를 변경했을 때 어떤 점을 고려하셨나요?",
+          "slot": "action",
+          "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-1-q3",
+          "question": "멀티 스테이지 빌드를 도입하면서 빌드 도구를 첫 단계에서만 사용하도록 구성한 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-1-q4",
+          "question": ".dockerignore에 테스트 폴더와 .git을 추가한 것이 이미지 크기 감소에 얼마나 기여했나요?",
+          "slot": "action",
+          "quote": ".dockerignore에 테스트 폴더와 .git을 넣었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-1-q5",
+          "question": "이미지 크기가 210MB로 줄어든 후 배포 파이프라인에서 어떤 추가 최적화를 고려했나요?",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c06-2",
+      "title": "GitHub Actions 빌드 시간",
+      "fields_sent": 2,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 12.5,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 614,
+        "completion_tokens": 777
+      },
+      "questions": [
+        {
+          "id": "c06-2-q1",
+          "question": "CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다는 상황에서, 어떤 부분이 가장 큰 병목이라고 생각했나요?",
+          "slot": "situation",
+          "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-2-q2",
+          "question": "리뷰 요청 전에 CI가 끝나길 기다리는 시간이 아까웠다고 하셨는데, 그 대기 시간이 팀 생산성에 어떤 영향을 주었나요?",
+          "slot": "situation",
+          "quote": "리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-2-q3",
+          "question": "actions/cache를 도입해 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꾼 계기는 무엇이었나요?",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c06-2-q4",
+          "question": "캐시 키를 잠금 파일 해시로 설정하면서 예상치 못한 캐시 미스나 충돌을 어떻게 방지했나요?",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c07-1",
+      "title": "날씨 API 연동 담당",
+      "fields_sent": 2,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 39.9,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 671,
+        "completion_tokens": 1111
+      },
+      "questions": [
+        {
+          "id": "c07-1-q1",
+          "question": "팀이 날씨에 맞춰 옷차림을 추천하는 웹앱을 만들게 된 배경은 무엇이었나요?",
+          "slot": "situation",
+          "quote": "우리 팀은 날씨에 맞춰 옷차림을 추천하는 웹앱을 만들었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-1-q2",
+          "question": "기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았을 때, 어떤 점을 가장 먼저 고려했나요?",
+          "slot": "situation",
+          "quote": "나는 기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-1-q3",
+          "question": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다고 하셨는데, 공식대로 구현하면서 겪은 어려움은 무엇이었나요?",
+          "slot": "action",
+          "quote": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-1-q4",
+          "question": "응답이 느릴 때를 대비해 마지막으로 받은 예보를 10분 동안 저장해 두고 그 값을 먼저 보여 줬다고 하셨는데, 캐시 만료 시간인 10분을 정한 기준은 무엇이었나요?",
+          "slot": "action",
+          "quote": "응답이 느릴 때를 대비해 마지막으로 받은 예보를 10분 동안 저장해 두고 그 값을 먼저 보여 줬다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c07-2",
+      "title": "시연 실패 대비",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 9.3,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 679,
+        "completion_tokens": 739
+      },
+      "questions": [
+        {
+          "id": "c07-2-q1",
+          "question": "리허설 중 와이파이 장애가 발생했을 때 어떤 점이 가장 큰 위험으로 느껴졌나요?",
+          "slot": "situation",
+          "quote": "발표 전날 밤 리허설에서 학교 와이파이가 끊겨 API 호출이 모두 실패했다. 본 발표에서도 같은 일이 생기면 화면이 텅 비어 버릴 상황이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-2-q2",
+          "question": "JSON 파일로 저장한 API 응답을 시연 모드에 연결하는 과정에서 어떤 어려움이 있었나요?",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-2-q3",
+          "question": "새벽 3시까지 시연 모드를 구현하면서 팀원들과 어떻게 협업했나요?",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c07-2-q4",
+          "question": "실제 발표 중 와이파이가 끊겼을 때 시연 모드로 전환한 기준이나 판단 과정은 어땠나요?",
+          "slot": "result",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c08-1",
+      "title": "오늘 한 일",
+      "fields_sent": 1,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 12.1,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 630,
+        "completion_tokens": 764
+      },
+      "questions": [
+        {
+          "id": "c08-1-q1",
+          "question": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았을 때, 가장 먼저 어떤 점을 확인하셨나요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c08-1-q2",
+          "question": "remark-gfm 플러그인을 빼먹어서 표 문법이 그냥 글자로 나오고 있었다는 사실을 어떻게 파악하셨나요?",
+          "slot": "situation",
+          "quote": "확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그냥 글자로 나오고 있었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c08-1-q3",
+          "question": "플러그인을 추가한 후 예시 노트 3개로 화면을 확인하신 기준이나 방법은 무엇이었나요?",
+          "slot": "situation",
+          "quote": "플러그인을 추가하고 표가 들어간 예시 노트 3개로 화면을 확인한 뒤 다시 배포했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c08-1-q4",
+          "question": "친구에게 고쳤다고 답장하신 뒤 추가로 확인하거나 피드백을 받으신 부분이 있으신가요?",
+          "slot": "situation",
+          "quote": "친구에게 고쳤다고 답장했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c09-1",
+      "title": "쿠폰이 중복 발급되던 문제",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 24.8,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 761,
+        "completion_tokens": 1593
+      },
+      "questions": [
+        {
+          "id": "c09-1-q1",
+          "question": "이벤트 준비 당시 100장 한정 선착순 쿠폰을 설계하실 때 동시 요청이 몰릴 경우를 어떻게 고려하셨나요?",
+          "slot": "situation",
+          "quote": "팀 프로젝트 쇼핑몰에서 100장 한정 선착순 쿠폰 이벤트를 준비했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c09-1-q2",
+          "question": "Redisson 분산 락을 도입하신 이유와 락 획득 대기 시간을 0.5초로 정한 기준이 궁금합니다.",
+          "slot": "action",
+          "quote": "Spring 서비스에서 쿠폰 수량을 줄이는 부분을 Redisson 분산 락으로 감싸고, 락을 얻지 못한 요청은 0.5초까지만 기다린 뒤 \"잠시 후 다시 시도해 주세요\" 응답을 주게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c09-1-q3",
+          "question": "유니크 제약을 (쿠폰 ID, 사용자 ID)에 걸으신 배경과 이로 인해 어떤 추가적인 검증이 필요했는지 설명해 주시겠어요?",
+          "slot": "action",
+          "quote": "Spring 서비스에서 쿠폰 수량을 줄이는 부분을 Redisson 분산 락으로 감싸고, 락을 얻지 못한 요청은 0.5초까지만 기다린 뒤 \"잠시 후 다시 시도해 주세요\" 응답을 주게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c09-1-q4",
+          "question": "부하 테스트 재실행 후 정확히 100장만 발급되고 중복 발급이 0건이었다는 결과를 어떻게 검증하셨나요?",
+          "slot": "result",
+          "quote": "같은 부하 테스트를 다시 돌리자 정확히 100장만 발급됐고, 한 사용자에게 두 번 발급된 경우는 0건이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c10-1",
+      "title": "상품 상세 화면 접근성 개선",
+      "fields_sent": 3,
+      "received": 5,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 8.8,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 729,
+        "completion_tokens": 659
+      },
+      "questions": [
+        {
+          "id": "c10-1-q1",
+          "question": "스터디에서 접근성 점검을 하게 된 계기나 목표는 무엇이었나요?",
+          "slot": "situation",
+          "quote": "스터디에서 각자 맡은 화면을 접근성 기준으로 점검했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-1-q2",
+          "question": "키보드만으로는 옵션 선택 버튼에 들어갈 수 없었던 구체적인 원인을 어떻게 파악하셨나요?",
+          "slot": "situation",
+          "quote": "키보드만으로는 옵션 선택 버튼에 들어갈 수 없었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-1-q3",
+          "question": "div로 만든 옵션 버튼을 button 요소로 바꾸면서 포커스 관리나 키보드 이벤트 처리는 어떻게 하셨나요?",
+          "slot": "action",
+          "quote": "div로 만든 옵션 버튼을 button 요소로 바꾸고, 상품 이미지에 대체 텍스트를 넣고, 수량 입력 칸에 label을 연결했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-1-q4",
+          "question": "스크린리더(NVDA)로 읽어 보며 읽는 순서가 어색한 곳을 어떤 기준으로 판단해 고치셨나요?",
+          "slot": "action",
+          "quote": "스크린리더(NVDA)로 화면을 처음부터 끝까지 읽어 보며 읽는 순서가 어색한 곳을 고쳤다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-1-q5",
+          "question": "접근성 점수 96점 달성 후에도 남은 4점은 어떤 항목에서 감점됐는지 확인해 보셨나요?",
+          "slot": "result",
+          "quote": "접근성 점수가 58점에서 96점이 됐고, 키보드만으로 옵션 선택부터 장바구니 담기까지 할 수 있게 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": "premise",
+          "rule_tokens": [
+            "4"
+          ],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c10-2",
+      "title": "모바일 레이아웃 정리",
+      "fields_sent": 2,
+      "received": 3,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 9.8,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 630,
+        "completion_tokens": 639
+      },
+      "questions": [
+        {
+          "id": "c10-2-q1",
+          "question": "가격과 버튼이 겹치고 가로 스크롤이 생겼던 상황을 처음 발견했을 때 어떤 기준으로 문제의 원인을 파악하셨나요?",
+          "slot": "situation",
+          "quote": "같은 화면을 폭 360px 휴대폰에서 열면 가격과 버튼이 겹치고 가로 스크롤이 생겼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-2-q2",
+          "question": "고정 너비 영역을 flex와 미디어 쿼리로 변경하신 구체적인 결정 과정을 설명해 주실 수 있나요?",
+          "slot": "action",
+          "quote": "고정 너비로 잡혀 있던 영역을 flex와 미디어 쿼리로 바꾸고, 좁은 화면에서는 구매 버튼을 화면 아래에 붙이는 배치로 나눴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c10-2-q3",
+          "question": "좁은 화면에서 구매 버튼을 화면 아래에 고정하는 배치로 나눈 이유가 무엇인지, 사용성 테스트나 지표가 있었는지 궁금합니다.",
+          "slot": "action",
+          "quote": "고정 너비로 잡혀 있던 영역을 flex와 미디어 쿼리로 바꾸고, 좁은 화면에서는 구매 버튼을 화면 아래에 붙이는 배치로 나눴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c11-1",
+      "title": "팀 프로젝트에 Jest 테스트 도입",
+      "fields_sent": 3,
+      "received": 3,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 14.9,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 716,
+        "completion_tokens": 1071
+      },
+      "questions": [
+        {
+          "id": "c11-1-q1",
+          "question": "당시 테스트가 전혀 없어서 수동 확인을 해야 했던 상황에서, 팀원들과 어떤 방식으로 문제의 심각성을 공감했나요?",
+          "slot": "situation",
+          "quote": "4명이 함께 만드는 일정 공유 웹앱에 테스트가 하나도 없어서, 기능을 고칠 때마다 다른 화면이 깨졌는지 손으로 눌러 봐야 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c11-1-q2",
+          "question": "자주 깨지던 함수부터 단위 테스트를 작성하게 된 기준은 무엇이었나요?",
+          "slot": "action",
+          "quote": "날짜 계산과 반복 일정 만들기처럼 자주 깨지던 함수부터 Jest 단위 테스트를 붙였다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c11-1-q3",
+          "question": "커버리지가 64%까지 오른 후에도 여전히 테스트가 없는 영역이 있는데, 그 부분을 어떻게 우선순위를 정해 보완할 계획인가요?",
+          "slot": "result",
+          "quote": "두 달 동안 테스트 커버리지가 0%에서 64%가 됐고, 배포한 뒤에 발견된 오류는 한 달 6건에서 1건으로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c12-1",
+      "title": "업로드 이미지 썸네일 생성",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 9.3,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 752,
+        "completion_tokens": 974
+      },
+      "questions": [
+        {
+          "id": "c12-1-q1",
+          "question": "원본 이미지를 그대로 저장하고 목록에서도 원본을 불러오게 된 초기 설계 의도가 무엇이었나요?",
+          "slot": "situation",
+          "quote": "중고거래 사이드 프로젝트에서 사용자가 올린 사진을 원본 그대로 저장하고, 목록 화면에서도 원본을 불러왔다. 사진 한 장이 평균 4MB라 목록 화면 하나에 40MB 가까이 받아야 했고, 서버 저장 공간도 한 달 만에 절반이 찼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c12-1-q2",
+          "question": "서버 저장 공간이 한 달 만에 절반이 차는 상황을 인지한 시점과 대응 과정은 어땠나요?",
+          "slot": "situation",
+          "quote": "중고거래 사이드 프로젝트에서 사용자가 올린 사진을 원본 그대로 저장하고, 목록 화면에서도 원본을 불러왔다. 사진 한 장이 평균 4MB라 목록 화면 하나에 40MB 가까이 받아야 했고, 서버 저장 공간도 한 달 만에 절반이 찼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c12-1-q3",
+          "question": "sharp를 이용해 1280px 본문용과 320px 썸네일을 WebP로 변환하기로 결정한 기준이나 고려사항은 무엇이었나요?",
+          "slot": "action",
+          "quote": "Node.js 서버에서 업로드를 받을 때 sharp로 긴 변이 1280px인 본문용 이미지와 320px 썸네일을 WebP로 만들어 저장하고, 원본은 저장하지 않게 바꿨다. 목록 화면은 썸네일만 불러오게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c12-1-q4",
+          "question": "목록 화면 다운로드 용량이 40MB에서 1.5MB로 줄어든 수치를 어떻게 검증했나요?",
+          "slot": "result",
+          "quote": "목록 화면에서 받는 용량이 40MB에서 1.5MB로 줄었고, 사진 한 장의 저장 용량도 평균 4MB에서 350KB가 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c13-1",
+      "title": "메일 발송을 메시지 큐로 분리",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 14.0,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 694,
+        "completion_tokens": 1085
+      },
+      "questions": [
+        {
+          "id": "c13-1-q1",
+          "question": "메일 서버가 느린 날에는 10초를 넘기기도 했다고 하셨는데, 당시 지연 원인을 어떻게 파악하셨나요?",
+          "slot": "situation",
+          "quote": "메일 서버가 느린 날에는 10초를 넘기기도 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c13-1-q2",
+          "question": "신청 저장까지만 요청 안에서 처리하고, 메일 발송은 RabbitMQ 큐에 메시지로 넣은 뒤 따로 도는 소비자가 보내게 바꿨다고 하셨는데, 큐에 메시지를 넣는 과정에서 어떤 예외 처리를 고려하셨나요?",
+          "slot": "action",
+          "quote": "신청 저장까지만 요청 안에서 처리하고, 메일 발송은 RabbitMQ 큐에 메시지로 넣은 뒤 따로 도는 소비자가 보내게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c13-1-q3",
+          "question": "메일 발송을 별도 소비자에게 위임하면서, 메시지 큐의 신뢰성(예: 메시지 유실 방지)을 어떻게 보장하셨나요?",
+          "slot": "action",
+          "quote": "신청 저장까지만 요청 안에서 처리하고, 메일 발송은 RabbitMQ 큐에 메시지로 넣은 뒤 따로 도는 소비자가 보내게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c13-1-q4",
+          "question": "신청 응답 시간이 평균 3.2초에서 0.3초로 줄었다고 하셨는데, 이 수치를 측정하기 위해 어떤 모니터링 도구나 방법을 사용하셨나요?",
+          "slot": "result",
+          "quote": "신청 응답 시간이 평균 3.2초에서 0.3초로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c14-1",
+      "title": "팀장으로 일정 관리와 의견 조율",
+      "fields_sent": 2,
+      "received": 4,
+      "drop_reasons": {
+        "quote_not_found": 1
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 15.8,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 677,
+        "completion_tokens": 1247
+      },
+      "questions": [
+        {
+          "id": "c14-1-q1",
+          "question": "중간 발표 2주 전까지 기능의 절반이 끝나지 않은 상황을 처음 어떻게 파악하셨나요?",
+          "slot": "situation",
+          "quote": "중간 발표 2주 전까지 기능의 절반이 끝나지 않았고",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c14-1-q2",
+          "question": "프론트엔드와 백엔드 담당이 API 모양을 두고 사흘째 의견이 갈렸던 구체적인 갈등 포인트는 무엇이었나요?",
+          "slot": "situation",
+          "quote": "프론트엔드와 백엔드 담당이 API 모양을 두고 사흘째 의견이 갈려 있었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c14-1-q3",
+          "question": "기능을 꼭 필요한 것과 나중에 할 것으로 나누어 중간 발표 범위를 줄인 기준은 무엇이었나요?",
+          "slot": "action",
+          "quote": "기능을 꼭 필요한 것과 나중에 할 것으로 나눠 중간 발표 범위를 줄이고, 매주 월요일 15분 회의에서 각자 막힌 것만 말하게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    },
+    {
+      "card": "c14-2",
+      "title": "디자이너와 화면 기준 맞추기",
+      "fields_sent": 3,
+      "received": 4,
+      "drop_reasons": {},
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": 10.4,
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 691,
+        "completion_tokens": 751
+      },
+      "questions": [
+        {
+          "id": "c14-2-q1",
+          "question": "시안과 구현 화면 간격과 색이 화면마다 달랐던 구체적인 원인이 무엇이었나요?",
+          "slot": "situation",
+          "quote": "같은 프로젝트에 시각디자인과 학생 한 명이 함께했는데, 시안과 구현 화면의 간격과 색이 화면마다 조금씩 달라서 매번 수정 요청이 왔다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c14-2-q2",
+          "question": "간격 단계와 색 이름을 정의할 때 어떤 기준이나 프로세스를 따랐나요?",
+          "slot": "action",
+          "quote": "디자이너와 함께 간격 단계(4 · 8 · 16 · 24px)와 색 이름 8개를 정하고, CSS 변수로 옮겨 모든 화면이 그 값만 쓰게 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c14-2-q3",
+          "question": "디자이너와 시안을 주고받을 때 이름이 통일된 용어를 사용하게 된 계기는 무엇이었나요?",
+          "slot": "action",
+          "quote": "시안을 주고받을 때도 그 이름으로 말했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        },
+        {
+          "id": "c14-2-q4",
+          "question": "수정 요청이 크게 줄어든 후 팀 내 커뮤니케이션이나 작업 흐름에 어떤 변화가 있었나요?",
+          "slot": "result",
+          "quote": "시안과 다르다는 수정 요청이 한 주 평균 12건에서 2건으로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": false
+        }
+      ]
+    }
+  ],
+  "labels_by": "Claude(AI) — 사용자 위임, 경계 6개는 사용자 확인(2026-11-18, 판정 그대로)"
+}

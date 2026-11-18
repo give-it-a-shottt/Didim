@@ -31,7 +31,7 @@ TOO_LARGE_DETAIL = f"한 번에 올릴 수 있는 용량({MAX_IMPORT_TOTAL_BYTES
 BAD_PATH_DETAIL = "잘못된 주소예요."
 
 
-def _route_path(scope: Scope) -> str:
+def route_path(scope: Scope) -> str:
     """라우터가 비교하는 경로와 같은 기준: 앞에 붙은 root_path(배포 때 하위 경로)를 뗀 경로."""
     path: str = scope["path"]
     root_path: str = scope.get("root_path", "")
@@ -59,7 +59,7 @@ class ImportUploadGuard:
             await _reply(scope, receive, send, status.HTTP_400_BAD_REQUEST, BAD_PATH_DETAIL)
             return
 
-        if scope["method"] != "POST" or _route_path(scope) != IMPORT_PATH:
+        if scope["method"] != "POST" or route_path(scope) != IMPORT_PATH:
             await self.app(scope, receive, send)
             return
 

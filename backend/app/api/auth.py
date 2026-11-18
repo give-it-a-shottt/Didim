@@ -9,6 +9,7 @@ from app.api.deps import get_current_user, get_settings
 from app.config import (
     OAUTH_STATE_COOKIE_NAME,
     OAUTH_STATE_MAX_AGE_SECONDS,
+    SAMPLE_GOOGLE_SUB,
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
     Settings,
@@ -34,6 +35,7 @@ class CurrentUserResponse(BaseModel):
     id: int
     email: str
     name: str
+    is_sample: bool = False  # 샘플 체험 계정이면 화면이 '샘플' 배지 · [체험 끝내기]를 보인다(D-029)
 
 
 def _login_error_redirect(settings: Settings, error_code: str) -> RedirectResponse:
@@ -128,6 +130,7 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> Current
         id=current_user.id,
         email=current_user.email,
         name=current_user.name,
+        is_sample=current_user.google_sub == SAMPLE_GOOGLE_SUB,
     )
 
 

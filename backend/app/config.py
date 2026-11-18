@@ -10,6 +10,9 @@ MIN_SESSION_SECRET_LENGTH = 32
 # DB 연결을 기다리는 최대 시간. 없으면 연결이 응답 없이 끝없이 멈출 수 있다(T-002).
 DB_CONNECT_TIMEOUT_SECONDS = 5
 
+# 샘플 체험 계정(D-025 · D-029). 구글 sub는 숫자라 이 값과 겹치지 않는다 — 구글 로그인으로는 이 계정이 될 수 없다.
+SAMPLE_GOOGLE_SUB = "didim-sample"
+
 # 사용자 기본 하루 AI 호출 상한 (didim-design.md SET_01_001 기준 30회)
 DEFAULT_DAILY_LIMIT = 30
 

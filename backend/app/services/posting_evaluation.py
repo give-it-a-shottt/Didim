@@ -30,7 +30,11 @@ from app.config import APPLICATION_COMPANY_MAX_CHARS, CARD_STATUS_SAVED
 from app.db.models import Card, CardField
 from app.llm.base import LLMClient, LLMUsage, Message
 from app.llm.structured import StructuredReply
-from app.services.application_service import create_application, get_application_detail
+from app.services.application_service import (
+    ApplicationDetail,
+    create_application,
+    get_application_detail,
+)
 from app.services.card_evaluation import NoteKey, section_spans
 from app.services.chunking import split_markdown
 from app.services.eval_retry import RetryPolicy, Sleep, run_ai_step
@@ -271,6 +275,9 @@ class PostingEvalResult:
     seconds: dict[str, float] = field(default_factory=dict)
     usage: LLMUsage = field(default_factory=LLMUsage)
     retries: int = 0
+    # 실제로 저장된 역량 · 매칭 줄(이름 · 종류 · 인용 · 칸 · 이유, 카드는 경험 id) — 샘플 시드가 이 줄을
+    # AI 답으로 다시 들려줘 같은 화면을 만든다(F-010, AI 없이). 결과 파일에 남기지 않으면 매칭 이유 문장을 되살릴 수 없다.
+    saved: list[dict[str, object]] = field(default_factory=list)
 
 
 async def _run_step[PlanT: AnalysisPlan, ReplyT: BaseModel](
@@ -350,13 +357,28 @@ async def evaluate_posting(
     candidates = {req_id: list(cards) for req_id, cards in match_plan.candidates.items()}
     if not (match_plan.needs_ai and match_reply is None):  # 매칭 AI가 실패했으면 저장 없이 뽑은 역량만으로 채점(매칭 0)
         result.match_drops = save_match(db, match_plan, match_reply).drop_reasons
-    extracted = _load_extracted(db, user_id=user_id, application_id=application_id)
-    result.score = score_posting(posting_text, key, extracted, candidates, card_experience)
+    detail = get_application_detail(db, user_id=user_id, application_id=application_id)
+    result.score = score_posting(posting_text, key, _extracted(detail), candidates, card_experience)
+    result.saved = _saved_rows(detail, card_experience)
     return result
 
 
-def _load_extracted(db: Session, *, user_id: int, application_id: int) -> list[ExtractedRequirement]:
-    detail = get_application_detail(db, user_id=user_id, application_id=application_id)
+def _saved_rows(detail: ApplicationDetail, card_experience: Mapping[int, str]) -> list[dict[str, object]]:
+    return [
+        {
+            "name": item.name,
+            "kind": item.kind,
+            "quote": item.quote,
+            "matches": [
+                {"card": card_experience.get(match.card_id), "slot": match.slot, "quote": match.quote, "reason": match.reason}
+                for match in item.matches
+            ],
+        }
+        for item in detail.requirements
+    ]
+
+
+def _extracted(detail: ApplicationDetail) -> list[ExtractedRequirement]:
     return [
         ExtractedRequirement(
             id=item.id,
@@ -451,4 +473,5 @@ def result_to_dict(result: PostingEvalResult) -> dict[str, object]:
             for verdict in result.score.verdicts
         ],
         "extra_requirements": result.score.extra_requirements,
+        "saved": result.saved,
     }

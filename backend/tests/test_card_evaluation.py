@@ -152,7 +152,7 @@ def test_answer_key_matches_eval_notes() -> None:
     for path in paths:
         regions = build_regions(path.read_text(encoding="utf-8"), keys[path.name])
         assert regions, path.name
-    assert sum(len(key.experiences) for key in keys.values()) == 12
+    assert sum(len(key.experiences) for key in keys.values()) == 20  # c01~c08 12개 + F-010 c09~c14 8개(D-005 규모)
 
 
 # --- 서비스 흐름 그대로 (mock AI) ---

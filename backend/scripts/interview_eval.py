@@ -2,7 +2,7 @@
 
 backend 폴더에서:
     uv run python -m scripts.interview_eval --planted                                   # 심은 질문 평가(D-005, AI 안 부름) — 핵심 수치
-    uv run --env-file .env python -m scripts.interview_eval nvidia --pause 3             # AI 질문 평가: 카드 12장 — AI 12번(모델은 NVIDIA_MODEL)
+    uv run --env-file .env python -m scripts.interview_eval nvidia --pause 3             # AI 질문 평가: 카드 20장 — AI 20번(모델은 NVIDIA_MODEL)
     uv run --env-file .env python -m scripts.interview_eval exaone --pause 40            # EXAONE으로 비교(D-027)
     uv run --env-file .env python -m scripts.interview_eval nvidia --limit 2             # 앞에서부터 카드 2장으로 먼저 시험
     uv run python -m scripts.interview_eval --score eval/interview/results/<파일>.json   # 사람 판정(human)을 적은 뒤 다시 채점

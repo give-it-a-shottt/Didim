@@ -1,12 +1,12 @@
 """공고 분석 평가 실행 — 가상 공고로 '매칭 적중률' · '없는 근거로 만든 매칭 수'를 잰다 (F-007 완료 기준 6, D-005).
 
 backend 폴더에서:
-    uv run --env-file .env python -m scripts.posting_eval exaone             # 공고 6개(역량 28개) — AI 최대 12번
+    uv run --env-file .env python -m scripts.posting_eval exaone             # 공고 10개(역량 48개) — AI 최대 20번
     uv run --env-file .env python -m scripts.posting_eval exaone --limit 1   # 앞에서부터 공고 1개로 먼저 시험
     (카드 평가와 같이 호출 사이 기본 20초, 500 · 429면 60초 쉬고 2번까지 다시)
 
 - 공고: eval/postings/postings/*.md, 정답지: eval/postings/answers.json (지어낸 공고라 레포에 둔다).
-- 카드: F-006 평가 노트(eval/cards/notes)에 심은 경험 12개로 AI 없이 저장 카드를 만든다(posting_evaluation.build_eval_cards).
+- 카드: F-006 평가 노트(eval/cards/notes)에 심은 경험 20개로 AI 없이 저장 카드를 만든다(posting_evaluation.build_eval_cards).
 - 임시 SQLite DB에 평가용 사용자 · 노트 · 카드를 올려 돌린다. 개발 DB · 내 계정은 건드리지 않는다.
 - 판정은 채점 AI 없이 위치 · 카드 번호로 한다(app/services/posting_evaluation.py).
 - 결과는 eval/postings/results/postings-<provider>-<시각>.json. 공고 하나가 끝날 때마다 덮어쓴다("complete": false면 중간에 멈춤).

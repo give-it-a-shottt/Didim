@@ -32,7 +32,8 @@ export const SITE_DESCRIPTION =
 
 // 검색 엔진에 노출하는 공개 페이지(sitemap.xml에 들어감).
 // 공개 페이지를 추가하면 이 목록과 screens.md를 같이 고친다.
-export const PUBLIC_PATHS = ["/", "/login"] as const;
+// 평가 리포트(/report)는 가상 데이터 수치라 공개 · 검색 노출(D-029). 샘플 입구(/demo)는 noindex라 넣지 않는다.
+export const PUBLIC_PATHS = ["/", "/login", "/report"] as const;
 
 // 회원 화면은 개인 기록이라 검색 결과에 올리지 않는다.
 // robots.txt로 막으면 검색 로봇이 이 noindex를 읽지 못해 주소만 색인될 수 있어서,

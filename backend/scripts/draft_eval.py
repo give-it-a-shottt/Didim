@@ -2,7 +2,7 @@
 
 backend 폴더에서:
     uv run python -m scripts.draft_eval --planted                                   # 심은 문장 평가(D-005, AI 안 부름) — 핵심 수치
-    uv run --env-file .env python -m scripts.draft_eval exaone --pause 40            # AI 초안 평가: 공고 6개 × 문항 2개 — AI 12번
+    uv run --env-file .env python -m scripts.draft_eval exaone --pause 40            # AI 초안 평가: 공고 10개 × 문항 2개 — AI 20번
     uv run --env-file .env python -m scripts.draft_eval exaone --limit 1 --pause 40  # 앞에서부터 공고 1개(문항 2개)로 먼저 시험
     uv run python -m scripts.draft_eval --score eval/drafts/results/<파일>.json     # 사람 판정(human)을 적은 뒤 다시 채점(AI 안 부름)
 

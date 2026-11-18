@@ -119,14 +119,27 @@ def create_session_token(
     secret: str,
     *,
     max_age_seconds: int = SESSION_MAX_AGE_SECONDS,
+    sample: bool = False,
 ) -> str:
-    """user_id와 만료 시각을 담아 서명한 세션 토큰을 만든다."""
+    """user_id와 만료 시각을 담아 서명한 세션 토큰을 만든다.
+
+    sample=True는 샘플 체험 세션(POST /api/demo/session만 만든다, D-029). 서명 안에 들어가서 위조할 수 없고,
+    읽기 전용 미들웨어(app/api/sample_guard.py)가 DB를 보지 않고 이 표시만으로 쓰기를 막는다.
+    """
     payload: dict[str, object] = {
         "purpose": PURPOSE_SESSION,
         "uid": user_id,
         "exp": int(time.time()) + max_age_seconds,
     }
+    if sample:
+        payload["sample"] = True
     return _sign_payload(payload, secret)
+
+
+def is_sample_session_token(token: str, secret: str) -> bool:
+    """서명 · 만료가 맞는 샘플 체험 세션이면 True. 위조 · 만료 · 일반 세션은 False."""
+    payload = _verify_payload(token, secret, PURPOSE_SESSION)
+    return payload is not None and payload.get("sample") is True
 
 
 def verify_session_token(token: str, secret: str) -> int | None:

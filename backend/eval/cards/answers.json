@@ -1,5 +1,5 @@
 {
-  "_설명": "F-006 경험 카드 평가 정답지(D-005, 사용자 확인 전 초안). 경험 · 함정은 노트의 '## 제목' 구간으로 정한다. 후보의 인용이 가장 많이 들어간 구간으로 후보를 판정한다. missing = 기록에 없어서 빈칸으로 남아야 하는 칸(확실한 것만).",
+  "_설명": "F-006 경험 카드 평가 정답지(D-005, 사용자 확인 전 초안. c09~c14는 F-010에서 추가 — 사용자 확인 2026-11-17). 경험 · 함정은 노트의 '## 제목' 구간으로 정한다. 후보의 인용이 가장 많이 들어간 구간으로 후보를 판정한다. missing = 기록에 없어서 빈칸으로 남아야 하는 칸(확실한 것만).",
   "no_experience_notes": "eval/quiz/notes",
   "notes": {
     "c01-bookmark-n-plus-one.md": {
@@ -69,6 +69,56 @@
       ],
       "traps": [
         {"section": "멘토링에서 들은 이야기", "kind": "others"}
+      ]
+    },
+    "c09-coupon-concurrency.md": {
+      "experiences": [
+        {"id": "c09-1", "sections": ["쿠폰이 중복 발급되던 문제"], "missing": []}
+      ],
+      "traps": [
+        {"section": "낙관적 락과 비관적 락 정리", "kind": "concept"}
+      ]
+    },
+    "c10-accessibility-study.md": {
+      "experiences": [
+        {"id": "c10-1", "sections": ["상품 상세 화면 접근성 개선"], "missing": []},
+        {"id": "c10-2", "sections": ["모바일 레이아웃 정리"], "missing": ["result"]}
+      ],
+      "traps": [
+        {"section": "강의 메모: 공공기관 접근성 인증 사례", "kind": "others"}
+      ]
+    },
+    "c11-jest-testing.md": {
+      "experiences": [
+        {"id": "c11-1", "sections": ["팀 프로젝트에 Jest 테스트 도입"], "missing": []}
+      ],
+      "traps": [
+        {"section": "다음 학기에 해 볼 것", "kind": "plan"}
+      ]
+    },
+    "c12-image-upload.md": {
+      "experiences": [
+        {"id": "c12-1", "sections": ["업로드 이미지 썸네일 생성"], "missing": []}
+      ],
+      "traps": [
+        {"section": "이미지 포맷 비교 정리", "kind": "concept"}
+      ]
+    },
+    "c13-mail-queue.md": {
+      "experiences": [
+        {"id": "c13-1", "sections": ["메일 발송을 메시지 큐로 분리"], "missing": []}
+      ],
+      "traps": [
+        {"section": "세미나에서 들은 Kafka 사례", "kind": "others"}
+      ]
+    },
+    "c14-team-lead-retro.md": {
+      "experiences": [
+        {"id": "c14-1", "sections": ["팀장으로 일정 관리와 의견 조율"], "missing": ["result"]},
+        {"id": "c14-2", "sections": ["디자이너와 화면 기준 맞추기"], "missing": []}
+      ],
+      "traps": [
+        {"section": "내년에 할 일", "kind": "plan"}
       ]
     }
   }

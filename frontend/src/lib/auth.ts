@@ -8,6 +8,8 @@ export type CurrentUser = {
   id: number;
   email: string;
   name: string;
+  // 샘플 체험 세션(D-029) — 회원 화면 위에 '샘플' 배지와 [체험 끝내기]를 보인다
+  isSample: boolean;
 };
 
 /**
@@ -41,6 +43,7 @@ export const getCurrentUserOrNull = cache(async (): Promise<CurrentUser | null> 
         id: (data as CurrentUser).id,
         email: (data as CurrentUser).email,
         name: (data as CurrentUser).name,
+        isSample: (data as { is_sample?: unknown }).is_sample === true,
       };
     }
     return null;

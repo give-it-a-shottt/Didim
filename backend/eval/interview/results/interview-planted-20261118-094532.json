@@ -1,0 +1,2007 @@
+{
+  "mode": "planted",
+  "provider": "planted",
+  "model": "none",
+  "complete": true,
+  "summary": {
+    "cards": 20,
+    "questions": 140,
+    "planted": 80,
+    "planted_caught": 60,
+    "catch_rate": 0.75,
+    "by_type": {
+      "no_evidence": {
+        "planted": 20,
+        "caught": 20,
+        "catch_rate": 1.0
+      },
+      "fake_quote": {
+        "planted": 20,
+        "caught": 20,
+        "catch_rate": 1.0
+      },
+      "other_slot": {
+        "planted": 20,
+        "caught": 20,
+        "catch_rate": 1.0
+      },
+      "added_premise": {
+        "planted": 20,
+        "caught": 0,
+        "catch_rate": 0.0
+      }
+    },
+    "genuine": 60,
+    "genuine_dropped": 0,
+    "drop_reasons": {
+      "quote_too_short": 20,
+      "quote_not_found": 39,
+      "unknown_slot": 1
+    },
+    "failures": 0
+  },
+  "rate_limit_waits": [],
+  "cards": [
+    {
+      "card": "c01-1",
+      "title": "목록 API가 느려진 문제",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c01-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "북마크가 300개쯤 쌓인 테스트 계정으로 목록 화면을 열면 3초 넘게 걸렸다. 친구들에게 시연하기로 한 날이 이틀 남아서 그 전에 고쳐야 했다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다. SQ",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "SQL 로그를 켜 보니 목록 한 번에 쿼리가 301번 나가고 있었다. 북마크를 가져온 뒤 태그를 북마크마다 따로 불러오는 N+1 문제였다. SQ 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "고친 뒤 같은 계정에서 쿼리는 2번, 응답은 0.2초로 줄었다. 시연 날에도 목록이 바로 떴다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c01-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "북마크가 300개쯤 쌓인 테스트 계정으로 목록 화면을 열면 3초 넘게 걸렸다. 친구들에게 시연하기로 한 날이 이틀 남아서 그 전에 고쳐야 했다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c02-1",
+      "title": "내가 맡은 일: 상품 목록 렌더링 개선",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c02-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "스터디에서 같이 만드는 쇼핑몰 연습 앱에서 상품 목록 페이지가 필터를 바꿀 때마다 버벅였다. 내가 이 페이지를 맡고 있어서 다음 모임 전까지 원",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "React DevTools Profiler로 녹화해 보니 필터 하나를 바꿔도 상품 카드 120개가 전부 다시 그려지고 있었다. 부모 컴포넌트가",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "React DevTools Profiler로 녹화해 보니 필터 하나를 바꿔도 상품 카드 120개가 전부 다시 그려지고 있었다. 부모 컴포넌트가 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "Profiler 기준으로 필터 변경 한 번의 렌더링 시간이 180ms에서 40ms로 줄었다. 모임에서 Profiler 화면을 보여 주며 설명했더",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "Profiler 기준으로 필터 변경 한 번의 렌더링 시간이 180ms에서 40ms로 줄었다. 모임에서 Profiler 화면을 보여 주며 설명했더",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "스터디에서 같이 만드는 쇼핑몰 연습 앱에서 상품 목록 페이지가 필터를 바꿀 때마다 버벅였다. 내가 이 페이지를 맡고 있어서 다음 모임 전까지 원",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c02-2",
+      "title": "스터디 발표 자료 정리",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c02-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "4주 동안 발표 자료가 노션, 구글 드라이브, 각자 블로그에 흩어져 있어서 지난 주제를 다시 찾기 어려웠다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c02-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "내가 발표 자료를 깃허브 저장소 하나에 모으자고 제안했고, 주차별 폴더와 README 목차를 만들었다. 그동안의 자료 14개를 직접 옮기고, 앞",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c03-1",
+      "title": "로그인이 30분마다 풀리던 버그",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c03-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "4명이 같이 만드는 스터디 모집 앱에서, 글을 쓰다가 30분쯤 지나면 로그인이 풀려 작성 중인 글이 날아간다는 제보가 QA 시트에 3건 올라왔다",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다. 인터셉터에 40",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다. 인터셉터에 40 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "4명이 같이 만드는 스터디 모집 앱에서, 글을 쓰다가 30분쯤 지나면 로그인이 풀려 작성 중인 글이 날아간다는 제보가 QA 시트에 3건 올라왔다",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "4명이 같이 만드는 스터디 모집 앱에서, 글을 쓰다가 30분쯤 지나면 로그인이 풀려 작성 중인 글이 날아간다는 제보가 QA 시트에 3건 올라왔다",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c03-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "액세스 토큰 만료가 30분인데, 프론트에서 401을 받았을 때 리프레시 요청을 보내는 코드가 axios 인터셉터에 빠져 있었다. 인터셉터에 40",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c04-1",
+      "title": "회비 정산 자동화",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c04-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "사진 동아리 총무를 맡았을 때 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조했다. 부원이 45명이라 한 번 정산에 3시간쯤 걸렸고, 두",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "은행에서 내려받은 거래 내역 엑셀과 부원 명단을 이름과 입금액으로 맞춰 보는 파이썬 스크립트를 짰다. 이름이 겹치는 부원은 입금자명 뒤에 학번 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "그 뒤로 정산은 10분 안에 끝났고, 남은 임기 동안 미납 안내 실수는 한 번도 없었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "사진 동아리 총무를 맡았을 때 회비 입금 내역을 매달 통장 거래 내역과 손으로 대조했다. 부원이 45명이라 한 번 정산에 3시간쯤 걸렸고, 두",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c04-2",
+      "title": "신입 부원 안내 문서",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c04-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "매 학기 신입 부원이 들어오면 장비 대여 방법, 출사 일정, 회비 규칙을 단톡방에 같은 질문으로 계속 물어봤다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고, 가입 확정 메시지에 링크를 넣었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "자주 묻는 질문 20개를 모아 노션 안내 페이지를 만들고, 가입 확정 메시지에 링크를 넣었다. 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "다음 학기에는 단톡방에 올라오는 같은 질문이 눈에 띄게 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "다음 학기에는 단톡방에 올라오는 같은 질문이 눈에 띄게 줄었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c04-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "매 학기 신입 부원이 들어오면 장비 대여 방법, 출사 일정, 회비 규칙을 단톡방에 같은 질문으로 계속 물어봤다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c05-1",
+      "title": "하루 한 문제 습관",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c05-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "8월에 처음 본 코딩테스트에서 2문제 중 하나도 못 풀었다. 문제를 읽고 어디서부터 손대야 할지 모르는 상태였다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "9월 1일부터 프로그래머스 문제를 하루 한 문제씩 풀고, 못 푼 문제는 다른 사람 풀이를 본 뒤 다음 날 빈 화면에서 다시 짜 보는 규칙을 세웠",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "9월 1일부터 프로그래머스 문제를 하루 한 문제씩 풀고, 못 푼 문제는 다른 사람 풀이를 본 뒤 다음 날 빈 화면에서 다시 짜 보는 규칙을 세웠 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "60일 동안 하루도 빠지지 않았고, 10월 말 모의 테스트에서는 3문제 중 2문제를 풀었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "60일 동안 하루도 빠지지 않았고, 10월 말 모의 테스트에서는 3문제 중 2문제를 풀었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c05-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "8월에 처음 본 코딩테스트에서 2문제 중 하나도 못 풀었다. 문제를 읽고 어디서부터 손대야 할지 모르는 상태였다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c06-1",
+      "title": "도커 이미지 크기 줄이기",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c06-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고, 빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "베이스 이미지를 python:3.12에서 python:3.12-slim으로 바꾸고, 빌드 도구는 첫 단계에서만 쓰는 멀티 스테이지 빌드로 나눴다 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "이미지가 210MB로 줄었고 배포 시간도 1분 안쪽이 됐다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "개인 프로젝트 백엔드의 도커 이미지가 1.2GB여서 서버에 올릴 때마다 5분 넘게 걸렸다. 무료 서버의 디스크도 금방 찼다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c06-2",
+      "title": "GitHub Actions 빌드 시간",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c06-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다. 리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다. 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다. 리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "PR마다 도는 CI가 매번 의존성을 처음부터 설치해서 8분씩 걸렸다. 리뷰를 요청하기 전에 CI가 끝나길 기다리는 시간이 아까웠다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c06-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "actions/cache로 패키지 캐시를 잠금 파일 해시 기준으로 저장하게 바꿨다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c07-1",
+      "title": "날씨 API 연동 담당",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c07-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "우리 팀은 날씨에 맞춰 옷차림을 추천하는 웹앱을 만들었다. 나는 기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았다",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다. 응답이 느릴 때를 대비해 마",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다. 응답이 느릴 때를 대비해 마 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "우리 팀은 날씨에 맞춰 옷차림을 추천하는 웹앱을 만들었다. 나는 기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았다",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "우리 팀은 날씨에 맞춰 옷차림을 추천하는 웹앱을 만들었다. 나는 기상청 단기예보 API를 붙여 화면에 기온과 강수 확률을 보여 주는 일을 맡았다",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "예보 API가 격자 좌표(nx, ny)를 요구해서 위도와 경도를 격자로 바꾸는 변환 함수를 문서의 공식대로 옮겼다. 응답이 느릴 때를 대비해 마",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c07-2",
+      "title": "시연 실패 대비",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c07-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "발표 전날 밤 리허설에서 학교 와이파이가 끊겨 API 호출이 모두 실패했다. 본 발표에서도 같은 일이 생기면 화면이 텅 비어 버릴 상황이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "API 응답 몇 개를 JSON 파일로 저장해 두고, 네트워크가 안 되면 그 파일로 화면을 그리는 시연 모드를 새벽 3시까지 만들었다. 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "본 발표 중에 실제로 와이파이가 한 번 끊겼지만 시연 모드로 넘어가 끝까지 시연했고, 팀은 장려상을 받았다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c07-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "발표 전날 밤 리허설에서 학교 와이파이가 끊겨 API 호출이 모두 실패했다. 본 발표에서도 같은 일이 생기면 화면이 텅 비어 버릴 상황이었다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c08-1",
+      "title": "오늘 한 일",
+      "fields_sent": 1,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 1,
+        "unknown_slot": 1
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c08-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "task",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c08-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "어제 배포한 기록 앱에서 마크다운 표가 깨져 보인다는 친구의 메시지를 받았다. 확인해 보니 remark-gfm 플러그인을 빼먹어서 표 문법이 그",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c09-1",
+      "title": "쿠폰이 중복 발급되던 문제",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c09-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "팀 프로젝트 쇼핑몰에서 100장 한정 선착순 쿠폰 이벤트를 준비했다. 부하 테스트로 동시 요청 500개를 보내자 쿠폰이 117장 발급됐다. 남은",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "Spring 서비스에서 쿠폰 수량을 줄이는 부분을 Redisson 분산 락으로 감싸고, 락을 얻지 못한 요청은 0.5초까지만 기다린 뒤 \"잠시",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "Spring 서비스에서 쿠폰 수량을 줄이는 부분을 Redisson 분산 락으로 감싸고, 락을 얻지 못한 요청은 0.5초까지만 기다린 뒤 \"잠시 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "같은 부하 테스트를 다시 돌리자 정확히 100장만 발급됐고, 한 사용자에게 두 번 발급된 경우는 0건이었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "같은 부하 테스트를 다시 돌리자 정확히 100장만 발급됐고, 한 사용자에게 두 번 발급된 경우는 0건이었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c09-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "팀 프로젝트 쇼핑몰에서 100장 한정 선착순 쿠폰 이벤트를 준비했다. 부하 테스트로 동시 요청 500개를 보내자 쿠폰이 117장 발급됐다. 남은",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c10-1",
+      "title": "상품 상세 화면 접근성 개선",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c10-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "스터디에서 각자 맡은 화면을 접근성 기준으로 점검했다. 내가 맡은 상품 상세 화면은 Lighthouse 접근성 점수가 58점이었고, 키보드만으로",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "div로 만든 옵션 버튼을 button 요소로 바꾸고, 상품 이미지에 대체 텍스트를 넣고, 수량 입력 칸에 label을 연결했다. 스크린리더(N",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "div로 만든 옵션 버튼을 button 요소로 바꾸고, 상품 이미지에 대체 텍스트를 넣고, 수량 입력 칸에 label을 연결했다. 스크린리더(N 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "접근성 점수가 58점에서 96점이 됐고, 키보드만으로 옵션 선택부터 장바구니 담기까지 할 수 있게 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "접근성 점수가 58점에서 96점이 됐고, 키보드만으로 옵션 선택부터 장바구니 담기까지 할 수 있게 됐다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "스터디에서 각자 맡은 화면을 접근성 기준으로 점검했다. 내가 맡은 상품 상세 화면은 Lighthouse 접근성 점수가 58점이었고, 키보드만으로",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c10-2",
+      "title": "모바일 레이아웃 정리",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c10-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "같은 화면을 폭 360px 휴대폰에서 열면 가격과 버튼이 겹치고 가로 스크롤이 생겼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "고정 너비로 잡혀 있던 영역을 flex와 미디어 쿼리로 바꾸고, 좁은 화면에서는 구매 버튼을 화면 아래에 붙이는 배치로 나눴다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "고정 너비로 잡혀 있던 영역을 flex와 미디어 쿼리로 바꾸고, 좁은 화면에서는 구매 버튼을 화면 아래에 붙이는 배치로 나눴다. 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "같은 화면을 폭 360px 휴대폰에서 열면 가격과 버튼이 겹치고 가로 스크롤이 생겼다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "같은 화면을 폭 360px 휴대폰에서 열면 가격과 버튼이 겹치고 가로 스크롤이 생겼다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c10-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "고정 너비로 잡혀 있던 영역을 flex와 미디어 쿼리로 바꾸고, 좁은 화면에서는 구매 버튼을 화면 아래에 붙이는 배치로 나눴다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c11-1",
+      "title": "팀 프로젝트에 Jest 테스트 도입",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c11-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "4명이 함께 만드는 일정 공유 웹앱에 테스트가 하나도 없어서, 기능을 고칠 때마다 다른 화면이 깨졌는지 손으로 눌러 봐야 했다. 지난달에만 배포",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "날짜 계산과 반복 일정 만들기처럼 자주 깨지던 함수부터 Jest 단위 테스트를 붙였다. PR을 올릴 때는 바꾼 함수의 테스트를 같이 올리기로 팀",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "날짜 계산과 반복 일정 만들기처럼 자주 깨지던 함수부터 Jest 단위 테스트를 붙였다. PR을 올릴 때는 바꾼 함수의 테스트를 같이 올리기로 팀 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "두 달 동안 테스트 커버리지가 0%에서 64%가 됐고, 배포한 뒤에 발견된 오류는 한 달 6건에서 1건으로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "두 달 동안 테스트 커버리지가 0%에서 64%가 됐고, 배포한 뒤에 발견된 오류는 한 달 6건에서 1건으로 줄었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c11-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "4명이 함께 만드는 일정 공유 웹앱에 테스트가 하나도 없어서, 기능을 고칠 때마다 다른 화면이 깨졌는지 손으로 눌러 봐야 했다. 지난달에만 배포",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c12-1",
+      "title": "업로드 이미지 썸네일 생성",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c12-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "중고거래 사이드 프로젝트에서 사용자가 올린 사진을 원본 그대로 저장하고, 목록 화면에서도 원본을 불러왔다. 사진 한 장이 평균 4MB라 목록 화",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "Node.js 서버에서 업로드를 받을 때 sharp로 긴 변이 1280px인 본문용 이미지와 320px 썸네일을 WebP로 만들어 저장하고, 원",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "Node.js 서버에서 업로드를 받을 때 sharp로 긴 변이 1280px인 본문용 이미지와 320px 썸네일을 WebP로 만들어 저장하고, 원 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "목록 화면에서 받는 용량이 40MB에서 1.5MB로 줄었고, 사진 한 장의 저장 용량도 평균 4MB에서 350KB가 됐다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "목록 화면에서 받는 용량이 40MB에서 1.5MB로 줄었고, 사진 한 장의 저장 용량도 평균 4MB에서 350KB가 됐다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c12-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "중고거래 사이드 프로젝트에서 사용자가 올린 사진을 원본 그대로 저장하고, 목록 화면에서도 원본을 불러왔다. 사진 한 장이 평균 4MB라 목록 화",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c13-1",
+      "title": "메일 발송을 메시지 큐로 분리",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c13-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "동아리 행사 신청 서비스(Spring Boot)에서 신청 버튼을 누르면 확인 메일을 보낸 뒤에야 응답이 와서, 신청 완료까지 평균 3.2초가 걸",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "신청 저장까지만 요청 안에서 처리하고, 메일 발송은 RabbitMQ 큐에 메시지로 넣은 뒤 따로 도는 소비자가 보내게 바꿨다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "신청 저장까지만 요청 안에서 처리하고, 메일 발송은 RabbitMQ 큐에 메시지로 넣은 뒤 따로 도는 소비자가 보내게 바꿨다. 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "신청 응답 시간이 평균 3.2초에서 0.3초로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "신청 응답 시간이 평균 3.2초에서 0.3초로 줄었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c13-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "동아리 행사 신청 서비스(Spring Boot)에서 신청 버튼을 누르면 확인 메일을 보낸 뒤에야 응답이 와서, 신청 완료까지 평균 3.2초가 걸",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c14-1",
+      "title": "팀장으로 일정 관리와 의견 조율",
+      "fields_sent": 2,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c14-1-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "5명이 함께한 졸업 프로젝트(전시 예약 웹 서비스)에서 팀장을 맡았다. 중간 발표 2주 전까지 기능의 절반이 끝나지 않았고, 프론트엔드와 백엔드",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "기능을 꼭 필요한 것과 나중에 할 것으로 나눠 중간 발표 범위를 줄이고, 매주 월요일 15분 회의에서 각자 막힌 것만 말하게 했다. API 모양",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "기능을 꼭 필요한 것과 나중에 할 것으로 나눠 중간 발표 범위를 줄이고, 매주 월요일 15분 회의에서 각자 막힌 것만 말하게 했다. API 모양 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "situation",
+          "quote": "5명이 함께한 졸업 프로젝트(전시 예약 웹 서비스)에서 팀장을 맡았다. 중간 발표 2주 전까지 기능의 절반이 끝나지 않았고, 프론트엔드와 백엔드",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "action",
+          "quote": "5명이 함께한 졸업 프로젝트(전시 예약 웹 서비스)에서 팀장을 맡았다. 중간 발표 2주 전까지 기능의 절반이 끝나지 않았고, 프론트엔드와 백엔드",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-1-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "action",
+          "quote": "기능을 꼭 필요한 것과 나중에 할 것으로 나눠 중간 발표 범위를 줄이고, 매주 월요일 15분 회의에서 각자 막힌 것만 말하게 했다. API 모양",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    },
+    {
+      "card": "c14-2",
+      "title": "디자이너와 화면 기준 맞추기",
+      "fields_sent": 3,
+      "received": 7,
+      "drop_reasons": {
+        "quote_too_short": 1,
+        "quote_not_found": 2
+      },
+      "error": null,
+      "error_detail": null,
+      "retries": 0,
+      "seconds": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0
+      },
+      "questions": [
+        {
+          "id": "c14-2-p1",
+          "question": "그때 가장 먼저 무엇을 확인했나요?",
+          "slot": "situation",
+          "quote": "같은 프로젝트에 시각디자인과 학생 한 명이 함께했는데, 시안과 구현 화면의 간격과 색이 화면마다 조금씩 달라서 매번 수정 요청이 왔다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p2",
+          "question": "이 프로젝트에서 팀을 이끌며 가장 힘들었던 점은 무엇인가요?",
+          "slot": "situation",
+          "quote": "",
+          "kept": false,
+          "planted": "no_evidence",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p3",
+          "question": "그 방법을 고른 이유는 무엇인가요?",
+          "slot": "action",
+          "quote": "디자이너와 함께 간격 단계(4 · 8 · 16 · 24px)와 색 이름 8개를 정하고, CSS 변수로 옮겨 모든 화면이 그 값만 쓰게 했다. 시",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p4",
+          "question": "그 결과로 팀에서 어떤 평가를 받았나요?",
+          "slot": "action",
+          "quote": "디자이너와 함께 간격 단계(4 · 8 · 16 · 24px)와 색 이름 8개를 정하고, CSS 변수로 옮겨 모든 화면이 그 값만 쓰게 했다. 시 덕분에 팀에서 칭찬을 받았다.",
+          "kept": false,
+          "planted": "fake_quote",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p5",
+          "question": "그 경험에서 무엇을 배웠나요?",
+          "slot": "result",
+          "quote": "시안과 다르다는 수정 요청이 한 주 평균 12건에서 2건으로 줄었다.",
+          "kept": true,
+          "planted": null,
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p6",
+          "question": "그 부분을 다른 단계에서는 어떻게 다뤘나요?",
+          "slot": "situation",
+          "quote": "시안과 다르다는 수정 요청이 한 주 평균 12건에서 2건으로 줄었다.",
+          "kept": false,
+          "planted": "other_slot",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        },
+        {
+          "id": "c14-2-p7",
+          "question": "팀원 5명과 3개월 동안 진행해 매출이 20% 늘었다고 했는데, 그 과정에서 무엇이 가장 어려웠나요?",
+          "slot": "situation",
+          "quote": "같은 프로젝트에 시각디자인과 학생 한 명이 함께했는데, 시안과 구현 화면의 간격과 색이 화면마다 조금씩 달라서 매번 수정 요청이 왔다.",
+          "kept": true,
+          "planted": "added_premise",
+          "rule": null,
+          "rule_tokens": [],
+          "human": null
+        }
+      ]
+    }
+  ]
+}

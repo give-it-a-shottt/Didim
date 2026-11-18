@@ -1,5 +1,5 @@
 {
-  "_설명": "F-007 공고 분석 평가 정답지(D-005, 사용자 확인 2026-11-12). 공고는 eval/postings/postings/*.md(지어낸 공고), 카드는 F-006 평가 노트(eval/cards/notes)에 심은 경험 12개로 만든다(경험 구간의 문단을 칸 인용으로 — AI 없이). 요구 역량은 공고의 한 줄(quote, 공고에 글자 그대로)로 적고, cards는 그 역량의 근거로 인정하는 경험 id다. 빈 목록 = 내 기록에 근거가 없어야 하는 역량(매칭되면 '없는 근거로 만든 매칭').",
+  "_설명": "F-007 공고 분석 평가 정답지(D-005, 사용자 확인 2026-11-12). 공고는 eval/postings/postings/*.md(지어낸 공고), 카드는 F-006 평가 노트(eval/cards/notes)에 심은 경험 20개(F-010에서 8개 · 공고 p07~p10 추가, 사용자 확인 2026-11-17)로 만든다(경험 구간의 문단을 칸 인용으로 — AI 없이). 요구 역량은 공고의 한 줄(quote, 공고에 글자 그대로)로 적고, cards는 그 역량의 근거로 인정하는 경험 id다. 빈 목록 = 내 기록에 근거가 없어야 하는 역량(매칭되면 '없는 근거로 만든 매칭').",
   "cards_from": "eval/cards/answers.json",
   "postings": {
     "p01-backend.md": {
@@ -52,6 +52,42 @@
         { "quote": "프롬프트를 설계하고 평가해 본 경험", "kind": "required", "cards": [] },
         { "quote": "Python 개발 경험", "kind": "required", "cards": ["c04-1", "c01-1", "c06-1"] },
         { "quote": "벡터 데이터베이스를 사용해 본 경험", "kind": "preferred", "cards": [] }
+      ]
+    },
+    "p07-java-backend.md": {
+      "requirements": [
+        { "quote": "동시 요청 상황에서 데이터 정합성을 지켜 본 경험", "kind": "required", "cards": ["c09-1"] },
+        { "quote": "메시지 큐로 비동기 처리를 구현해 본 경험", "kind": "required", "cards": ["c13-1"] },
+        { "quote": "테스트 코드를 작성해 본 경험", "kind": "required", "cards": ["c11-1"] },
+        { "quote": "JPA 사용 중 N+1 문제를 해결해 본 경험", "kind": "preferred", "cards": ["c01-1"] },
+        { "quote": "MSA 환경에서 서비스를 운영해 본 분", "kind": "preferred", "cards": [] }
+      ]
+    },
+    "p08-frontend-a11y.md": {
+      "requirements": [
+        { "quote": "웹 접근성 기준에 맞게 화면을 개선해 본 경험", "kind": "required", "cards": ["c10-1"] },
+        { "quote": "다양한 기기에 맞는 반응형 UI를 만들어 본 경험", "kind": "required", "cards": ["c10-2"] },
+        { "quote": "디자이너와 협업해 디자인 기준을 맞춰 본 경험", "kind": "required", "cards": ["c14-2"] },
+        { "quote": "React 렌더링 성능을 개선해 본 경험", "kind": "preferred", "cards": ["c02-1"] },
+        { "quote": "React Native로 앱을 개발해 본 경험", "kind": "preferred", "cards": [] }
+      ]
+    },
+    "p09-startup-fullstack.md": {
+      "requirements": [
+        { "quote": "파일 · 이미지 업로드를 처리해 본 경험", "kind": "required", "cards": ["c12-1"] },
+        { "quote": "팀을 이끌며 일정을 관리해 본 경험", "kind": "required", "cards": ["c14-1"] },
+        { "quote": "외부 API를 연동해 본 경험", "kind": "required", "cards": ["c07-1"] },
+        { "quote": "테스트를 도입해 품질을 높여 본 경험", "kind": "preferred", "cards": ["c11-1"] },
+        { "quote": "GraphQL API를 설계해 본 경험", "kind": "preferred", "cards": [] }
+      ]
+    },
+    "p10-platform-backend.md": {
+      "requirements": [
+        { "quote": "느린 작업을 비동기로 분리해 응답 시간을 줄여 본 경험", "kind": "required", "cards": ["c13-1"] },
+        { "quote": "동시성 문제를 찾아 해결해 본 경험", "kind": "required", "cards": ["c09-1"] },
+        { "quote": "Docker로 서비스를 배포해 본 경험", "kind": "required", "cards": ["c06-1"] },
+        { "quote": "WebSocket으로 실시간 기능을 만들어 본 경험", "kind": "required", "cards": [] },
+        { "quote": "Go 언어로 개발해 본 경험", "kind": "preferred", "cards": [] }
       ]
     }
   }

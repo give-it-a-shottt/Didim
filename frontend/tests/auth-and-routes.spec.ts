@@ -3,7 +3,6 @@ import { VALID_SESSION_TOKEN } from "./helpers";
 
 const MEMBER_SCREENS = [
   { path: "/home", screenId: "HOM_01_001" },
-  { path: "/demo", screenId: "DEM_01_001" },
   { path: "/records", screenId: "REV_01_001" },
   { path: "/records/1", screenId: "REV_01_002" }, // F-003부터 실제 노트를 불러온다(가짜 백엔드의 노트 1)
   { path: "/records/manage", screenId: "REV_01_003" },
@@ -17,7 +16,6 @@ const MEMBER_SCREENS = [
   { path: "/applications/902/draft", screenId: "APL_02_003" },
   { path: "/applications/902/interview", screenId: "APL_02_004" },
   { path: "/settings", screenId: "SET_01_001" },
-  { path: "/settings/report", screenId: "SET_02_001" },
 ] as const;
 
 test("공개 페이지(/, /login)와 로그인 에러 배너가 정상 렌더링된다", async ({ page }) => {
@@ -37,7 +35,7 @@ test("공개 페이지(/, /login)와 로그인 에러 배너가 정상 렌더링
   await expect(page.getByText("구글 로그인이 취소되었어요. 다시 시도해 주세요.")).toBeVisible();
 });
 
-test("비로그인 상태에서 회원 화면(16개 URL)에 접근하면 /login으로 이동한다", async ({
+test("비로그인 상태에서 회원 화면(14개 URL)에 접근하면 /login으로 이동한다", async ({
   page,
 }) => {
   for (const { path } of MEMBER_SCREENS) {
@@ -47,7 +45,7 @@ test("비로그인 상태에서 회원 화면(16개 URL)에 접근하면 /login�
   }
 });
 
-test("로그인 상태에서 회원 화면 16개가 열리고, 설정(/settings)에서 로그아웃하면 /login으로 이동한다", async ({
+test("로그인 상태에서 회원 화면 14개가 열리고, 설정(/settings)에서 로그아웃하면 /login으로 이동한다", async ({
   context,
   page,
 }) => {

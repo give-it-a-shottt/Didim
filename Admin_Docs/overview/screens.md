@@ -7,13 +7,14 @@
 
 ```
 [게스트] 랜딩 LND_01_001 → 로그인 AUT_01_001
+[공개 — D-029] 평가 리포트 SET_02_001(`/report`) · 샘플 체험 입구 DEM_01_001(`/demo`, 샘플 세션으로 회원 화면 둘러봄)
 [회원]
 ├─ 00 기록 추가 [버튼]  IMP_01_001 → 002 → 003 · 900
 ├─ 01 홈               HOM_01_900 첫 방문 · DEM_01_001 샘플 체험 · HOM_01_001 대시보드
 ├─ 02 기록 · 복습       REV_01_001 · 002 · 003 · REV_02_001 퀴즈 · 002 결과 · REV_03_001 오답노트
 ├─ 03 경험 카드         CRD_01_001 목록 · 002 상세 · 003 만들기 · 후보 검토(시트)
 ├─ 04 지원             APL_01_001 D-day 목록 · 002 공고 추가 · APL_02_001 지원 상세(탭 002 공고 분석 · 003 자소서 · 004 면접 연습)
-└─ 05 설정             SET_01_001 설정 · SET_02_001 평가 리포트
+└─ 05 설정             SET_01_001 설정 (SET_02_001 평가 리포트는 공개로 옮김 — D-029)
 [2차] SRC_01_001 Cmd+K 검색 · APL_01_003 칸반
 ```
 
@@ -27,7 +28,7 @@
 | LND_01_001 랜딩 | `/` | 게스트 | (guest)/page.tsx | F-011 |
 | AUT_01_001 로그인 | `/login` | 게스트 | (guest)/login/page.tsx | F-001 |
 | HOM_01_001 대시보드 · HOM_01_900 첫 방문 | `/home` | 사이드바 | (app)/home/page.tsx | F-012 |
-| DEM_01_001 샘플 체험 | `/demo` | 사이드바 | (app)/demo/page.tsx | F-010 |
+| DEM_01_001 샘플 체험 | `/demo` (입구 · 로그인 없이 · noindex — D-029) | 게스트 | (guest)/demo/page.tsx — [샘플로 체험하기]는 components/sample-session-buttons.tsx, 회원 화면 위 '샘플' 알림 · [체험 끝내기]는 member-auth-guard.tsx. 로그인 화면에 입구 링크 | F-010 |
 | REV_01_001 기록 · 복습 홈 (+900) | `/records` (`?q=` 검색어) | 사이드바 | (app)/records/page.tsx | F-003 검색창 · 결과(됨), 노트 목록 · 오늘 복습은 F-004 |
 | REV_01_002 노트 상세 | `/records/[noteId]` (`?chunk=` 강조할 조각) | 사이드바 | (app)/records/[noteId]/page.tsx | F-003 원문 · 위치 강조(됨), 문제 칸([문제 만들기] · [이 노트 풀기])은 F-004, 개념 탭은 아직 없음(F-004 완료 기준 밖) |
 | REV_01_003 노트 관리 | `/records/manage` | 사이드바 | (app)/records/manage/page.tsx | F-002 |
@@ -42,7 +43,7 @@
 | APL_02_003 자소서 | `/applications/[id]/draft` | 사이드바(접힘 — CSS `data-collapse-sidebar`) | …/[id]/draft/page.tsx + components/draft-workspace.tsx(빈 상태 19:383 · 쓰는 중 19:407 · 문장 고치기 23:959 · [카드 연결] 창 포함) | F-008 |
 | APL_02_004 면접 연습 | `/applications/[id]/interview` | 사이드바 | …/[id]/interview/page.tsx + components/interview-workspace.tsx(Figma 27:1586 — 완료 기준 요소 얹음, 사용자 선택 2026-11-15) | F-009 |
 | SET_01_001 설정 | `/settings` | 사이드바 | (app)/settings/page.tsx | F-001(계정) · F-005(연결 — 노션, 연결을 마치면 `?notion=connected` · 실패면 `?notion_error=`로 돌아옴) |
-| SET_02_001 평가 리포트 | `/settings/report` | 사이드바 | (app)/settings/report/page.tsx | F-010 |
+| SET_02_001 평가 리포트 | `/report` (공개 · 검색 노출 — D-029) | 게스트(옮길 예정) | 지금 (app)/settings/report/page.tsx → F-010에서 옮김 | F-010 |
 
 - URL 없는 화면: IMP_01_001~003 · 900(기록 추가 모달 — IMP_01_001에 가져올 곳 탭: 마크다운 파일 · 노션 연결(F-005)), APL_01_002(공고 추가 모달), CRD_01_003(후보 검토 시트 — 노트 상세 '후보 N개 검토' · `/cards?tab=candidate`에서 열림), REV_01_900 · CRD_01_900 · APL_02_900(상태). 2차 SRC_01_001 · APL_01_003은 만들지 않음.
 - 레이아웃 3종(라우트 그룹, URL에는 안 나옴): `(guest)` 게스트 · `(app)` 왼쪽 메뉴 · `(focus)` 메뉴 숨김(퀴즈).

@@ -24,3 +24,12 @@ export async function fetchBackendAsUser(path: string): Promise<Response | null>
     return null;
   }
 }
+
+/** 로그인 없이 읽는 공개 API(평가 리포트 — F-010, D-029)를 부른다. 쿠키를 붙이지 않는다. 연결이 안 되면 null. */
+export async function fetchBackendPublic(path: string): Promise<Response | null> {
+  try {
+    return await fetch(`${BACKEND_URL}${path}`, { cache: "no-store" });
+  } catch {
+    return null;
+  }
+}
