@@ -28,6 +28,8 @@ export const PRIMARY_BUTTON_L = `${BUTTON_BASE} h-12 min-w-20 gap-1.5 px-5 text-
 const OUTLINE_COLORS = "border border-line-black bg-bg-default text-text-main hover:bg-bg-hover disabled:border-line-regular disabled:text-text-disabled";
 export const SECONDARY_BUTTON = `${BUTTON_BASE} ${SIZE_M} ${OUTLINE_COLORS}`;
 export const SECONDARY_BUTTON_S = `${BUTTON_BASE} ${SIZE_S} ${OUTLINE_COLORS}`;
+// Outline L 48: 랜딩 첫 화면처럼 Primary L 옆에 나란히 두는 보조 행동(Figma 랜딩 [샘플 보기])
+export const SECONDARY_BUTTON_L = `${BUTTON_BASE} h-12 min-w-20 gap-1.5 px-5 text-title-4 font-semibold ${OUTLINE_COLORS}`;
 
 // Ghost(테두리 없음): 모달의 [취소], 집중 모드의 [나가기]
 const GHOST_COLORS = "text-text-main hover:bg-bg-hover disabled:text-text-disabled";
@@ -52,6 +54,11 @@ const BADGE_BASE = `${BADGE_SHAPE} text-badge-black-text`;
 export const BADGE_SOFT = `${BADGE_BASE} bg-badge-black-soft`;
 export const BADGE_LINE = `${BADGE_BASE} border border-badge-black-line bg-bg-default`;
 
+// Figma Didim/근거 칩(Badge Line · 검정 글자) — 자소서 문장 끝에 붙는다. '근거 없음' · '확인 필요'는 경고색.
+// 자소서 화면(draft-editor)과 랜딩 스토리(landing-story)가 같이 쓴다.
+export const CHIP = `${BADGE_SHAPE} ml-1 border border-badge-black-text bg-bg-default align-middle text-badge-black-text`;
+export const CHIP_WARNING = `${BADGE_SHAPE} border border-warning-text bg-bg-default align-middle text-warning-text`;
+
 // 글자 버튼(Figma Button Text · Main · S 13): 밑줄은 Hover에만. 주 색은 쓰지 않는다(콘텐츠 링크와 헷갈리지 않게)
 export const TEXT_BUTTON = `inline-flex items-center gap-1 rounded-tag text-body-3 font-medium text-text-main hover:underline ${FOCUS_RING}`;
 
@@ -61,3 +68,6 @@ export const SOURCE_LINK = `underline-offset-2 hover:underline ${FOCUS_RING}`;
 // 근거 칩(didim-design.md: Badge Line Strong 모양 + 누를 수 있음, 누르는 영역 32, Hover bg/hover, 포커스 링)
 // Figma 근거 칩(16:142) 모양은 기록 · 복습 묶음에서 옮긴다.
 export const EVIDENCE_CHIP = `inline-flex min-h-8 items-center gap-1 rounded-tag border border-line-black bg-bg-default px-2 text-body-3 font-medium text-text-main hover:bg-bg-hover ${FOCUS_RING}`;
+
+// 랜딩 고정 구간(스토리 · 기능)의 건너뛰기 링크 — 고정 구간 바로 뒤로 옮겨 간다(D-007)
+export const LANDING_SKIP_LINK = `rounded-tag text-body-3 font-medium text-text-sub-weak underline underline-offset-2 transition-colors duration-(--motion-duration) ease-motion hover:text-text-sub ${FOCUS_RING}`;

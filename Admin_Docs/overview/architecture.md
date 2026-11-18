@@ -28,7 +28,7 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   next.config.ts          /api/* → BACKEND_URL 프록시(rewrites), /applications/[id] → 공고 분석 탭(redirects)
   playwright.config.ts    Playwright 스모크 · 인증 리다이렉트 테스트 설정 (D-013)
   src/app/                화면(라우트) — 19개, 표는 screens.md
-    (guest)/ (app)/ (focus)/   레이아웃 3종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
+    (landing)/ (guest)/ (app)/ (focus)/   레이아웃 4종(URL에 안 나옴, 회원 레이아웃은 MemberAuthGuard로 보호)
   src/components/         공통 컴포넌트(app-sidebar, screen-placeholder, member-auth-guard, logout-button, import-records-dialog, highlighted-text, note-markdown — 노트 원문을 조각 단위로 react-markdown으로 그리고 고른 조각 강조, 200KB 넘으면 글자 그대로, D-017)
   src/lib/site.ts         사이트 이름 · 설명 · 주소 · 공개/회원 경로 (SEO)
   src/lib/auth.ts         서버에서 httpOnly 쿠키로 /api/auth/me 확인 · 비로그인 시 /login 이동
@@ -119,6 +119,7 @@ backend/                  FastAPI (uv)
 | [샘플로 체험하기] · [체험 끝내기] 진행 중 · 오류 | 컴포넌트 안(`useState`, `sample-session-buttons.tsx`) + 성공 뒤 `router.push` · `router.refresh()` | 버튼 하나에서만 쓰는 일시적인 상태라서(로그아웃 버튼과 같은 방식) | F-010 |
 | 평가 리포트 회차 · 수치(`/report`) | 서버 컴포넌트(`(guest)/report/page.tsx`, `lib/report-data.ts` — Suspense 안, 요청 때 읽음) | 서버 데이터라서. `use cache`를 쓰지 않아 빌드가 백엔드에 기대지 않는다 | F-010 |
 | 홈의 단계 띠 · 첫 방문 체크리스트 · 대시보드(`/home`) | 서버 컴포넌트(`(app)/home/page.tsx`, `lib/home-data.ts` — Suspense 안, 요청 때 읽음) | 서버 데이터라서. 체크리스트를 보일지는 개수로만 정해 저장할 상태가 없다(사용자 확인 2026-11-18). [기록 추가]는 기존 모달 버튼을 다시 씀 | F-012 |
+| 랜딩의 로그인 여부([로그인] · [내 기록으로 시작하기] ↔ [홈으로]) · 첫 화면 평가 수치 · 스토리 · 기능 고정 구간 장면 넘김 · 평가 방법 떠오름(`/`) | 서버 컴포넌트(`(landing)/page.tsx` — 로그인 여부 · 수치만 Suspense 안에서 요청 때 읽음, 나머지는 정적). 고정 구간(스토리 · 기능)의 '지금 몇 번째 장면'만 컴포넌트 안 `useState`(`landing-pinned-scenes.tsx`, 스크롤 진행률 → `data-step`), 평가 방법 떠오름은 상태 없이 DOM 속성(`landing-reveal.tsx`, `data-reveal`), 움직임은 CSS 전환 | 서버에서 알 수 있는 값은 서버에서. 장면 번호는 구간 하나 안에서만 쓰는 UI 상태라 useState(D-012). 스크롤 위치에 값을 바로 묶으면 끊겨 보여서(사용자 피드백 2026-11-18) 장면이 바뀔 때만 상태를 바꾸고 600ms 전환으로 넘김. 떠오름은 한 번 바뀌고 끝이라 다시 그릴 필요가 없어 DOM 속성 | F-011 |
 | 지원 상태 바꾸기 · 공고 지우기 | TanStack Query `useMutation`(`application-header-actions.tsx`의 `ApplicationStatusSelect` · `DeleteApplicationButton` — 자리가 달라 따로, 오류도 각자 옆에) + `router.refresh()` · 목록으로 이동 | 서버 수정이라서 | F-007 |
 
 ### DB (D-008)

@@ -1126,7 +1126,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 평가 리포트(F-010): 로그인 없이. 회차 두 개 — 최근 회차에는 판정 대기 · 실패 칸이 있다
+  // 평가 리포트(F-010) · 랜딩 수치(F-011): 로그인 없이. 회차 두 개 — 최근 회차에는 판정 대기 · 실패 칸이 있다
   if (req.method === "GET" && req.url === "/api/report") {
     const metric = (key, label, kind, value) => ({ key, label, kind, value });
     const run = (runId, model, quizDrop, pending) => ({
@@ -1141,6 +1141,11 @@ const server = http.createServer((req, res) => {
             metric("unsupported_per_draft", "초안당 근거 없는 문장", "per", 0.58)] },
         { key: "cards", title: "경험 카드", status: runId.startsWith("20261117") ? "failed" : "ok", error: null, model,
           labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("found_rate", "심은 경험 찾은 비율", "rate", 0.5)] },
+        // 랜딩 첫 화면 수치(F-011)가 고르는 나머지 두 칸. 최근 회차는 공고 매칭을 돌리지 못함 — 랜딩은 그 칸을 뺀다
+        { key: "postings", title: "공고 매칭", status: runId.startsWith("20261117") ? "failed" : "ok", error: null, model,
+          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("false_matches", "없는 근거로 만든 매칭 수", "count", 5)] },
+        { key: "interview_planted", title: "면접 · 심은 질문", status: "ok", error: null, model, labels_pending: 0,
+          metrics: [metric("catch_rate", "심은 질문 잡은 비율", "rate", 0.75)] },
       ],
     });
     res.writeHead(200, { "Content-Type": "application/json" });

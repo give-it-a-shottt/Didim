@@ -337,3 +337,104 @@ body {
   color: var(--color-text-main);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/*
+ * 랜딩(LND_01_001, F-011) — 배치는 Figma 디딤 랜딩(29:1373), 움직임 값은 didim-design.md 5장 모션 표 · D-007.
+ * 기본으로 그린 상태가 '움직임 없는 완성 상태'다: 세 장면이 나란히 다 보인다(JS 없음 · 움직임 줄이기 · 좁은 화면).
+ * 넓은 화면에서 JS가 켜지면(landing-pinned-scenes.tsx가 data-motion을 붙임) 스토리 · 기능 두 구역이 250vh 고정 구간이 되고,
+ * 스크롤로 다음 장면에 들어설 때마다 그 장면이 --landing-duration ease-out으로 들어온다 — 스크롤 위치에 값을 묶지 않아 끊기지 않는다.
+ */
+@theme static {
+  --landing-gnb-height: 72px; /* Figma GNB PC Type A 72 */
+  --landing-pinned-height: 250vh; /* 고정 구간마다 250vh — 200 → 250, 장면마다 머무는 스크롤을 늘림(사용자 요청 2026-11-18, D-007) */
+  --landing-shift: 8px; /* 장면이 들어올 때 translateX 8px */
+  --landing-underline: 2px; /* 자소서 화면 밑줄(decoration-2)과 같은 두께 */
+  --landing-duration: 600ms; /* 장면마다 — 빠르게 스크롤해도 부드럽게 보이게 300 → 600(사용자 요청 2026-11-18) */
+  --landing-rise: 16px; /* 아래 섹션이 떠오를 때 translateY 16px (5장 모션 표) */
+  --landing-stagger: 600ms; /* 아래 섹션 칸이 차례로 들어오는 간격 */
+  --ease-landing: cubic-bezier(0.16, 1, 0.3, 1); /* ease-out — 스토리 장면 */
+  --ease-reveal: ease-out; /* 아래 섹션 떠오름 — 위 곡선은 첫 0.05초에 90%가 끝나 '툭' 뜬 것처럼 보여서 고른 기본 ease-out(사용자 피드백 2026-11-18) */
+}
+
+/* 첫 화면 = GNB를 뺀 화면 높이 */
+.landing-hero {
+  min-height: calc(100svh - var(--landing-gnb-height));
+}
+
+/* 랜딩에서만: 메뉴 · 건너뛰기 링크로 옮겨 갈 때 부드럽게, 붙어 있는 GNB에 제목이 가리지 않게 */
+:root:has([data-screen-id="LND_01_001"]) {
+  scroll-padding-top: var(--landing-gnb-height);
+  @media (prefers-reduced-motion: no-preference) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* 밑줄은 배경으로 그린다(길이를 0 → 100%로 늘릴 수 있게). 근거 없음 = 실선 — 자소서 화면과 같은 구분 */
+.story-mark {
+  padding-bottom: var(--landing-underline);
+  background-image: linear-gradient(var(--color-warning-text), var(--color-warning-text));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% var(--landing-underline);
+}
+
+@media (width >= 64rem) and (prefers-reduced-motion: no-preference) {
+  .landing-pinned[data-motion] {
+    height: var(--landing-pinned-height);
+  }
+  .landing-pinned[data-motion] .landing-pinned-stage {
+    position: sticky;
+    top: var(--landing-gnb-height);
+    display: flex;
+    align-items: center;
+    height: calc(100vh - var(--landing-gnb-height));
+  }
+  /* 전환은 기본 선택자에 둔다 — 스크롤을 되돌릴 때도 같은 속도로 부드럽게 빠진다 */
+  .landing-pinned[data-motion] .pinned-scene,
+  .landing-pinned[data-motion] .pinned-step {
+    transition:
+      opacity var(--landing-duration) var(--ease-landing),
+      transform var(--landing-duration) var(--ease-landing),
+      color var(--landing-duration) var(--ease-landing);
+  }
+  /* 밑줄은 장면이 들어온 뒤에 긋는다(한 번에 움직이는 요소 2개 이하) */
+  .landing-pinned[data-motion] .story-mark {
+    transition: background-size var(--landing-duration) var(--ease-landing) calc(var(--landing-duration) / 2);
+  }
+  .landing-pinned[data-step="1"] [data-scene="2"],
+  .landing-pinned[data-step="1"] [data-scene="3"],
+  .landing-pinned[data-step="2"] [data-scene="3"] {
+    opacity: 0;
+    transform: translateX(var(--landing-shift));
+  }
+  .landing-pinned[data-step="1"] .story-mark {
+    background-size: 0% var(--landing-underline);
+  }
+  /* 진행 표시: 지금 장면까지는 브랜드 색, 남은 장면은 흐리게 */
+  .landing-pinned[data-step="1"] .pinned-step:nth-child(n + 2),
+  .landing-pinned[data-step="2"] .pinned-step:nth-child(n + 3) {
+    opacity: 0.3;
+  }
+}
+
+/*
+ * 아래 구역의 제목 · 칸이 화면에 들어올 때 떠오름(landing-reveal.tsx가 data-reveal을 pending → shown으로 바꿈).
+ * 전환 선언은 기본 선택자에 두고, 상태 쪽은 값(변수)만 바꾼다. 처음 숨길 때(pending)는 즉시 — 지연 · 시간이 숨김에도 걸리면
+ * 늦은 칸이 숨기 전에 화면에 들어와 떠오름 없이 그대로 보인다. 한 번 보이면 다시 숨기지 않는다.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    transition:
+      opacity var(--reveal-duration, 0s) var(--ease-reveal),
+      transform var(--reveal-duration, 0s) var(--ease-reveal);
+    transition-delay: var(--reveal-delay, 0s);
+  }
+  [data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(var(--landing-rise));
+  }
+  [data-reveal="shown"] {
+    --reveal-duration: var(--landing-duration);
+    --reveal-delay: calc(var(--reveal-index, 0) * var(--landing-stagger));
+  }
+}

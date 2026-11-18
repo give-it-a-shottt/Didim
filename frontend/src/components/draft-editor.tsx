@@ -28,8 +28,9 @@ import {
   formatTime,
 } from "@/lib/drafts";
 import {
-  BADGE_SHAPE,
   BADGE_SOFT,
+  CHIP,
+  CHIP_WARNING,
   FOCUS_RING,
   GHOST_BUTTON_S,
   PRIMARY_BUTTON,
@@ -39,10 +40,6 @@ import {
 } from "@/lib/ui-classes";
 
 export type EditTarget = { kind: "edit"; sentenceId: number } | { kind: "insert"; afterSentenceId: number | null };
-
-// Figma Didim/근거 칩(Badge Line · 검정 글자) — 문장 끝에 붙는다. 근거 없음은 경고색.
-const CHIP = `${BADGE_SHAPE} ml-1 border border-badge-black-text bg-bg-default align-middle text-badge-black-text`;
-const CHIP_WARNING = `${BADGE_SHAPE} border border-warning-text bg-bg-default align-middle text-warning-text`;
 
 /** 초안 쓰기 상태(어느 문항의 요청인지 문항 번호로 가린다). */
 export type WriteState = RequestState<(questionId: number, overwrite: boolean) => void> & {

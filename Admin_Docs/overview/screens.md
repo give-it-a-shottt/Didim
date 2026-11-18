@@ -25,7 +25,7 @@
 
 | 화면 ID | URL | 레이아웃 | 파일(frontend/src/app/) | 완성할 기능 |
 |---|---|---|---|---|
-| LND_01_001 랜딩 | `/` | 게스트 | (guest)/page.tsx | F-011 |
+| LND_01_001 랜딩 | `/` (공개 · 검색 노출) | 랜딩(위 메뉴 · 바닥글을 직접 그림) | (landing)/page.tsx — Figma 29:1373 순서: 위 메뉴(기능 · 평가 방법 → 같은 페이지 id, 샘플 보기 → /demo, 로그인) · 첫 화면(components/landing-draft-preview.tsx 자소서 카드) · 스토리 세 장면(landing-story.tsx) · 기능 카드 세 장(landing-sections.tsx) — 두 구역 다 250vh 고정 구간, 장면 넘김은 landing-pinned-scenes.tsx · 평가 방법(landing-sections.tsx, 떠오름 landing-reveal.tsx) · 마지막 CTA · 바닥글. 샘플 글 · 수치 규칙은 lib/landing.ts | F-011 |
 | AUT_01_001 로그인 | `/login` | 게스트 | (guest)/login/page.tsx | F-001 |
 | HOM_01_001 대시보드 · HOM_01_900 첫 방문 | `/home` | 사이드바 | (app)/home/page.tsx | F-012 — 맨 위 단계 띠, 세 단계(첫 기록 · 카드 · 공고)를 다 끝내기 전엔 첫 방문 체크리스트(`data-screen-id` HOM_01_900) + [샘플로 체험하기](→ `/demo`)를 대시보드 위에, 아래 대시보드 세 칸(오늘 복습 · 마감 7일 안 · 빈칸 카드) |
 | DEM_01_001 샘플 체험 | `/demo` (입구 · 로그인 없이 · noindex — D-029) | 게스트 | (guest)/demo/page.tsx — [샘플로 체험하기]는 components/sample-session-buttons.tsx, 회원 화면 위 '샘플' 알림 · [체험 끝내기]는 member-auth-guard.tsx. 로그인 화면에 입구 링크 | F-010 |
@@ -46,7 +46,7 @@
 | SET_02_001 평가 리포트 | `/report` (공개 · 검색 노출 — D-029) | 게스트 | (guest)/report/page.tsx — 옛 `/settings/report`는 next.config.ts에서 `/report`로 보냄 | F-010 |
 
 - URL 없는 화면: IMP_01_001~003 · 900(기록 추가 모달 — IMP_01_001에 가져올 곳 탭: 마크다운 파일 · 노션 연결(F-005)), APL_01_002(공고 추가 모달), CRD_01_003(후보 검토 시트 — 노트 상세 '후보 N개 검토' · `/cards?tab=candidate`에서 열림), REV_01_900 · CRD_01_900 · APL_02_900(상태). 2차 SRC_01_001 · APL_01_003은 만들지 않음.
-- 레이아웃 3종(라우트 그룹, URL에는 안 나옴): `(guest)` 게스트 · `(app)` 왼쪽 메뉴 · `(focus)` 메뉴 숨김(퀴즈).
+- 레이아웃 4종(라우트 그룹, URL에는 안 나옴): `(landing)` 랜딩(공통 틀 없음 — 위 메뉴 · `main` · 바닥글을 페이지가 직접) · `(guest)` 게스트 · `(app)` 왼쪽 메뉴 · `(focus)` 메뉴 숨김(퀴즈).
 - 왼쪽 메뉴: 넓은 화면(lg 이상)에서 로고 옆 [사이드바 접기 · 펼치기]로 접고 펴며 같은 브라우저에 기억한다. 자소서 탭과 좁은 화면은 늘 접혀 있고 버튼이 없다. [기록 추가]는 사이드바에만 있다(기록 · 복습 머리 버튼은 뺌, 빈 화면의 [기록 추가]는 그대로). (사용자 요청 2026-11-16, F-013 5차 — Figma는 고치지 않음)
 - 로그인 확인(회원 화면 막기)은 F-001에서 붙인다.
 - SEO용 메타 경로(화면 · API 아님): `/robots.txt`(frontend/src/app/robots.ts), `/sitemap.xml`(sitemap.ts). 공개 페이지는 `/`, `/login`뿐이고, 공개 페이지를 추가하면 `frontend/src/lib/site.ts`의 `PUBLIC_PATHS`도 같이 고친다.

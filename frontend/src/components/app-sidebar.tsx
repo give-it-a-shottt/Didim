@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AddRecordButton } from "@/components/import-records-dialog";
+import { LogoMark } from "@/components/logo-mark";
 import { SidebarNav, SidebarTooltip } from "@/components/sidebar-nav";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { FOCUS_RING } from "@/lib/ui-classes";
@@ -15,8 +16,7 @@ export function AppSidebar() {
       {/* 펼침: 로고 왼쪽 · [사이드바 접기] 오른쪽 한 줄 / 접힘: 로고 아래에 [사이드바 펼치기](버튼이 보일 때만) */}
       <div className="flex min-h-16 shrink-0 flex-col items-center justify-center gap-2 py-4 sidebar-open:flex-row sidebar-open:justify-between sidebar-open:py-0 sidebar-open:pr-3 sidebar-open:pl-5">
         <Link href="/home" className={`flex items-center gap-2 rounded-button ${FOCUS_RING}`}>
-          {/* 로고 마크: 모서리가 왼쪽 위 · 오른쪽 아래 8, 나머지 6 */}
-          <span aria-hidden="true" className="size-6 rounded-tl-button rounded-tr-tag rounded-br-button rounded-bl-tag bg-primary-accent" />
+          <LogoMark />
           <span className="sr-only text-title-1 font-semibold text-text-main sidebar-open:not-sr-only">디딤</span>
         </Link>
         <SidebarToggle />

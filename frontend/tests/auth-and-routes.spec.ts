@@ -21,7 +21,7 @@ const MEMBER_SCREENS = [
 test("공개 페이지(/, /login)와 로그인 에러 배너가 정상 렌더링된다", async ({ page }) => {
   const landingResp = await page.goto("/");
   expect(landingResp?.status()).toBe(200);
-  await expect(page.getByText("LND_01_001")).toBeVisible();
+  await expect(page.locator('[data-screen-id="LND_01_001"]')).toBeVisible();
   await expect(page.locator("h1")).toHaveCount(1);
 
   const loginResp = await page.goto("/login");
