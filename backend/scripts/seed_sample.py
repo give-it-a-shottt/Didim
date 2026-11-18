@@ -4,7 +4,8 @@ backend 폴더에서(DATABASE_URL의 DB — 개발 DB · 배포 DB):
     uv run --env-file .env python -m scripts.seed_sample                                          # 가장 최근 회차
     uv run --env-file .env python -m scripts.seed_sample --summary eval/summary/run-<시각>.json   # 회차 고르기
 
-- 샘플 사용자(google_sub 'didim-sample')를 지우고 새로 만든다. 체험 중이던 샘플 세션은 로그인 화면으로 돌아간다.
+- 새 샘플을 공개되지 않는 임시 계정에 채운 뒤 한 번에 옛 샘플(google_sub 'didim-sample')과 바꿔 끼운다. 실패하면 지금 샘플은
+  그대로다. 바꿔 끼우면 체험 중이던 샘플 세션은 로그인 화면으로 돌아간다.
 - 저장 개수를 결과 파일과 비교해 다르면 종료 코드 1(샘플 화면과 리포트 수치가 어긋나면 안 됨). 자세한 방식은
   app/services/sample_seed.py. DB 주소 · 키는 출력하지 않는다.
 """

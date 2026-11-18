@@ -221,12 +221,18 @@ def rescore(path: Path, *, runner: Runner = run_streaming) -> int:
         return 1
     failed = False
     for index, entry in enumerate(evals):
-        step = STEP_BY_KEY.get(str(entry.get("key"))) if isinstance(entry, dict) else None
-        result_file = entry.get("result_file") if isinstance(entry, dict) else None
+        if not isinstance(entry, dict):
+            continue
+        step = STEP_BY_KEY.get(str(entry.get("key")))
+        result_file = entry.get("result_file")
         if step is None or not step.rescorable or not isinstance(result_file, str):
             continue
         print(f"\n=== {step.title} 다시 채점 ===", flush=True)
-        code, _ = runner([sys.executable, "-m", f"scripts.{step.module}", "--score", result_file])
+        try:
+            code, _ = runner([sys.executable, "-m", f"scripts.{step.module}", "--score", result_file])
+        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — run_all과 같이 그 칸만 실패(F-010 2차 R3)
+            print(f"{step.title}: 실행하지 못했어요({type(exc).__name__}).", flush=True)
+            code = 1
         rescored = collect(step, code, result_file)
         if rescored["status"] == "failed":
             # 채점이 실패하면 이전 수치를 지우지 않는다 — 판정을 고친 뒤 다시 돌리면 된다(F-010 1차 R3)

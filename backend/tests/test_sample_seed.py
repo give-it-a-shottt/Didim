@@ -16,13 +16,15 @@ from app.services.chunking import split_markdown
 from app.services.eval_report import EVAL_SUMMARY_DIR, list_summaries
 from app.services.note_service import create_note_for_user
 from app.services.sample_seed import (
+    SAMPLE_SEEDING_SUB,
     SeedError,
     SeedReport,
     SeedSources,
     draft_reply,
     match_reply,
+    new_staging_user,
+    promote_staging_user,
     quiz_reply,
-    reset_sample_user,
     seed_sample,
     sources_from_summary,
 )
@@ -72,13 +74,36 @@ def test_sources_need_finished_and_judged_runs() -> None:
         sources_from_summary({"evals": [e for e in summary["evals"] if e["key"] != "postings"]}, BACKEND_DIR)
 
 
-def test_reset_replaces_the_sample_user_and_its_data(db_session: Session) -> None:
-    first = reset_sample_user(db_session)
+def _old_sample_with_note(db: Session) -> int:
+    """이미 공개 중인 옛 샘플(노트 1개)을 흉내 낸다."""
+    user = User(google_sub=SAMPLE_GOOGLE_SUB, email="old@didim.local", name="옛 샘플", daily_limit=0)
+    db.add(user)
+    db.commit()
+    content = "# 옛 노트\n\n본문"
+    create_note_for_user(db, user_id=user.id, title="옛 노트", content=content, chunks=split_markdown(content))
+    return user.id
+
+
+def test_promote_swaps_in_the_new_sample_in_one_step(db_session: Session) -> None:
+    """임시 계정을 다 채운 뒤 한 번에: 옛 샘플(과 딸린 데이터) 지움 · 임시 계정이 샘플 · 상한 0(2차 R2)."""
+    _old_sample_with_note(db_session)
+    staging = new_staging_user(db_session)
+    assert db_session.get(User, staging).google_sub == SAMPLE_SEEDING_SUB  # type: ignore[union-attr]
+    promote_staging_user(db_session, staging)
+    samples = db_session.scalars(select(User).where(User.google_sub == SAMPLE_GOOGLE_SUB)).all()
+    assert [u.id for u in samples] == [staging] and samples[0].daily_limit == 0
+    assert db_session.scalar(select(func.count()).select_from(Note)) == 0  # 옛 샘플의 노트도 함께 지워짐
+    assert db_session.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_SEEDING_SUB)) == 0
+
+
+def test_new_staging_user_clears_leftovers(db_session: Session) -> None:
+    """강제 종료로 남은 임시 계정은 다음 시드가 처음에 지운다."""
+    first = new_staging_user(db_session)
     content = "# t\n\n본문"
     create_note_for_user(db_session, user_id=first, title="t", content=content, chunks=split_markdown(content))
-    reset_sample_user(db_session)  # SQLite는 지운 마지막 번호를 다시 쓸 수 있어 번호 비교는 하지 않는다
-    assert db_session.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_GOOGLE_SUB)) == 1
-    assert db_session.scalar(select(func.count()).select_from(Note)) == 0  # 딸린 데이터도 함께 지워짐
+    new_staging_user(db_session)
+    assert db_session.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_SEEDING_SUB)) == 1
+    assert db_session.scalar(select(func.count()).select_from(Note)) == 0
 
 
 def test_seed_from_the_repo_run_matches_the_result_files(db_session: Session) -> None:
@@ -113,17 +138,47 @@ def test_seed_leaves_the_sample_with_no_ai_budget(db_session: Session) -> None:
     assert user is not None and user.daily_limit == 0
 
 
-def test_failed_seed_removes_the_half_filled_sample(db_session: Session, tmp_path: Path) -> None:
-    """중간에 실패하면 반쯤 채운 샘플을 지워 체험 열기가 503(아직 준비 안 됨)이 되게 한다(R3)."""
+def _broken_sources(tmp_path: Path) -> SeedSources:
     runs = list_summaries(EVAL_SUMMARY_DIR)
     if not runs:
         pytest.skip("레포에 평가 회차 요약이 없어요.")
     sources = sources_from_summary(runs[0], BACKEND_DIR)
     broken = tmp_path / "interview.json"
     broken.write_text(json.dumps({"cards": [{"card": "c01-1", "questions": [{"kept": True}]}]}), encoding="utf-8")  # 필수 키 없음
-    with pytest.raises(SeedError, match="샘플 사용자를 지웠어요"):
-        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=SeedSources(sources.quiz, sources.postings, sources.drafts, broken)))
-    assert db_session.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_GOOGLE_SUB)) == 0
+    return SeedSources(sources.quiz, sources.postings, sources.drafts, broken)
+
+
+def _assert_old_sample_kept(db: Session, old_id: int) -> None:
+    samples = db.scalars(select(User.id).where(User.google_sub == SAMPLE_GOOGLE_SUB)).all()
+    assert list(samples) == [old_id]  # 옛 샘플은 그대로 공개 중
+    assert db.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_SEEDING_SUB)) == 0
+    # 반쯤 채운 임시 계정의 노트 · 카드도 함께 지워짐(옛 샘플의 노트 1개만 남음)
+    assert db.scalar(select(func.count()).select_from(Note)) == 1
+    assert db.scalar(select(func.count()).select_from(Card)) == 0
+
+
+def test_failed_seed_keeps_the_old_sample_and_drops_the_half_filled_one(db_session: Session, tmp_path: Path) -> None:
+    """중간에 실패해도 공개 중인 샘플은 그대로, 반쯤 채운 임시 계정과 딸린 데이터는 지운다(2차 R2 · R3)."""
+    old_id = _old_sample_with_note(db_session)
+    with pytest.raises(SeedError, match="지금 샘플은 그대로예요"):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+    _assert_old_sample_kept(db_session, old_id)
+
+
+@pytest.mark.parametrize("signal", [KeyboardInterrupt, asyncio.CancelledError])
+def test_interrupted_seed_cleans_up_and_reraises(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, signal: type[BaseException]) -> None:
+    """중단 · 취소는 일반 실패로 바꾸지 않고 그대로 올린다 — 정리는 한다(2차 R3)."""
+    from app.services import sample_seed
+
+    old_id = _old_sample_with_note(db_session)
+
+    async def stop(*_args, **_kwargs) -> None:
+        raise signal
+
+    monkeypatch.setattr(sample_seed, "_fill", stop)
+    with pytest.raises(signal):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+    _assert_old_sample_kept(db_session, old_id)
 
 
 def test_mismatches_report_counts_that_differ() -> None:

@@ -173,6 +173,10 @@ def test_open_sample_refuses_cross_site_requests(client: TestClient, db_session:
         assert response.status_code == 403, site
         assert SESSION_COOKIE_NAME not in response.cookies
     assert client.post("/api/demo/session", headers={"Sec-Fetch-Site": "same-origin"}).status_code == 204
+    # 주소창 · 북마크(none)와 대소문자가 다른 값도 받는다(2차 R3)
+    for site in ("none", "Same-Origin", "NONE"):
+        assert client.post("/api/demo/session", headers={"Sec-Fetch-Site": site}).status_code == 204, site
+    assert client.post("/api/demo/session", headers={"Sec-Fetch-Site": "Cross-Site"}).status_code == 403
 
 
 def test_open_sample_reports_session_config_errors(client: TestClient, db_session: Session, test_settings) -> None:

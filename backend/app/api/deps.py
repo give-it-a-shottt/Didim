@@ -57,9 +57,18 @@ def get_current_user(
         )
 
     user = get_user_by_id(db, user_id)
-    # 샘플 표시가 있는 토큰은 샘플 계정이어야 한다. 시드가 샘플 계정을 다시 만들며 번호가 다른 사람에게 가는 DB(SQLite 등)에서
-    # 옛 샘플 토큰이 그 사람으로 열리지 않게 한다(F-010 1차 R2). 위에서 서명을 이미 확인해 설정 오류는 나지 않는다.
-    if user is None or is_sample_session_token(session_token, settings.session_secret) != is_sample_user(user):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="유효하지 않은 계정이에요. 다시 로그인해 주세요.",
+        )
+
+    # 샘플 표시가 있는 토큰은 샘플 계정이어야 하고, 샘플 계정은 샘플 표시가 있는 토큰으로만 열린다. 시드가 샘플 계정을 다시 만들며
+    # 번호가 다른 사람에게 가는 DB(SQLite 등)에서 옛 샘플 토큰이 그 사람으로 열리지 않게 한다(F-010 1차 R2). 위에서 서명을 이미 확인해
+    # 설정 오류는 나지 않는다.
+    token_is_sample = is_sample_session_token(session_token, settings.session_secret)
+    account_is_sample = is_sample_user(user)
+    if token_is_sample != account_is_sample:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="유효하지 않은 계정이에요. 다시 로그인해 주세요.",

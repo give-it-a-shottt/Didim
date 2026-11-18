@@ -7,8 +7,10 @@
 - 카드: 평가와 같은 build_eval_cards(경험 구간 문단 → 저장 카드 20장). 초안 · 면접 결과의 인용이 이 카드 글에 맞는다.
 - 자소서: 초안 평가처럼 정답지 매칭을 깔고 초안을 다시 들려준 뒤, 역량 줄을 지우고 AI 공고 분석(역량 뽑기 · 매칭)을
   다시 들려준다 — 분석 탭은 AI 결과(리포트 매칭 수치), 초안은 초안 평가와 같은 카드 묶음(사용자 선택 2026-11-18).
-- 샘플 사용자는 지우고 새로 만든다(모든 표가 ON DELETE CASCADE). 하루 AI 상한은 넉넉히 — 시드가 60번 넘게
-  상한 확인을 지나가고, 샘플 세션은 미들웨어가 AI 호출을 막으므로 상한이 뜻이 없다.
+- 새 데이터는 공개되지 않는 임시 계정(google_sub SAMPLE_SEEDING_SUB)에 채우고, 다 채운 뒤 한 commit에서 옛 샘플을
+  지우고(모든 표가 ON DELETE CASCADE) 임시 계정을 샘플로 바꿔 끼우며 하루 AI 상한을 0으로 둔다(F-010 2차 R2 · R3).
+  그래서 시드 도중 · 실패 · 강제 종료에도 반쯤 채운 샘플이 공개되지 않고, 옛 샘플은 바꿔 끼우는 순간까지 그대로다.
+  채우는 동안의 임시 계정 상한은 넉넉히(60번 넘게 상한 확인을 지나감). 남은 임시 계정은 다음 시드가 처음에 지운다.
 """
 
 from __future__ import annotations
@@ -63,7 +65,8 @@ from app.services.quiz_generation import (
 
 SAMPLE_EMAIL = "sample@didim.local"
 SAMPLE_NAME = "샘플 지원자"
-SAMPLE_DAILY_LIMIT = 10_000  # 시드하는 동안만 — 60번 넘게 상한 확인을 지나간다
+SAMPLE_DAILY_LIMIT = 10_000  # 임시 계정에 채우는 동안만 — 60번 넘게 상한 확인을 지나간다
+SAMPLE_SEEDING_SUB = "didim-sample-seeding"  # 채우는 동안의 임시 계정(공개 안 됨 — 샘플 열기는 SAMPLE_GOOGLE_SUB만 찾음)
 SAMPLE_DAILY_LIMIT_AFTER = 0  # 시드가 끝나면 0 — 읽기 전용 가드에 빈틈이 생겨도 공개 계정으로 AI를 못 부르게(F-010 1차 R2)
 
 # 요약 파일의 평가 칸 → 시드가 읽는 결과 파일
@@ -131,13 +134,36 @@ def _reply(payload: object) -> MockLLMClient:
     return MockLLMClient([json.dumps(payload, ensure_ascii=False)])
 
 
-def reset_sample_user(db: Session) -> int:
-    """샘플 사용자를 지우고(딸린 데이터는 DB 외래키가 함께 지움) 새로 만든다. 새 사용자 번호."""
-    db.execute(delete(User).where(User.google_sub == SAMPLE_GOOGLE_SUB))
-    user = User(google_sub=SAMPLE_GOOGLE_SUB, email=SAMPLE_EMAIL, name=SAMPLE_NAME, daily_limit=SAMPLE_DAILY_LIMIT)
+def new_staging_user(db: Session) -> int:
+    """남은 임시 계정을 지우고(딸린 데이터는 DB 외래키가 함께 지움) 새 임시 계정을 만든다. 새 사용자 번호."""
+    db.execute(delete(User).where(User.google_sub == SAMPLE_SEEDING_SUB))
+    user = User(google_sub=SAMPLE_SEEDING_SUB, email=SAMPLE_EMAIL, name=SAMPLE_NAME, daily_limit=SAMPLE_DAILY_LIMIT)
     db.add(user)
     db.commit()
     return user.id
+
+
+def promote_staging_user(db: Session, user_id: int) -> None:
+    """한 commit에서: 옛 샘플 지우기 → 임시 계정을 샘플로 → 하루 AI 상한 0. 중간에 실패하면 아무것도 바뀌지 않는다."""
+    db.execute(delete(User).where(User.google_sub == SAMPLE_GOOGLE_SUB))
+    db.flush()  # 옛 샘플이 먼저 지워져야 google_sub UNIQUE에 걸리지 않는다
+    user = db.get(User, user_id)
+    if user is None or user.google_sub != SAMPLE_SEEDING_SUB:
+        raise SeedError("임시 계정이 없어요.")
+    user.google_sub = SAMPLE_GOOGLE_SUB
+    user.daily_limit = SAMPLE_DAILY_LIMIT_AFTER
+    db.commit()
+
+
+def _discard_staging(db: Session) -> str | None:
+    """실패한 임시 계정을 지운다. 정리도 실패하면 그 이유(원래 실패를 덮지 않게 돌려준다)."""
+    try:
+        db.rollback()
+        db.execute(delete(User).where(User.google_sub == SAMPLE_SEEDING_SUB))
+        db.commit()
+    except Exception as exc:  # noqa: BLE001 — 정리 실패는 원래 실패와 함께 알린다(임시 계정은 공개 안 되고 다음 시드가 지움)
+        return type(exc).__name__
+    return None
 
 
 # --- 퀴즈 ---
@@ -301,21 +327,17 @@ async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> S
     """샘플 계정을 새로 만들고 평가 회차 결과를 다시 들려줘 채운다. 저장 개수가 결과와 다르면 report.mismatches에 남는다."""
     quiz, postings, drafts, interview = (_load(p) for p in (sources.quiz, sources.postings, sources.drafts, sources.interview))
     report = SeedReport()
-    report.user_id = user_id = reset_sample_user(db)
+    report.user_id = user_id = new_staging_user(db)
     try:
         await _fill(db, report, user_id=user_id, eval_dir=eval_dir, quiz=quiz, postings=postings, drafts=drafts, interview=interview)
-    except BaseException as exc:
-        # 반쯤 채운 샘플로 체험이 열리지 않게 샘플 사용자를 지운다 → 체험 열기는 503 '아직 준비 안 됨'(F-010 1차 R3)
-        db.rollback()
-        db.execute(delete(User).where(User.google_sub == SAMPLE_GOOGLE_SUB))
-        db.commit()
-        if isinstance(exc, SeedError | KeyboardInterrupt):
-            raise
-        raise SeedError(f"샘플을 넣다가 멈췄어요({type(exc).__name__}). 샘플 사용자를 지웠어요.") from exc
-    user = db.get(User, user_id)
-    if user is not None:
-        user.daily_limit = SAMPLE_DAILY_LIMIT_AFTER
-        db.commit()
+        promote_staging_user(db, user_id)
+    except Exception as exc:
+        cleanup_error = _discard_staging(db)
+        note = f" 임시 계정 정리도 실패했어요({cleanup_error}) — 다음 시드가 지워요." if cleanup_error else ""
+        raise SeedError(f"샘플을 넣다가 멈췄어요({type(exc).__name__}). 지금 샘플은 그대로예요.{note}") from exc
+    except BaseException:
+        _discard_staging(db)  # 중단 · 취소는 그대로 올린다(F-010 2차 R3)
+        raise
     return report
 
 

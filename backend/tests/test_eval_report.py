@@ -293,3 +293,23 @@ def test_resume_clears_finished_at_until_done(tmp_path: Path) -> None:
     only = eval_all.Options("nvidia", ("quiz", "cards"), 3.0, 2, 60.0, False)
     eval_all.run_all(only, out, runner=watching, sizes=SIZES, resume=saved)
     assert seen[-1] is None  # 두 번째 단계를 돌 때 파일의 finished_at은 비어 있다
+
+
+def test_rescore_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
+    """다시 채점에서 하위 프로세스를 못 띄워도 그 칸만 실패로 두고(이전 수치 유지) 나머지는 계속한다(2차 R3)."""
+    runner, _ = _fake_runner(tmp_path, {"drafts_ai": {"warn_rate": 0.8}, "interview_ai": {"premise_rate": 0.0}})
+    out = tmp_path / "run-1.json"
+    eval_all.run_all(OPTIONS, out, runner=runner, sizes=SIZES)
+    calls: list[str] = []
+
+    def flaky(command: list[str]) -> tuple[int, str | None]:
+        calls.append(command[2])
+        if command[2] == "scripts.draft_eval":
+            raise FileNotFoundError("python 없음")
+        return 0, None
+
+    assert eval_all.rescore(out, runner=flaky) == 1
+    assert calls == ["scripts.draft_eval", "scripts.interview_eval"]  # 첫 칸이 실패해도 다음 칸을 채점
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    by_key = {e["key"]: e for e in saved["evals"]}
+    assert by_key["drafts_ai"]["metrics"][0]["value"] == 0.8 and saved["rescored_at"]
