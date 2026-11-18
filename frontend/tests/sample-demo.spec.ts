@@ -44,3 +44,17 @@ test("일반 로그인 세션에는 샘플 알림이 없다", async ({ context, 
   await expect(page.locator('[data-screen-id="APL_01_001"]')).toBeVisible();
   await expect(page.getByText("가상 지원자의 기록을 둘러보는 중이에요", { exact: false })).toHaveCount(0);
 });
+
+test("샘플 데이터가 아직 없으면(503) 체험 대신 안내 문구를 보여 준다", async ({ page }) => {
+  // F-010 1차 리뷰 R3: 시드 전 · 시드 실패 뒤에는 샘플 사용자가 없어 서버가 503을 준다
+  await page.route("**/api/demo/session", (route) =>
+    route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "준비 안 됨" }) }),
+  );
+  await page.goto("/demo");
+  await page.getByRole("button", { name: "샘플로 체험하기" }).click();
+  // Next의 화면 이동 알림(__next-route-announcer__)도 role="alert"라 문구로 좁힌다
+  await expect(
+    page.getByRole("alert").filter({ hasText: "샘플 데이터가 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요." }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/demo$/);
+});

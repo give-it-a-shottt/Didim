@@ -34,6 +34,7 @@ from app.services.eval_report import (
     STEPS,
     SUMMARY_VERSION,
     EvalStep,
+    format_value,
     list_summaries,
     parse_result_path,
     readme_table,
@@ -173,6 +174,7 @@ def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, size
         # --only로 고른 단계는 'ok'여도 다시 돌려 그 칸을 바꾼다(예: 결과 파일 모양을 바꾼 뒤 매칭만 다시)
         evals = [e for e in evals if str(e.get("key")) not in options.only]
         summary["resumed_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
+        summary["finished_at"] = None  # 이어 하다 또 멈추면 '끝난 회차'로 보이지 않게(F-010 1차 R3)
     else:
         summary = {
             "version": SUMMARY_VERSION,
@@ -192,7 +194,11 @@ def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, size
         print(f"이미 끝난 단계는 건너뛰어요: {', '.join(sorted(done))}", flush=True)
     for index, step in enumerate(steps, start=1):
         print(f"\n=== [{index}/{len(steps)}] {step.title} ===", flush=True)
-        code, result_path = runner(build_command(step, options))
+        try:
+            code, result_path = runner(build_command(step, options))
+        except OSError as exc:  # 하위 프로세스를 띄우지 못함 — 이 단계만 실패로 두고 계속(F-010 1차 R3)
+            print(f"{step.title}: 실행하지 못했어요({type(exc).__name__}).", flush=True)
+            code, result_path = 1, None
         evals = _ordered([*evals, collect(step, code, result_path)])
         summary["evals"] = evals
         summary["model"] = run_model(evals)
@@ -210,16 +216,24 @@ def rescore(path: Path, *, runner: Runner = run_streaming) -> int:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"요약 파일 오류: {type(exc).__name__}")
         return 1
+    if not isinstance(evals, list):
+        print("요약 파일 모양이 달라요.")
+        return 1
     failed = False
     for index, entry in enumerate(evals):
-        step = STEP_BY_KEY.get(str(entry.get("key")))
-        result_file = entry.get("result_file")
+        step = STEP_BY_KEY.get(str(entry.get("key"))) if isinstance(entry, dict) else None
+        result_file = entry.get("result_file") if isinstance(entry, dict) else None
         if step is None or not step.rescorable or not isinstance(result_file, str):
             continue
         print(f"\n=== {step.title} 다시 채점 ===", flush=True)
         code, _ = runner([sys.executable, "-m", f"scripts.{step.module}", "--score", result_file])
-        evals[index] = collect(step, code, result_file)
-        failed = failed or evals[index]["status"] == "failed"
+        rescored = collect(step, code, result_file)
+        if rescored["status"] == "failed":
+            # 채점이 실패하면 이전 수치를 지우지 않는다 — 판정을 고친 뒤 다시 돌리면 된다(F-010 1차 R3)
+            print(f"{step.title} 다시 채점 실패: {rescored.get('error')} — 이전 수치를 그대로 둬요.")
+            failed = True
+            continue
+        evals[index] = rescored
     summary["rescored_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
     write_json_atomic(path, summary)
     return 1 if failed else 0
@@ -245,16 +259,8 @@ def print_summary(summary: dict[str, object]) -> None:
     print("\n=== 회차 요약 ===")
     evals = summary.get("evals")
     for entry in evals if isinstance(evals, list) else []:
-        parts = []
-        for metric in entry["metrics"]:
-            value = metric["value"]
-            if value is None:
-                shown = "판정 대기" if entry["labels_pending"] else "-"
-            elif metric["kind"] == "rate":
-                shown = f"{value * 100:.1f}%"
-            else:
-                shown = f"{value}"
-            parts.append(f"{metric['label']} {shown}")
+        # README · 화면과 같은 표시 규칙(eval_report.format_value — F-010 1차 R1)
+        parts = [f"{metric['label']} {format_value(metric, entry['labels_pending'])}" for metric in entry["metrics"]]
         status = "" if entry["status"] == "ok" else f" [{entry['status']}: {entry.get('error') or '중간에 멈춤'}]"
         print(f"- {entry['title']}{status}: " + " · ".join(parts))
 

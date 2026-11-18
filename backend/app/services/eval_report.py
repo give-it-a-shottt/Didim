@@ -137,6 +137,7 @@ def list_summaries(summary_dir: Path) -> list[dict[str, object]]:
 
 README_START = "<!-- eval-report:start -->"
 README_END = "<!-- eval-report:end -->"
+# 화면에도 같은 목록이 있다(frontend/src/lib/report.ts DATA_LABELS) — 이름 · 순서를 바꾸면 두 곳을 같이 고친다(F-010 1차 R1)
 DATA_LABELS = {
     "quiz_notes": "퀴즈 노트", "card_notes": "경험 노트", "experiences": "심은 경험",
     "postings": "공고", "requirements": "요구 역량", "draft_questions": "자소서 문항",

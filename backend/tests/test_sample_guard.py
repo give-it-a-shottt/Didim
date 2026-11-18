@@ -1,6 +1,7 @@
 """샘플 체험 세션 · 읽기 전용 미들웨어 테스트 (F-010, D-029)."""
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.sample_guard import (
@@ -111,3 +112,77 @@ def test_get_routes_snapshot() -> None:
     gets = sorted(p for m, p in _registered() if m == "GET")
     assert BLOCKED_READS <= set(gets)
     assert len(gets) == 21, gets  # F-010 GET /api/report 추가(읽기만 함)
+
+
+# --- F-010 1차 리뷰 반영 ---
+
+
+def test_sample_search_does_not_save_logs(client: TestClient, db_session: Session, monkeypatch) -> None:
+    """샘플은 GET 검색도 DB에 쓰지 않는다(R2 — 검색 로그). 라우터가 save_log=False를 넘기는지 본다."""
+    import app.api.search as search_api
+
+    seen: list[bool] = []
+
+    def fake_search_records(*_args, save_log: bool = True, **_kwargs):
+        seen.append(save_log)
+        raise search_api.SearchUnavailableError("멈춤")  # 응답 모양은 이 테스트의 관심이 아님
+
+    monkeypatch.setattr(search_api, "search_records", fake_search_records)
+    _open_sample(client, db_session)
+    client.get("/api/search", params={"q": "캐시"})
+    client.cookies.clear()
+    user = get_or_create_google_user(db_session, GoogleProfile(sub="555", email="b@example.com", name="나"))
+    client.cookies.set(SESSION_COOKIE_NAME, create_session_token(user.id, SECRET))
+    client.get("/api/search", params={"q": "캐시"})
+    assert seen == [False, True]
+
+
+def test_search_records_skips_the_log_when_asked(db_session: Session) -> None:
+    from app.db.models import SearchLog
+    from app.search import SearchQuery
+    from app.services.search_service import search_records
+
+    class EmptySearcher:
+        method = "fake"
+
+        def search(self, db, *, user_id, query: SearchQuery, limit, max_per_note):
+            return []
+
+    user = get_or_create_google_user(db_session, GoogleProfile(sub="556", email="c@example.com", name="다"))
+    search_records(db_session, EmptySearcher(), user_id=user.id, text="캐시", limit=5, save_log=False)  # type: ignore[arg-type]
+    assert db_session.scalar(select(func.count()).select_from(SearchLog)) == 0
+    search_records(db_session, EmptySearcher(), user_id=user.id, text="캐시", limit=5)  # type: ignore[arg-type]
+    assert db_session.scalar(select(func.count()).select_from(SearchLog)) == 1
+
+
+def test_sample_mark_must_match_the_account(client: TestClient, db_session: Session) -> None:
+    """토큰의 샘플 표시와 계정이 다르면 401(R2 — 샘플 계정을 다시 만들며 번호가 다른 사람에게 간 경우)."""
+    normal = get_or_create_google_user(db_session, GoogleProfile(sub="557", email="d@example.com", name="라"))
+    client.cookies.set(SESSION_COOKIE_NAME, create_session_token(normal.id, SECRET, sample=True))
+    assert client.get("/api/auth/me").status_code == 401
+    sample_id = _sample_user(db_session)
+    client.cookies.set(SESSION_COOKIE_NAME, create_session_token(sample_id, SECRET))  # 샘플 계정인데 표시 없음
+    assert client.get("/api/auth/me").status_code == 401
+
+
+def test_open_sample_refuses_cross_site_requests(client: TestClient, db_session: Session) -> None:
+    """다른 사이트가 보낸 form으로 방문자를 로그아웃시키지 못하게(R2 — 로그인 CSRF)."""
+    _sample_user(db_session)
+    for site in ("cross-site", "same-site"):
+        response = client.post("/api/demo/session", headers={"Sec-Fetch-Site": site})
+        assert response.status_code == 403, site
+        assert SESSION_COOKIE_NAME not in response.cookies
+    assert client.post("/api/demo/session", headers={"Sec-Fetch-Site": "same-origin"}).status_code == 204
+
+
+def test_open_sample_reports_session_config_errors(client: TestClient, db_session: Session, test_settings) -> None:
+    """세션 비밀키 설정이 틀리면 500(R3)."""
+    import dataclasses
+
+    from app.api.deps import AUTH_NOT_CONFIGURED_DETAIL, get_settings
+
+    _sample_user(db_session)
+    client.app.dependency_overrides[get_settings] = lambda: dataclasses.replace(test_settings, session_secret="짧음")  # type: ignore[attr-defined]
+    response = client.post("/api/demo/session")
+    assert response.status_code == 500
+    assert response.json()["detail"] == AUTH_NOT_CONFIGURED_DETAIL

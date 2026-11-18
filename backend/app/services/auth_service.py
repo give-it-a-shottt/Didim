@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.config import (
     MIN_SESSION_SECRET_LENGTH,
     OAUTH_STATE_MAX_AGE_SECONDS,
+    SAMPLE_GOOGLE_SUB,
     SESSION_MAX_AGE_SECONDS,
     Settings,
 )
@@ -134,6 +135,11 @@ def create_session_token(
     if sample:
         payload["sample"] = True
     return _sign_payload(payload, secret)
+
+
+def is_sample_user(user: User) -> bool:
+    """샘플 체험 계정인지(계정 기준). 세션 토큰의 sample 표시와 늘 같아야 한다 — get_current_user가 맞춰 본다(F-010 1차 R1 · R2)."""
+    return user.google_sub == SAMPLE_GOOGLE_SUB
 
 
 def is_sample_session_token(token: str, secret: str) -> bool:

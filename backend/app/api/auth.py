@@ -5,13 +5,11 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_settings
+from app.api.deps import get_current_user, get_settings, set_session_cookie
 from app.config import (
     OAUTH_STATE_COOKIE_NAME,
     OAUTH_STATE_MAX_AGE_SECONDS,
-    SAMPLE_GOOGLE_SUB,
     SESSION_COOKIE_NAME,
-    SESSION_MAX_AGE_SECONDS,
     Settings,
 )
 from app.db.models import User
@@ -25,6 +23,7 @@ from app.services.auth_service import (
     create_session_token,
     exchange_google_code_for_profile,
     get_or_create_google_user,
+    is_sample_user,
     verify_oauth_state_token,
 )
 
@@ -111,15 +110,7 @@ async def google_callback(
         status_code=status.HTTP_302_FOUND,
     )
     response.delete_cookie(key=OAUTH_STATE_COOKIE_NAME, path="/")
-    response.set_cookie(
-        key=SESSION_COOKIE_NAME,
-        value=session_token,
-        max_age=SESSION_MAX_AGE_SECONDS,
-        httponly=True,
-        samesite="lax",
-        secure=settings.cookie_secure,
-        path="/",
-    )
+    set_session_cookie(response, session_token, settings)
     return response
 
 
@@ -130,7 +121,7 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> Current
         id=current_user.id,
         email=current_user.email,
         name=current_user.name,
-        is_sample=current_user.google_sub == SAMPLE_GOOGLE_SUB,
+        is_sample=is_sample_user(current_user),
     )
 
 

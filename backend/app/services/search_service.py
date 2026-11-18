@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import MAX_SEARCH_RESULTS_PER_NOTE, SEARCH_SCORE_DIGITS
 from app.db.models import SearchLog
-from app.search import SearchHit, SearchQuery, Searcher, extract_terms, make_excerpt
+from app.search import Searcher, SearchHit, SearchQuery, extract_terms, make_excerpt
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +29,13 @@ class SearchOutcome:
     results: list[SearchResultItem]
 
 
-def search_records(db: Session, searcher: Searcher, *, user_id: int, text: str, limit: int) -> SearchOutcome:
+def search_records(
+    db: Session, searcher: Searcher, *, user_id: int, text: str, limit: int, save_log: bool = True
+) -> SearchOutcome:
     """user_id의 기록 조각을 찾는다. 검색이 끝나면 로그를 남긴다(D-005).
 
     검색 방식을 못 쓰면 SearchUnavailableError, 시간 상한을 넘으면 SearchTimeoutError(세션은 이미 rollback됨).
-    두 경우 모두 로그는 남기지 않는다.
+    두 경우 모두 로그는 남기지 않는다. 샘플 체험 세션(save_log=False)도 남기지 않는다 — 샘플은 읽기만 한다(F-010 1차 R2).
     """
     query_text = text.strip()
     terms = extract_terms(query_text)
@@ -47,7 +49,8 @@ def search_records(db: Session, searcher: Searcher, *, user_id: int, text: str, 
         excerpt, matched = make_excerpt(hit.content, terms)
         results.append(SearchResultItem(hit=hit, excerpt=excerpt, matched_terms=matched))
 
-    _save_log(db, user_id=user_id, query=query_text, method=searcher.method, hits=hits)
+    if save_log:
+        _save_log(db, user_id=user_id, query=query_text, method=searcher.method, hits=hits)
     return SearchOutcome(query=query_text, terms=terms, method=searcher.method, results=results)
 
 

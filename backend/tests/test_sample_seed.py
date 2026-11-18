@@ -17,6 +17,8 @@ from app.services.eval_report import EVAL_SUMMARY_DIR, list_summaries
 from app.services.note_service import create_note_for_user
 from app.services.sample_seed import (
     SeedError,
+    SeedReport,
+    SeedSources,
     draft_reply,
     match_reply,
     quiz_reply,
@@ -96,3 +98,41 @@ def test_seed_from_the_repo_run_matches_the_result_files(db_session: Session) ->
     # 분석 탭은 AI 결과로 바뀌어 있다(정답지 줄이 남아 있지 않음 — 정답지 역량 이름은 공고 줄 그대로라 AI 이름과 다르다)
     names = db_session.scalars(select(PostingRequirement.name).where(PostingRequirement.user_id == user_id)).all()
     assert names and not all(len(name) > 25 for name in names)
+
+
+# --- F-010 1차 리뷰 반영 ---
+
+
+def test_seed_leaves_the_sample_with_no_ai_budget(db_session: Session) -> None:
+    """시드가 끝나면 공개 샘플 계정의 하루 AI 상한은 0(R2 — 가드에 빈틈이 생겨도 AI를 못 부르게)."""
+    runs = list_summaries(EVAL_SUMMARY_DIR)
+    if not runs:
+        pytest.skip("레포에 평가 회차 요약이 없어요.")
+    report = asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=sources_from_summary(runs[0], BACKEND_DIR)))
+    user = db_session.get(User, report.user_id)
+    assert user is not None and user.daily_limit == 0
+
+
+def test_failed_seed_removes_the_half_filled_sample(db_session: Session, tmp_path: Path) -> None:
+    """중간에 실패하면 반쯤 채운 샘플을 지워 체험 열기가 503(아직 준비 안 됨)이 되게 한다(R3)."""
+    runs = list_summaries(EVAL_SUMMARY_DIR)
+    if not runs:
+        pytest.skip("레포에 평가 회차 요약이 없어요.")
+    sources = sources_from_summary(runs[0], BACKEND_DIR)
+    broken = tmp_path / "interview.json"
+    broken.write_text(json.dumps({"cards": [{"card": "c01-1", "questions": [{"kept": True}]}]}), encoding="utf-8")  # 필수 키 없음
+    with pytest.raises(SeedError, match="샘플 사용자를 지웠어요"):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=SeedSources(sources.quiz, sources.postings, sources.drafts, broken)))
+    assert db_session.scalar(select(func.count()).select_from(User).where(User.google_sub == SAMPLE_GOOGLE_SUB)) == 0
+
+
+def test_mismatches_report_counts_that_differ() -> None:
+    """저장 개수가 결과와 다르면 mismatches에 남는다(R3) — 인용이 어느 조각에도 없으면 조각 번호 0(검사가 버림)."""
+    chunks = [SimpleNamespace(id=7, content="다른 글")]
+    saved = [{"kind": "ox", "question": "q", "choices": ["O", "X"], "answer_index": 0, "explanation": "e", "quote": "없는 문장"}]
+    assert quiz_reply(saved, chunks)["quizzes"][0]["chunk_id"] == 0  # type: ignore[index]
+    report = SeedReport()
+    report.add("퀴즈", 5, 5)
+    report.add("퀴즈", 1, 0)
+    report.add("매칭", 2, 2)
+    assert report.mismatches == ["퀴즈: 결과 6 · 저장 5"]

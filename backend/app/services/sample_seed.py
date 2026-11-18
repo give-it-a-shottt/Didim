@@ -63,7 +63,8 @@ from app.services.quiz_generation import (
 
 SAMPLE_EMAIL = "sample@didim.local"
 SAMPLE_NAME = "샘플 지원자"
-SAMPLE_DAILY_LIMIT = 10_000
+SAMPLE_DAILY_LIMIT = 10_000  # 시드하는 동안만 — 60번 넘게 상한 확인을 지나간다
+SAMPLE_DAILY_LIMIT_AFTER = 0  # 시드가 끝나면 0 — 읽기 전용 가드에 빈틈이 생겨도 공개 계정으로 AI를 못 부르게(F-010 1차 R2)
 
 # 요약 파일의 평가 칸 → 시드가 읽는 결과 파일
 SOURCE_KEYS = {"quiz": "quiz", "postings": "postings", "drafts": "drafts_ai", "interview": "interview_ai"}
@@ -301,7 +302,27 @@ async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> S
     quiz, postings, drafts, interview = (_load(p) for p in (sources.quiz, sources.postings, sources.drafts, sources.interview))
     report = SeedReport()
     report.user_id = user_id = reset_sample_user(db)
+    try:
+        await _fill(db, report, user_id=user_id, eval_dir=eval_dir, quiz=quiz, postings=postings, drafts=drafts, interview=interview)
+    except BaseException as exc:
+        # 반쯤 채운 샘플로 체험이 열리지 않게 샘플 사용자를 지운다 → 체험 열기는 503 '아직 준비 안 됨'(F-010 1차 R3)
+        db.rollback()
+        db.execute(delete(User).where(User.google_sub == SAMPLE_GOOGLE_SUB))
+        db.commit()
+        if isinstance(exc, SeedError | KeyboardInterrupt):
+            raise
+        raise SeedError(f"샘플을 넣다가 멈췄어요({type(exc).__name__}). 샘플 사용자를 지웠어요.") from exc
+    user = db.get(User, user_id)
+    if user is not None:
+        user.daily_limit = SAMPLE_DAILY_LIMIT_AFTER
+        db.commit()
+    return report
 
+
+async def _fill(
+    db: Session, report: SeedReport, *, user_id: int, eval_dir: Path,
+    quiz: Mapping[str, Any], postings: Mapping[str, Any], drafts: Mapping[str, Any], interview: Mapping[str, Any],
+) -> None:
     card_keys = parse_answer_key(json.loads((eval_dir / "cards" / "answers.json").read_text(encoding="utf-8")))
     card_experience = build_eval_cards(db, user_id=user_id, notes_dir=eval_dir / "cards" / "notes", card_keys=card_keys)
     experience_card = {experience: card_id for card_id, experience in card_experience.items()}
@@ -313,4 +334,3 @@ async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> S
         db, report, user_id=user_id, eval_dir=eval_dir, experience_card=experience_card, drafts=drafts, postings=postings
     )
     await _seed_interview(db, report, user_id=user_id, experience_card=experience_card, result=interview)
-    return report

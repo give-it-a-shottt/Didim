@@ -43,7 +43,7 @@
 | APL_02_003 자소서 | `/applications/[id]/draft` | 사이드바(접힘 — CSS `data-collapse-sidebar`) | …/[id]/draft/page.tsx + components/draft-workspace.tsx(빈 상태 19:383 · 쓰는 중 19:407 · 문장 고치기 23:959 · [카드 연결] 창 포함) | F-008 |
 | APL_02_004 면접 연습 | `/applications/[id]/interview` | 사이드바 | …/[id]/interview/page.tsx + components/interview-workspace.tsx(Figma 27:1586 — 완료 기준 요소 얹음, 사용자 선택 2026-11-15) | F-009 |
 | SET_01_001 설정 | `/settings` | 사이드바 | (app)/settings/page.tsx | F-001(계정) · F-005(연결 — 노션, 연결을 마치면 `?notion=connected` · 실패면 `?notion_error=`로 돌아옴) |
-| SET_02_001 평가 리포트 | `/report` (공개 · 검색 노출 — D-029) | 게스트(옮길 예정) | 지금 (app)/settings/report/page.tsx → F-010에서 옮김 | F-010 |
+| SET_02_001 평가 리포트 | `/report` (공개 · 검색 노출 — D-029) | 게스트 | (guest)/report/page.tsx — 옛 `/settings/report`는 next.config.ts에서 `/report`로 보냄 | F-010 |
 
 - URL 없는 화면: IMP_01_001~003 · 900(기록 추가 모달 — IMP_01_001에 가져올 곳 탭: 마크다운 파일 · 노션 연결(F-005)), APL_01_002(공고 추가 모달), CRD_01_003(후보 검토 시트 — 노트 상세 '후보 N개 검토' · `/cards?tab=candidate`에서 열림), REV_01_900 · CRD_01_900 · APL_02_900(상태). 2차 SRC_01_001 · APL_01_003은 만들지 않음.
 - 레이아웃 3종(라우트 그룹, URL에는 안 나옴): `(guest)` 게스트 · `(app)` 왼쪽 메뉴 · `(focus)` 메뉴 숨김(퀴즈).

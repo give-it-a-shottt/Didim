@@ -29,7 +29,8 @@ export type ReportRun = {
   evals: ReportEval[];
 };
 
-// 데이터 규모 칸 이름(backend/scripts/eval_all.py data_sizes)
+// 데이터 규모 칸 이름(backend/scripts/eval_all.py data_sizes). README 표도 같은 목록을 쓴다(backend/app/services/eval_report.py
+// DATA_LABELS) — 이름 · 순서를 바꾸면 두 곳을 같이 고친다(F-010 1차 R1). formatMetric도 eval_report.format_value와 같은 규칙.
 const DATA_LABELS: Record<string, string> = {
   quiz_notes: "퀴즈 노트",
   card_notes: "경험 노트",

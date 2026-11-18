@@ -12,7 +12,13 @@ from app.api.deps import get_current_user
 from app.config import MAX_SEARCH_QUERY_CHARS, MAX_SEARCH_RESULTS
 from app.db.models import User
 from app.db.session import get_db
-from app.search import Searcher, SearchTimeoutError, SearchUnavailableError, get_searcher
+from app.search import (
+    Searcher,
+    SearchTimeoutError,
+    SearchUnavailableError,
+    get_searcher,
+)
+from app.services.auth_service import is_sample_user
 from app.services.search_service import search_records
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -54,7 +60,9 @@ def search(
     if not q.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=EMPTY_QUERY_DETAIL)
     try:
-        outcome = search_records(db, searcher, user_id=current_user.id, text=q, limit=limit)
+        outcome = search_records(
+            db, searcher, user_id=current_user.id, text=q, limit=limit, save_log=not is_sample_user(current_user)
+        )
     except SearchUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=UNAVAILABLE_DETAIL) from exc
     except SearchTimeoutError as exc:

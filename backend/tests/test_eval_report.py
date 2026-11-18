@@ -226,3 +226,70 @@ def test_resume_with_only_reruns_that_step(tmp_path: Path) -> None:
     by_key = {e["key"]: e for e in summary["evals"]}  # type: ignore[index]
     assert by_key["postings"]["metrics"][0]["value"] == 0.9
     assert [e["key"] for e in summary["evals"]] == [s.key for s in STEPS]  # type: ignore[index]
+
+
+# --- F-010 1차 리뷰 반영 ---
+
+
+def test_failed_rescore_keeps_the_previous_numbers(tmp_path: Path) -> None:
+    """다시 채점이 실패하면 이전 수치를 지우지 않는다(R3)."""
+    runner, _ = _fake_runner(tmp_path, {"drafts_ai": {"warn_rate": 0.8, "labels_pending": 0}})
+    out = tmp_path / "run-1.json"
+    eval_all.run_all(OPTIONS, out, runner=runner, sizes=SIZES)
+    assert eval_all.rescore(out, runner=lambda command: (1, None)) == 1
+    by_key = {e["key"]: e for e in json.loads(out.read_text(encoding="utf-8"))["evals"]}
+    assert by_key["drafts_ai"]["status"] == "ok" and by_key["drafts_ai"]["metrics"][0]["value"] == 0.8
+
+
+def test_rescore_skips_entries_that_are_not_objects(tmp_path: Path) -> None:
+    path = tmp_path / "run-x.json"
+    path.write_text(json.dumps({"version": 1, "evals": ["이상한 칸"]}), encoding="utf-8")
+    assert eval_all.rescore(path, runner=lambda command: (0, None)) == 0
+    path.write_text(json.dumps({"version": 1, "evals": "목록 아님"}), encoding="utf-8")
+    assert eval_all.rescore(path, runner=lambda command: (0, None)) == 1
+
+
+def test_collect_failure_paths(tmp_path: Path) -> None:
+    """결과를 못 읽는 경우마다 'failed'와 이유를 남긴다(R3)."""
+    step = STEP_BY_KEY["quiz"]
+    assert eval_all.collect(step, 0, None)["error"] == "결과 파일 경로를 받지 못했어요."
+    assert "읽지 못했어요" in str(eval_all.collect(step, 0, str(tmp_path / "없음.json"))["error"])
+    broken = tmp_path / "broken.json"
+    broken.write_text("{깨짐", encoding="utf-8")
+    assert eval_all.collect(step, 0, str(broken))["status"] == "failed"
+    not_object = tmp_path / "list.json"
+    not_object.write_text("[1, 2]", encoding="utf-8")
+    assert eval_all.collect(step, 0, str(not_object))["error"] == "결과 파일 모양이 달라요."
+    good = tmp_path / "good.json"
+    good.write_text(json.dumps({"model": "m", "summary": {"drop_rate": 0.1}}), encoding="utf-8")
+    entry = eval_all.collect(step, 1, str(good))  # 결과는 있지만 종료 코드 1
+    assert entry["status"] == "failed" and entry["error"] == "종료 코드 1"
+
+
+def test_run_all_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
+    """하위 프로세스를 띄우지 못해도(OSError) 그 단계만 실패로 두고 계속한다(R3)."""
+    runner, _ = _fake_runner(tmp_path, {})
+
+    def flaky(command: list[str]) -> tuple[int, str | None]:
+        if command[2] == "scripts.quiz_eval":
+            raise FileNotFoundError("python 없음")
+        return runner(command)
+
+    summary = eval_all.run_all(OPTIONS, tmp_path / "run-1.json", runner=flaky, sizes=SIZES)
+    by_key = {e["key"]: e for e in summary["evals"]}  # type: ignore[index]
+    assert by_key["quiz"]["status"] == "failed" and len(summary["evals"]) == len(STEPS)  # type: ignore[arg-type]
+
+
+def test_resume_clears_finished_at_until_done(tmp_path: Path) -> None:
+    """이어 하는 동안 요약은 '끝나지 않음' — 다시 멈춰도 끝난 회차로 보이지 않는다(R3)."""
+    out = tmp_path / "run-1.json"
+    saved = {"version": 1, "run_id": "1", "data": SIZES, "provider": "nvidia", "finished_at": "2026-11-17T00:00:00+09:00", "evals": []}
+    seen: list[object] = []
+
+    def watching(command: list[str]) -> tuple[int, str | None]:
+        seen.append(json.loads(out.read_text(encoding="utf-8"))["finished_at"] if out.exists() else saved["finished_at"])
+        return 1, None
+
+    only = eval_all.Options("nvidia", ("quiz", "cards"), 3.0, 2, 60.0, False)
+    eval_all.run_all(only, out, runner=watching, sizes=SIZES, resume=saved)
+    assert seen[-1] is None  # 두 번째 단계를 돌 때 파일의 finished_at은 비어 있다
