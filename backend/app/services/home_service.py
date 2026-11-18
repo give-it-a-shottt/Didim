@@ -33,6 +33,7 @@ class HomeSteps:
 @dataclass(frozen=True)
 class HomeView:
     steps: HomeSteps
+    deadline_days: int  # 마감 칸 기준 일수(오늘 포함) — 화면 문구가 이 값을 그대로 쓴다
     deadlines: list[UpcomingDeadline]
     blank_cards: list[BlankCard]
 
@@ -42,6 +43,7 @@ def _count(db: Session, model: type, *conditions: object) -> int:
 
 
 def get_home(db: Session, *, user_id: int, now: datetime | None = None) -> HomeView:
+    # 한 지원에 초안이 여러 개(문항마다)라 지원 id를 distinct로 한 번만 센다
     drafted = db.scalar(
         select(func.count(func.distinct(Draft.application_id))).where(Draft.user_id == user_id)
     ) or 0
@@ -54,6 +56,7 @@ def get_home(db: Session, *, user_id: int, now: datetime | None = None) -> HomeV
     )
     return HomeView(
         steps=steps,
+        deadline_days=HOME_DEADLINE_DAYS,
         deadlines=list_upcoming_deadlines(
             db, user_id=user_id, within_days=HOME_DEADLINE_DAYS, limit=HOME_LIST_LIMIT, now=now
         ),

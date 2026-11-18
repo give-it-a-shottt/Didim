@@ -1088,7 +1088,7 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  // 홈(F-012): 토큰 꼬리표로 경우를 나눈다 — 정상 = 다 갖춘 사용자, -home-empty = 처음 온 사람, -home-partial = 기록만, -home-error = 실패
+  // 홈(F-012): 토큰 꼬리표로 경우를 나눈다 — 정상 = 다 갖춘 사용자, -home-empty = 처음 온 사람, -home-partial = 기록만, -home-error = 실패, -home-bad = 200인데 모양이 틀림
   if (req.method === "GET" && req.url === "/api/home") {
     const cookie = req.headers.cookie ?? "";
     if (!isLoggedIn(req)) {
@@ -1103,10 +1103,16 @@ const server = http.createServer((req, res) => {
     }
     const zero = { notes: 0, reviews_today: 0, cards: 0, applications: 0, drafted_applications: 0 };
     let body;
-    if (cookie.includes("-home-empty")) body = { steps: zero, deadlines: [], blank_cards: [] };
-    else if (cookie.includes("-home-partial")) body = { steps: { ...zero, notes: 2 }, deadlines: [], blank_cards: [] };
-    else {
+    if (cookie.includes("-home-empty")) body = { steps: zero, deadline_days: 7, deadlines: [], blank_cards: [] };
+    else if (cookie.includes("-home-partial")) body = { steps: { ...zero, notes: 2 }, deadline_days: 7, deadlines: [], blank_cards: [] };
+    else if (cookie.includes("-home-bad")) {
       body = {
+        steps: zero, deadline_days: 7, blank_cards: [],
+        deadlines: [{ id: 904, company: "지난마감", role: "백엔드", deadline: "2026-11-17", days_left: -1, status: "ready" }],
+      };
+    } else {
+      body = {
+        deadline_days: 7,
         steps: { notes: 12, reviews_today: 4, cards: 7, applications: 3, drafted_applications: 2 },
         deadlines: [
           { id: 902, company: "스텝랩", role: "백엔드", deadline: "2026-11-20", days_left: 2, status: "writing" },

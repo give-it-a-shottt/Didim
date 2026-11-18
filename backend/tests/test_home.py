@@ -5,17 +5,19 @@ from datetime import UTC, date, datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.config import SESSION_COOKIE_NAME, Settings
+from app.config import HOME_DEADLINE_DAYS, SESSION_COOKIE_NAME, Settings
 from app.db.models import (
     Application,
     ApplicationQuestion,
     Card,
     CardField,
+    Chunk,
     Draft,
     Quiz,
     QuizReview,
 )
 from app.korea_time import korea_today
+from app.services.application_service import list_upcoming_deadlines
 from app.services.auth_service import (
     GoogleProfile,
     create_session_token,
@@ -67,8 +69,6 @@ def _draft(db: Session, user_id: int, application_id: int) -> None:
 
 def _due_review(db: Session, user_id: int, *, days: int) -> None:
     """복습 문제 하나 — 조각 하나에 문제 하나뿐이라(quizzes.chunk_id 고유) 문제마다 노트를 따로 만든다."""
-    from app.db.models import Chunk
-
     note_id = _note(db, user_id, f"복습 {days}")
     chunk = db.query(Chunk).filter(Chunk.note_id == note_id).first()
     assert chunk is not None
@@ -120,6 +120,26 @@ def test_upcoming_deadlines_within_seven_days_not_submitted(db_session: Session)
     assert deadlines[0].deadline == TODAY and isinstance(deadlines[0].deadline, date)
 
 
+def test_deadline_window_includes_day_six_and_excludes_day_seven(db_session: Session) -> None:
+    """경계만 본다 — 홈의 4개 자르기에 가리지 않게 limit을 넉넉히 주고 직접 부른다."""
+    me = _user(db_session, "1")
+    for days in (-1, 0, 6, 7):
+        _application(db_session, me, f"{days}일", days=days)
+    deadlines = list_upcoming_deadlines(db_session, user_id=me, within_days=HOME_DEADLINE_DAYS, limit=10, now=NOW)
+    assert [d.days_left for d in deadlines] == [0, 6]
+
+
+def test_deadlines_follow_korean_date_around_midnight(db_session: Session) -> None:
+    """한국 자정(UTC 15:00)을 넘기면 오늘 마감은 빠지고 내일 마감은 남은 날이 0이 된다."""
+    me = _user(db_session, "1")
+    _application(db_session, me, "오늘", days=0)
+    _application(db_session, me, "내일", days=1)
+    before = datetime(2026, 11, 18, 14, 59, tzinfo=UTC)  # 한국 11-18 23:59
+    after = datetime(2026, 11, 18, 15, 0, tzinfo=UTC)  # 한국 11-19 00:00
+    assert [(d.company, d.days_left) for d in get_home(db_session, user_id=me, now=before).deadlines] == [("오늘", 0), ("내일", 1)]
+    assert [(d.company, d.days_left) for d in get_home(db_session, user_id=me, now=after).deadlines] == [("내일", 0)]
+
+
 def test_blank_cards_saved_only_recent_first(db_session: Session) -> None:
     me = _user(db_session, "1")
     _card(db_session, me, "꽉 참", updated=50)
@@ -149,4 +169,5 @@ def test_home_api_needs_login_and_returns_the_shape(client: TestClient, db_sessi
     client.cookies.set(SESSION_COOKIE_NAME, create_session_token(me, test_settings.session_secret))
     body = client.get("/api/home").json()
     assert body["steps"]["cards"] == 1 and body["deadlines"] == []
+    assert body["deadline_days"] == HOME_DEADLINE_DAYS
     assert body["blank_cards"] == [{"id": body["blank_cards"][0]["id"], "title": "빈칸", "blank_slots": ["result"]}]

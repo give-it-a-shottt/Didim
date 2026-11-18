@@ -50,8 +50,14 @@ test("다시 온 사람: 체크리스트 없이 단계 띠 개수와 대시보�
   await expect(card).toContainText("빈칸: 과제 · 결과");
 });
 
-test("홈 정보를 못 받으면 알림을 보여 준다", async ({ context, page }) => {
-  await logIn(context, `${VALID_SESSION_TOKEN}-home-error`);
-  await page.goto("/home");
-  await expect(page.getByRole("alert").filter({ hasText: "홈을 불러오지 못했어요" })).toBeVisible();
-});
+for (const [tag, why] of [
+  ["-home-error", "서버 오류(500)"],
+  ["-home-bad", "200인데 모양이 틀림(남은 날 음수)"],
+]) {
+  test(`홈 정보를 못 받으면 알림을 보여 준다 — ${why}`, async ({ context, page }) => {
+    await logIn(context, `${VALID_SESSION_TOKEN}${tag}`);
+    await page.goto("/home");
+    await expect(page.getByRole("alert").filter({ hasText: "홈을 불러오지 못했어요" })).toBeVisible();
+    await expect(page.getByText("지난마감")).toHaveCount(0);
+  });
+}

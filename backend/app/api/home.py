@@ -39,6 +39,7 @@ class BlankCardOut(BaseModel):
 
 class HomeOut(BaseModel):
     steps: HomeStepsOut
+    deadline_days: int  # 마감 칸 기준 일수(오늘 포함, config.HOME_DEADLINE_DAYS)
     deadlines: list[DeadlineOut]
     blank_cards: list[BlankCardOut]
 

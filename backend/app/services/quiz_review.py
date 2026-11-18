@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import Session
 
 from app.config import MAX_REVIEW_SESSION_QUIZZES, QUIZ_REVIEW_INTERVAL_DAYS
@@ -117,16 +117,20 @@ class ReviewList:
     quizzes: list[QuizCard]  # 그중 앞에서부터 MAX_REVIEW_SESSION_QUIZZES개
 
 
+def _due_condition(today: date) -> ColumnElement[bool]:
+    """오늘 차례 = 다음 복습일 <= 오늘. 오늘 복습 목록 · 개수(홈 F-012 포함)가 이 하나를 쓴다."""
+    return QuizReview.next_review_on <= today
+
+
 def count_today_reviews(db: Session, *, user_id: int, now: datetime | None = None) -> int:
-    """오늘 차례인 문제 수(다음 복습일 <= 오늘). 오늘 복습 목록과 홈(F-012)이 같은 기준을 쓴다."""
-    due = QuizReview.next_review_on <= korea_today(now)
+    """오늘 차례인 문제 수. 오늘 복습 목록과 홈(F-012)이 같은 기준을 쓴다."""
+    due = _due_condition(korea_today(now))
     return db.scalar(select(func.count()).select_from(QuizReview).where(QuizReview.user_id == user_id, due)) or 0
 
 
 def list_today_reviews(db: Session, *, user_id: int, now: datetime | None = None) -> ReviewList:
     """모든 노트에서 오늘 차례인 문제(다음 복습일 <= 오늘). 오래 밀린 것부터."""
-    today = korea_today(now)
-    due = QuizReview.next_review_on <= today
+    due = _due_condition(korea_today(now))
     total = count_today_reviews(db, user_id=user_id, now=now)
     rows = db.execute(
         _cards_query(user_id).where(due).order_by(QuizReview.next_review_on, Quiz.id).limit(MAX_REVIEW_SESSION_QUIZZES)

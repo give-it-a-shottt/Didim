@@ -363,13 +363,17 @@ def list_upcoming_deadlines(
         .order_by(Application.deadline, Application.id)
         .limit(limit)
     ).all()
-    return [
-        UpcomingDeadline(
-            id=row.id, company=row.company, role=row.role, deadline=row.deadline,  # type: ignore[arg-type]
-            days_left=(row.deadline - today).days, status=row.status,  # type: ignore[operator]
+    upcoming = []
+    for row in rows:
+        days_left = _days_left(row.deadline, today)
+        assert row.deadline is not None and days_left is not None  # 마감일 없는 지원은 위 조건에서 뺐다
+        upcoming.append(
+            UpcomingDeadline(
+                id=row.id, company=row.company, role=row.role, deadline=row.deadline,
+                days_left=days_left, status=row.status,
+            )
         )
-        for row in rows
-    ]
+    return upcoming
 
 
 def list_applications(db: Session, *, user_id: int, now: datetime | None = None) -> ApplicationList:

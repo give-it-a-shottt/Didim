@@ -169,7 +169,7 @@ function FirstVisit({ progress }: { progress: ReturnType<typeof checklist> }) {
   );
 }
 
-/** HOM_01_001 대시보드 세 칸: 오늘 복습 · 마감이 다가온 지원(7일 안 · 제출 전) · 빈칸 있는 카드(각 최대 4). */
+/** HOM_01_001 대시보드 세 칸: 오늘 복습 · 마감이 다가온 지원(deadlineDays일 안 · 제출 전) · 빈칸 있는 카드(각 최대 4). */
 function Dashboard({ home }: { home: Home }) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -210,7 +210,7 @@ function Dashboard({ home }: { home: Home }) {
             ))}
           </ul>
         ) : (
-          <p className="text-body-2 text-text-sub">7일 안에 마감인 지원이 없어요.</p>
+          <p className="text-body-2 text-text-sub">{home.deadlineDays}일 안에 마감인 지원이 없어요.</p>
         )}
       </section>
 
