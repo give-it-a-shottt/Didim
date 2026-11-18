@@ -1,7 +1,7 @@
 # 프로젝트 상태
 
 ## 한눈에 보기
-됨 13 · 일부 2 · 다음 1 · 열린 질문 3개
+됨 13 · 일부 2 · 다음 1 · 열린 질문 4개
 최종 수정: 2026-11-17
 
 ## 기능별 상태
@@ -21,5 +21,5 @@
 | [F-009](features/F-009-interview-practice/feature.md) 면접 연습 | [됨] | 구현 끝(질문 만들기 · 근거 검사 · 다시 검사 · 메모 · 면접 연습 탭). 1 · 2 · 3차 리뷰 반영함. 평가 끝(2026-11-16): 심은 질문 잡음 36/48(카드에 없는 전제 0/12), AI 질문 — 메인 Ultra 전제 2/50 · Bolt 0/45(AI 판정, 사용자 위임). 4차 리뷰 지적 모두 반영(5차는 사용자 결정으로 건너뜀). 남은 것 없음 | 테스트 test_interview.py 29개 · test_interview_evaluation.py 18개 포함 백엔드 SQLite 561 · PostgreSQL 574 passed, interview.spec.ts 10개 포함 Playwright 90 passed(2026-11-16) | 4차 [주의] → 모두 반영 | 2026-11-16 |
 | [F-010](features/F-010-eval-and-sample/feature.md) 평가 · 샘플 체험 | [됨] | 완료 기준 4개 코드 · 실행으로 충족(평가 데이터 경험 20 · 공고 10, eval_all · 요약, /report · README 표, /demo 샘플 세션 · 읽기 전용 가드 · 시드). 1차 리뷰 반영(e491954). 2차 반영(7e4e4c2). 빠진 것: 3차 반영(052fa33) · 4차 [통과]. 4차 제안 4개 반영(백엔드 646 통과). 남은 것: README 서비스 소개(Q-030 — 사용자 작성 칸, 완료 기준 밖) | 백엔드 SQLite 622 · PostgreSQL 635 통과, Playwright 101 · tsc · eslint 통과(2026-11-18). 평가 회차 `backend/eval/summary/run-20261117-164539.json`(NVIDIA, 판정 — AI · 경계 사용자 확인), 개발 DB 시드 개수 일치, 개발 서버 직접 실행(/report · /demo · 샘플 403) · 화면 확인(사용자, 2026-11-18) | 4차 [통과] | 2026-11-18 |
 | [F-011](features/F-011-landing/feature.md) 랜딩 | [다음] | 8주차 | - | - | - |
-| [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [일부] | 8주차. 설계 의도 받음(2026-11-18 — 문제 4 · 완료 기준 4 · 화면 · GET /api/home · 데이터). 빠진 것: 구현 전부 | - | - | 2026-11-18 |
+| [F-012](features/F-012-home-onboarding/feature.md) 홈 · 첫 방문 안내 | [일부] | 8주차. 구현 끝(d8f6e6b): GET /api/home · /home 단계 띠 · 첫 방문 체크리스트 · 대시보드 세 칸. 빠진 것: 1차 리뷰 [주의] 4개 판정 · 반영, Q-031(단계 띠 이름 · 단위 · 경로) | 백엔드 SQLite 652 · PostgreSQL 665 통과, test_home 6 · home.spec 4, Playwright 106 통과(2026-11-18) | 1차 [주의] | 2026-11-18 |
 | 디자인 적용 ([D-019](decisions/D-019-figma-is-design-source.md)) | [일부] | Figma 디딤 파일대로 화면 옮기기. ① 공통 부품 + 레이아웃 · ② 기록 · 복습(사용자 확인, 퀴즈 제목 위치는 사용자가 Figma 수정 후 반영) · ③ 기록 추가 모달(IMP_01_001 · 002 · 003 · 900) — 커밋 04c9900. ④ 로그인 · 설정(계정 칸만) 끝(사용자 확인). 이번 적용은 ④까지로 마무리. 데이터 · 기능 없는 Figma 칸은 그리지 않음. 남은 것: 홈(HOM_01_001 · 900)은 F-012 때 같이(사용자 결정 2026-11-11), REV_01_003 · CRD · APL · SET_02 · DEM · LND는 기능 만들 때 | Playwright 32 통과 · tsc · eslint 통과, 1440 · 375 화면 캡처로 Figma와 비교(2026-11-11) | 디자인은 사용자 평가(리뷰 없음) | 2026-11-11 |
