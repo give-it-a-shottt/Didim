@@ -7,7 +7,7 @@
 """
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from urllib.parse import urlsplit
 
 from sqlalchemy import and_, case, delete, func, select
@@ -22,6 +22,7 @@ from app.config import (
     APPLICATION_QUESTION_MAX_CHARS,
     APPLICATION_ROLE_MAX_CHARS,
     APPLICATION_STATUS_DEFAULT,
+    APPLICATION_STATUS_SUBMITTED,
     APPLICATION_STATUSES,
     APPLICATION_URL_MAX_CHARS,
     MAX_APPLICATION_LIST,
@@ -331,6 +332,44 @@ class ApplicationList:
 
 def _days_left(deadline: date | None, today: date) -> int | None:
     return (deadline - today).days if deadline is not None else None
+
+
+@dataclass(frozen=True)
+class UpcomingDeadline:
+    id: int
+    company: str
+    role: str
+    deadline: date
+    days_left: int  # 0 = 오늘 마감
+    status: str
+
+
+def list_upcoming_deadlines(
+    db: Session, *, user_id: int, within_days: int, limit: int, now: datetime | None = None
+) -> list[UpcomingDeadline]:
+    """오늘(한국 날짜)부터 within_days일 안에 마감이고 아직 제출하지 않은 지원, 마감 가까운 순 limit개(홈 — F-012).
+
+    마감이 지났거나 마감일이 없는 지원은 뺀다. 남은 날 계산은 지원 목록과 같은 _days_left."""
+    today = korea_today(now)
+    rows = db.scalars(
+        select(Application)
+        .where(
+            Application.user_id == user_id,
+            Application.status != APPLICATION_STATUS_SUBMITTED,
+            Application.deadline.is_not(None),
+            Application.deadline >= today,
+            Application.deadline < today + timedelta(days=within_days),
+        )
+        .order_by(Application.deadline, Application.id)
+        .limit(limit)
+    ).all()
+    return [
+        UpcomingDeadline(
+            id=row.id, company=row.company, role=row.role, deadline=row.deadline,  # type: ignore[arg-type]
+            days_left=(row.deadline - today).days, status=row.status,  # type: ignore[operator]
+        )
+        for row in rows
+    ]
 
 
 def list_applications(db: Session, *, user_id: int, now: datetime | None = None) -> ApplicationList:

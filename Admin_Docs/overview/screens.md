@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | LND_01_001 랜딩 | `/` | 게스트 | (guest)/page.tsx | F-011 |
 | AUT_01_001 로그인 | `/login` | 게스트 | (guest)/login/page.tsx | F-001 |
-| HOM_01_001 대시보드 · HOM_01_900 첫 방문 | `/home` | 사이드바 | (app)/home/page.tsx | F-012 |
+| HOM_01_001 대시보드 · HOM_01_900 첫 방문 | `/home` | 사이드바 | (app)/home/page.tsx | F-012 — 맨 위 단계 띠, 세 단계(첫 기록 · 카드 · 공고)를 다 끝내기 전엔 첫 방문 체크리스트(`data-screen-id` HOM_01_900) + [샘플로 체험하기](→ `/demo`)를 대시보드 위에, 아래 대시보드 세 칸(오늘 복습 · 마감 7일 안 · 빈칸 카드) |
 | DEM_01_001 샘플 체험 | `/demo` (입구 · 로그인 없이 · noindex — D-029) | 게스트 | (guest)/demo/page.tsx — [샘플로 체험하기]는 components/sample-session-buttons.tsx, 회원 화면 위 '샘플' 알림 · [체험 끝내기]는 member-auth-guard.tsx. 로그인 화면에 입구 링크 | F-010 |
 | REV_01_001 기록 · 복습 홈 (+900) | `/records` (`?q=` 검색어) | 사이드바 | (app)/records/page.tsx | F-003 검색창 · 결과(됨), 노트 목록 · 오늘 복습은 F-004 |
 | REV_01_002 노트 상세 | `/records/[noteId]` (`?chunk=` 강조할 조각) | 사이드바 | (app)/records/[noteId]/page.tsx | F-003 원문 · 위치 강조(됨), 문제 칸([문제 만들기] · [이 노트 풀기])은 F-004, 개념 탭은 아직 없음(F-004 완료 기준 밖) |

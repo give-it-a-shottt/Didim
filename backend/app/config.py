@@ -110,6 +110,11 @@ MAX_CARD_LIST = 200  # 카드 목록 한 번에 보내는 수(최근 고친 것�
 # 지원 상태: 준비 · 작성 중 · 제출. 화면(frontend/src/lib/applications.ts)에도 같은 값이 있다.
 APPLICATION_STATUSES = ("ready", "writing", "submitted")
 APPLICATION_STATUS_DEFAULT = "ready"
+APPLICATION_STATUS_SUBMITTED = "submitted"  # 제출한 지원 — 홈의 '마감이 다가온 지원'에서 뺀다(F-012)
+
+# 홈(F-012, 사용자 확인 2026-11-18): 대시보드 칸마다 최대 4개(didim-design.md 화면별 개수), 마감은 오늘 포함 7일 안
+HOME_LIST_LIMIT = 4
+HOME_DEADLINE_DAYS = 7
 APPLICATION_COMPANY_MAX_CHARS = 100
 APPLICATION_ROLE_MAX_CHARS = 100
 APPLICATION_URL_MAX_CHARS = 500  # 링크로 저장만 한다(서버가 읽지 않음, D-002). http · https만 받는다

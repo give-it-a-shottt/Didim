@@ -62,15 +62,15 @@ class CardList:
 
 # '빈칸'의 정의는 여기 한 곳(_is_blank)이 기준이다: 인용도 내 답도 없는 칸. 빈칸 수 · 빈칸 이름(SQL)과
 # CardDetail.blank_count(파이썬), 화면의 isBlank(frontend/src/lib/cards.ts)가 모두 같은 정의를 따른다.
-def _is_blank():  # noqa: ANN202
+def _is_blank():
     return and_(CardField.quote.is_(None), CardField.answer.is_(None))
 
 
-def _blank_count():  # noqa: ANN202
+def _blank_count():
     return func.sum(case((_is_blank(), 1), else_=0))
 
 
-def _evidence_count():  # noqa: ANN202
+def _evidence_count():
     return func.sum(case((CardField.quote.is_not(None), 1), else_=0))
 
 
@@ -89,6 +89,30 @@ def _blank_slots(db: Session, *, user_id: int, card_ids: list[int]) -> dict[int,
     for card_id, slot in rows:
         found.setdefault(card_id, set()).add(slot)
     return {card_id: [slot for slot in CARD_SLOTS if slot in slots] for card_id, slots in found.items()}
+
+
+@dataclass(frozen=True)
+class BlankCard:
+    id: int
+    title: str
+    blank_slots: list[str]  # CARD_SLOTS 순서
+
+
+def list_blank_cards(db: Session, *, user_id: int, limit: int) -> list[BlankCard]:
+    """빈칸이 남은 저장 카드, 최근 고친 것부터 limit장(홈 — F-012). 빈칸 정의는 _is_blank 한 곳."""
+    blank_cards = (
+        select(CardField.card_id)
+        .where(CardField.user_id == user_id, _is_blank())
+        .distinct()
+    )
+    rows = db.execute(
+        select(Card.id, Card.title)
+        .where(Card.user_id == user_id, Card.status == CARD_STATUS_SAVED, Card.id.in_(blank_cards))
+        .order_by(Card.updated_at.desc(), Card.id.desc())
+        .limit(limit)
+    ).all()
+    slots = _blank_slots(db, user_id=user_id, card_ids=[row.id for row in rows])
+    return [BlankCard(id=row.id, title=row.title, blank_slots=slots.get(row.id, [])) for row in rows]
 
 
 def list_cards(db: Session, *, user_id: int, status: str, note_id: int | None = None) -> CardList:

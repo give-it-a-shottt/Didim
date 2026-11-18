@@ -1088,6 +1088,38 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // 홈(F-012): 토큰 꼬리표로 경우를 나눈다 — 정상 = 다 갖춘 사용자, -home-empty = 처음 온 사람, -home-partial = 기록만, -home-error = 실패
+  if (req.method === "GET" && req.url === "/api/home") {
+    const cookie = req.headers.cookie ?? "";
+    if (!isLoggedIn(req)) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ detail: "로그인이 필요해요." }));
+      return;
+    }
+    if (cookie.includes("-home-error")) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ detail: "실패" }));
+      return;
+    }
+    const zero = { notes: 0, reviews_today: 0, cards: 0, applications: 0, drafted_applications: 0 };
+    let body;
+    if (cookie.includes("-home-empty")) body = { steps: zero, deadlines: [], blank_cards: [] };
+    else if (cookie.includes("-home-partial")) body = { steps: { ...zero, notes: 2 }, deadlines: [], blank_cards: [] };
+    else {
+      body = {
+        steps: { notes: 12, reviews_today: 4, cards: 7, applications: 3, drafted_applications: 2 },
+        deadlines: [
+          { id: 902, company: "스텝랩", role: "백엔드", deadline: "2026-11-20", days_left: 2, status: "writing" },
+          { id: 903, company: "바구니마켓", role: "Java 백엔드", deadline: "2026-11-24", days_left: 6, status: "ready" },
+        ],
+        blank_cards: [{ id: 801, title: "로그인이 30분마다 풀리던 버그", blank_slots: ["task", "result"] }],
+      };
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(body));
+    return;
+  }
+
   // 평가 리포트(F-010): 로그인 없이. 회차 두 개 — 최근 회차에는 판정 대기 · 실패 칸이 있다
   if (req.method === "GET" && req.url === "/api/report") {
     const metric = (key, label, kind, value) => ({ key, label, kind, value });

@@ -10,6 +10,7 @@ from app.api import (
     demo,
     drafts,
     health,
+    home,
     interview,
     notes,
     notion,
@@ -49,3 +50,4 @@ app.include_router(drafts.router, prefix="/api")
 app.include_router(interview.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
+app.include_router(home.router, prefix="/api")

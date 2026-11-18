@@ -111,7 +111,7 @@ def test_get_routes_snapshot() -> None:
     """GET 경로가 늘면 여기서 멈춘다 — 새 GET이 무언가를 저장한다면 BLOCKED_READS에 더할지 보고 이 숫자를 고친다."""
     gets = sorted(p for m, p in _registered() if m == "GET")
     assert BLOCKED_READS <= set(gets)
-    assert len(gets) == 21, gets  # F-010 GET /api/report 추가(읽기만 함)
+    assert len(gets) == 22, gets  # F-010 GET /api/report · F-012 GET /api/home 추가(둘 다 읽기만 함)
 
 
 # --- 실패 · 보안 경로 ---
