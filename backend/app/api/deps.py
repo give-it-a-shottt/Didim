@@ -2,6 +2,7 @@ from fastapi import Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import (
+    SAMPLE_SEEDING_SUB,
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
     Settings,
@@ -57,7 +58,8 @@ def get_current_user(
         )
 
     user = get_user_by_id(db, user_id)
-    if user is None:
+    # 샘플 시드의 임시 계정은 예약 계정 — 어떤 토큰으로도 열리지 않는다(F-010 3차 R2)
+    if user is None or user.google_sub == SAMPLE_SEEDING_SUB:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="유효하지 않은 계정이에요. 다시 로그인해 주세요.",

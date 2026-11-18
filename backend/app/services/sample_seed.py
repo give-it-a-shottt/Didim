@@ -24,7 +24,7 @@ from typing import Any
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.config import SAMPLE_GOOGLE_SUB
+from app.config import SAMPLE_GOOGLE_SUB, SAMPLE_SEEDING_SUB
 from app.db.models import (
     Application,
     Draft,
@@ -66,7 +66,6 @@ from app.services.quiz_generation import (
 SAMPLE_EMAIL = "sample@didim.local"
 SAMPLE_NAME = "샘플 지원자"
 SAMPLE_DAILY_LIMIT = 10_000  # 임시 계정에 채우는 동안만 — 60번 넘게 상한 확인을 지나간다
-SAMPLE_SEEDING_SUB = "didim-sample-seeding"  # 채우는 동안의 임시 계정(공개 안 됨 — 샘플 열기는 SAMPLE_GOOGLE_SUB만 찾음)
 SAMPLE_DAILY_LIMIT_AFTER = 0  # 시드가 끝나면 0 — 읽기 전용 가드에 빈틈이 생겨도 공개 계정으로 AI를 못 부르게(F-010 1차 R2)
 
 # 요약 파일의 평가 칸 → 시드가 읽는 결과 파일
@@ -324,7 +323,8 @@ async def _seed_interview(
 
 
 async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> SeedReport:
-    """샘플 계정을 새로 만들고 평가 회차 결과를 다시 들려줘 채운다. 저장 개수가 결과와 다르면 report.mismatches에 남는다."""
+    """임시 계정에 평가 회차 결과를 다시 들려줘 채운 뒤 한 번에 샘플과 바꿔 끼운다. 실패 · 중단하면 지금 샘플은 그대로다
+    (사용자 선택 2026-11-18 — D-029 덧붙임). 저장 개수가 결과와 다르면 report.mismatches에 남는다."""
     quiz, postings, drafts, interview = (_load(p) for p in (sources.quiz, sources.postings, sources.drafts, sources.interview))
     report = SeedReport()
     report.user_id = user_id = new_staging_user(db)
@@ -334,7 +334,9 @@ async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> S
     except Exception as exc:
         cleanup_error = _discard_staging(db)
         note = f" 임시 계정 정리도 실패했어요({cleanup_error}) — 다음 시드가 지워요." if cleanup_error else ""
-        raise SeedError(f"샘플을 넣다가 멈췄어요({type(exc).__name__}). 지금 샘플은 그대로예요.{note}") from exc
+        # 시드가 직접 낸 SeedError는 할 일 안내('매칭 평가를 다시 돌려 주세요' 등)를 그대로 보여 준다(F-010 3차 R3 · R1)
+        reason = str(exc) if isinstance(exc, SeedError) else f"샘플을 넣다가 멈췄어요({type(exc).__name__})."
+        raise SeedError(f"{reason} 지금 샘플은 그대로예요.{note}") from exc
     except BaseException:
         _discard_staging(db)  # 중단 · 취소는 그대로 올린다(F-010 2차 R3)
         raise

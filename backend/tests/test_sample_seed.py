@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import SAMPLE_GOOGLE_SUB
@@ -172,13 +172,94 @@ def test_interrupted_seed_cleans_up_and_reraises(db_session: Session, tmp_path: 
 
     old_id = _old_sample_with_note(db_session)
 
-    async def stop(*_args, **_kwargs) -> None:
+    async def stop(db: Session, _report: object, *, user_id: int, **_kwargs: object) -> None:
+        # 반쯤 채운 상태를 만든 뒤 멈춘다 — 정리가 데이터까지 지우는지 보려고(3차 R3)
+        content = "# 반쯤\n\n본문"
+        create_note_for_user(db, user_id=user_id, title="반쯤", content=content, chunks=split_markdown(content))
         raise signal
 
     monkeypatch.setattr(sample_seed, "_fill", stop)
     with pytest.raises(signal):
         asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
     _assert_old_sample_kept(db_session, old_id)
+
+
+# --- F-010 3차 리뷰 반영 ---
+
+
+def test_inner_seed_error_keeps_its_advice(db_session: Session, tmp_path: Path) -> None:
+    """시드가 직접 낸 SeedError의 할 일 안내가 일반 문구에 묻히지 않는다(3차 R3 · R1)."""
+    sources = _broken_sources(tmp_path)
+    postings = json.loads(sources.postings.read_text(encoding="utf-8"))
+    for item in postings["postings"]:
+        item.pop("saved", None)
+    no_saved = tmp_path / "postings.json"
+    no_saved.write_text(json.dumps(postings, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(SeedError) as caught:
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=SeedSources(sources.quiz, no_saved, sources.drafts, sources.interview)))
+    assert "매칭 평가를 다시 돌려 주세요" in str(caught.value) and "지금 샘플은 그대로예요" in str(caught.value)
+
+
+def test_failed_promote_rolls_back_the_old_sample_delete(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """바꿔 끼우기가 옛 샘플을 지운 뒤 실패해도 되돌려져 옛 샘플이 남는다(3차 R3)."""
+    from app.services import sample_seed
+
+    old_id = _old_sample_with_note(db_session)
+
+    async def fill_nothing(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    def promote_then_fail(db: Session, user_id: int) -> None:
+        db.execute(delete(User).where(User.google_sub == SAMPLE_GOOGLE_SUB))
+        db.flush()  # 옛 샘플 삭제까지 간 뒤
+        raise RuntimeError("commit 전에 끊김")
+
+    monkeypatch.setattr(sample_seed, "_fill", fill_nothing)
+    monkeypatch.setattr(sample_seed, "promote_staging_user", promote_then_fail)
+    with pytest.raises(SeedError, match="지금 샘플은 그대로예요"):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+    _assert_old_sample_kept(db_session, old_id)
+
+
+def test_promote_without_staging_account_changes_nothing(db_session: Session) -> None:
+    old_id = _old_sample_with_note(db_session)
+    with pytest.raises(SeedError, match="임시 계정이 없어요"):
+        promote_staging_user(db_session, 999_999)
+    db_session.rollback()
+    _assert_old_sample_kept(db_session, old_id)
+
+
+def test_cleanup_failure_is_reported_without_hiding_the_cause(db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """정리도 실패하면 원래 이유와 함께 알리고, 중단 신호는 그대로 올린다(3차 R3)."""
+    from app.services import sample_seed
+
+    monkeypatch.setattr(sample_seed, "_discard_staging", lambda db: "OperationalError")
+
+    async def boom(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("깨진 결과")
+
+    monkeypatch.setattr(sample_seed, "_fill", boom)
+    with pytest.raises(SeedError) as caught:
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+    message = str(caught.value)
+    assert "ValueError" in message and "임시 계정 정리도 실패했어요(OperationalError)" in message
+
+    async def interrupt(*_args: object, **_kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(sample_seed, "_fill", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+
+
+def test_discard_staging_reports_its_own_failure(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services.sample_seed import _discard_staging
+
+    def broken_commit() -> None:
+        raise RuntimeError("연결 끊김")
+
+    monkeypatch.setattr(db_session, "commit", broken_commit)
+    assert _discard_staging(db_session) == "RuntimeError"
 
 
 def test_mismatches_report_counts_that_differ() -> None:

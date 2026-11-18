@@ -190,3 +190,16 @@ def test_open_sample_reports_session_config_errors(client: TestClient, db_sessio
     response = client.post("/api/demo/session")
     assert response.status_code == 500
     assert response.json()["detail"] == AUTH_NOT_CONFIGURED_DETAIL
+
+
+def test_seeding_account_cannot_be_opened_by_any_token(client: TestClient, db_session: Session) -> None:
+    """샘플 시드의 임시 계정은 예약 계정 — 일반 토큰 · 샘플 토큰 모두 401(3차 R2)."""
+    from app.config import SAMPLE_SEEDING_SUB
+    from app.db.models import User
+
+    staging = User(google_sub=SAMPLE_SEEDING_SUB, email="sample@didim.local", name="샘플", daily_limit=10_000)
+    db_session.add(staging)
+    db_session.commit()
+    for sample in (False, True):
+        client.cookies.set(SESSION_COOKIE_NAME, create_session_token(staging.id, SECRET, sample=sample))
+        assert client.get("/api/auth/me").status_code == 401, sample
