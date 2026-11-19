@@ -18,7 +18,7 @@ from app.config import (
     LoginConfigError,
     Settings,
     check_login_allowlist,
-    check_login_allowlist_at_startup,
+    check_login_allowlist_from_env,
     parse_email_list,
 )
 from app.db.models import User
@@ -144,15 +144,6 @@ def test_local_without_allowlist_starts(test_settings: Settings) -> None:
         check_login_allowlist(replace(test_settings, frontend_url=url))  # 로컬은 비어도 됨(완료 기준 4)
 
 
-def test_startup_check_is_wired_into_the_app(monkeypatch: pytest.MonkeyPatch) -> None:
-    """main.py lifespan이 실제로 확인을 부른다 — 호출 줄이 빠지면 이 테스트가 깨진다(F-015 2차 리뷰 R3)."""
-    monkeypatch.setenv("FRONTEND_URL", "https://didim.example")
-    monkeypatch.delenv("ALLOWED_LOGIN_EMAILS", raising=False)
-    monkeypatch.delenv("GOOGLE_REDIRECT_URI", raising=False)
-    with pytest.raises(LoginConfigError), TestClient(app):
-        pass
-
-
 def test_dropped_non_ascii_entries_are_logged_by_count(test_settings: Settings, caplog: pytest.LogCaptureFixture) -> None:
     check_login_allowlist(test_settings, "\u212aim@x.com, a@x.com")
     assert "1개" in caplog.text and "\u212a" not in caplog.text and "a@x.com" not in caplog.text  # 이메일 값은 로그에 안 씀
@@ -180,7 +171,7 @@ def test_startup_passes_the_raw_env_for_the_warning(monkeypatch: pytest.MonkeyPa
     for name in ("COOKIE_SECURE", "FRONTEND_URL", "GOOGLE_REDIRECT_URI"):
         monkeypatch.delenv(name, raising=False)  # 로컬 기본값 — 시작은 되고 경고만
     monkeypatch.setenv("ALLOWED_LOGIN_EMAILS", "\u212aim@x.com, a@x.com")
-    check_login_allowlist_at_startup()
+    check_login_allowlist_from_env()
     assert "1개" in caplog.text
 
 

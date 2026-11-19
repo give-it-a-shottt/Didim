@@ -42,6 +42,10 @@ POSTGRES_TEST_URL = _read_postgres_test_url()
 # 앱은 DATABASE_URL이 없으면 시작하지 않는다. 셸에 개발용 DATABASE_URL이 있어도 테스트가 그 DB를
 # 건드리지 않도록 항상 덮어쓴다. (서버 시작 단계만 이 값을 쓰고, 요청은 아래 db_session을 쓴다.)
 os.environ["DATABASE_URL"] = POSTGRES_TEST_URL or "sqlite://"
+# 앱은 불러올 때 운영 여부 · 허용 목록을 본다(F-015 · D-032). 셸에 운영 값이 남아 있어도 테스트 수집이 멈추지 않게,
+# 테스트 파일들이 app.main을 불러오기 전(여기)에 지운다. 운영 흉내는 각 테스트가 직접(하위 프로세스 · replace).
+for _name in ("COOKIE_SECURE", "FRONTEND_URL", "GOOGLE_REDIRECT_URI", "ALLOWED_LOGIN_EMAILS"):
+    os.environ.pop(_name, None)
 
 
 @pytest.fixture(autouse=True)
@@ -104,11 +108,8 @@ def test_settings() -> "Settings":
 
 
 @pytest.fixture()
-def client(db_session: Session, test_settings: "Settings", monkeypatch: pytest.MonkeyPatch) -> Generator["TestClient", None, None]:
+def client(db_session: Session, test_settings: "Settings") -> Generator["TestClient", None, None]:
     """요청이 db_session · test_settings를 쓰는 테스트 클라이언트. 끝나면 바꿔 끼운 것을 되돌린다."""
-    # 서버 시작 확인(F-015)은 실제 환경변수를 읽는다 — 셸에 운영 값이 있어도 테스트가 시작 단계에서 멈추지 않게 지운다
-    for name in ("COOKIE_SECURE", "FRONTEND_URL", "GOOGLE_REDIRECT_URI", "ALLOWED_LOGIN_EMAILS"):
-        monkeypatch.delenv(name, raising=False)
     from fastapi.testclient import TestClient
 
     from app.api.deps import get_settings

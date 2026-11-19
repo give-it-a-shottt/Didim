@@ -338,9 +338,9 @@ def test_import_rejects_no_files_too_many_files_and_bad_kind(
 def test_total_size_over_limit_is_413_even_when_header_check_passes(
     client: TestClient, db_session: Session, test_settings: Settings
 ) -> None:
-    """요청 전체는 머리말 상한(21MB) 아래지만 파일 합계가 20MB를 넘으면, 엔드포인트가 받은 뒤 413으로 막는다."""
+    """요청 전체는 머리말 상한(4MB) 아래지만 파일 합계가 3MB를 넘으면, 엔드포인트가 받은 뒤 413으로 막는다."""
     _sign_in(client, db_session, test_settings, "total")
-    half = b"a" * (10 * 1024 * 1024 + 300 * 1024)  # 약 10.3MB × 2 = 20.6MB
+    half = b"a" * (1024 * 1024 + 600 * 1024)  # 약 1.6MB × 2 = 3.2MB
     response = client.post(
         "/api/notes/import",
         files=[("files", ("a.md", half, "text/markdown")), ("files", ("b.md", half, "text/markdown"))],

@@ -147,7 +147,7 @@ def prepare_interview(db: Session, *, user_id: int, card_id: int, now: datetime 
     # 5분 동안 이 사용자의 모든 AI 작업이 409가 된다(D-020, 3차 리뷰 R2 · R3).
     try:
         already = _has_questions(db, user_id=user_id, card_id=card_id)
-        # 위 SELECT가 연 트랜잭션을 닫고 DB 연결을 풀에 돌려준다 — 이대로 두면 AI 응답(최대 180초)을 기다리는 동안
+        # 위 SELECT가 연 트랜잭션을 닫고 DB 연결을 풀에 돌려준다 — 이대로 두면 AI 응답(최대 100초)을 기다리는 동안
         # 연결 하나가 'idle in transaction'으로 묶인다(2차 리뷰 R2). 읽기만 했으므로 rollback.
         db.rollback()
     except Exception:

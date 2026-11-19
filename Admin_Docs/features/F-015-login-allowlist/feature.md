@@ -19,7 +19,7 @@
   - '운영'은 COOKIE_SECURE=true이거나, 화면 주소(FRONTEND_URL) · 구글 로그인 돌아올 주소(GOOGLE_REDIRECT_URI) 중 하나라도 https · localhost가 아닌 경우다. (사용자 선택 2026-11-19, 2 · 3차 리뷰 R2)
 
 ## 결과 (AI 작성 — 구현 후)
-- 설정: `ALLOWED_LOGIN_EMAILS`(쉼표) → `config.parse_email_list`(앞뒤 빈칸 제거 · ASCII만 · 소문자) → `Settings.allowed_login_emails`. `config.is_production`(COOKIE_SECURE=true, 또는 FRONTEND_URL · GOOGLE_REDIRECT_URI 중 하나라도 https · localhost 아님), `check_login_allowlist_at_startup`을 `main.py` lifespan에서 DB 확인 전에 — 운영인데 목록이 비면 `LoginConfigError`로 시작하지 않음, 버린 항목은 개수만 · 운영인데 COOKIE_SECURE 꺼짐은 경고 로그.
+- 설정: `ALLOWED_LOGIN_EMAILS`(쉼표) → `config.parse_email_list`(앞뒤 빈칸 제거 · ASCII만 · 소문자) → `Settings.allowed_login_emails`. `config.is_production`(COOKIE_SECURE=true, 또는 FRONTEND_URL · GOOGLE_REDIRECT_URI 중 하나라도 https · localhost 아님), `check_login_allowlist_at_startup`을 `main.py`가 앱을 불러올 때(처음엔 lifespan — F-016 1차 리뷰 R2로 옮김, D-032) — 운영인데 목록이 비면 `LoginConfigError`로 시작하지 않음, 버린 항목은 개수만 · 운영인데 COOKIE_SECURE 꺼짐은 경고 로그.
 - 판단: `auth_service.is_login_allowed(settings, email, *, email_verified)` 한 곳 — 목록이 비면 누구나, 있으면 구글이 확인한 ASCII 이메일만 대소문자 무시. `GoogleProfile.email_verified`는 userinfo의 `email_verified is True`, 기본값은 닫는 쪽(False).
 - 막는 곳: 구글 콜백(`api/auth.py`)이 계정을 만들기 전에 → `/login?error=not_allowed`(state 쿠키 삭제). `deps.get_current_user`가 매 요청(샘플 계정 제외) → 401 `지금은 샘플 체험만 열려 있어요.` + 머리말 `X-Didim-Login-Error: not_allowed`.
 - 화면: 로그인 화면 `ERROR_MESSAGES.not_allowed`(아래 '로그인 없이 샘플로 둘러보기'로 이어짐), `lib/auth.ts` `checkCurrentUser`(cache)가 머리말을 읽어 `requireCurrentUser`가 `/login?error=not_allowed`로(랜딩의 `getCurrentUserOrNull`은 그대로 null — 리다이렉트 안 함).

@@ -10,7 +10,7 @@ LLM_BASE_URL          local일 때만 읽는다(기본: 이 컴퓨터의 Ollama 
                       같이 쓰면 provider를 넘겨 부를 때 한 회사의 키가 다른 회사 주소로 갈 수 있어서(F-009 4차 리뷰 R2, 사용자 선택)
 LLM_MODEL             모델 이름(exaone은 기본값 있음, local은 꼭 필요)
 LLM_REASONING_EFFORT  exaone: low(기본) | high | max. local · nvidia는 넣을 때만 보낸다
-LLM_TIMEOUT_SECONDS   데이터가 오가는 간격의 상한(기본 60초). 재시도를 합친 전체 상한은 아래 상수(180초)
+LLM_TIMEOUT_SECONDS   데이터가 오가는 간격의 상한(기본 60초). 재시도를 합친 전체 상한은 아래 상수(100초)
 """
 
 import os
@@ -37,10 +37,11 @@ LOCAL_LLM_DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
 
 # EXAONE은 답하기 전에 항상 추론부터 해서 일반 API보다 오래 걸릴 수 있다
 # 아래 값은 사용자 확인(2026-11-10).
-# 60초는 "데이터가 오가는 간격"의 상한이라, 재시도까지 합친 전체 시간은 따로 막는다(180초, complete_json).
+# 60초는 "데이터가 오가는 간격"의 상한이라, 재시도까지 합친 전체 시간은 따로 막는다(100초, complete_json).
 DEFAULT_LLM_TIMEOUT_SECONDS = 60.0
 LLM_CONNECT_TIMEOUT_SECONDS = 5.0
-DEFAULT_LLM_TOTAL_TIMEOUT_SECONDS = 180.0
+# 100초: 배포(Vercel)에서 화면 → 백엔드로 넘기는 요청은 120초에 끊겨서, 그 안에 끝나게(D-032, 원래 180초 — D-022)
+DEFAULT_LLM_TOTAL_TIMEOUT_SECONDS = 100.0
 
 # 재시도 규칙 — "처음 1번 + 다시 1번"
 LLM_MAX_TRANSIENT_ATTEMPTS = 2  # 네트워크 · 타임아웃 · 5xx

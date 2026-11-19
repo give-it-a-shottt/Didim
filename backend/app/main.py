@@ -19,20 +19,25 @@ from app.api import (
     search,
 )
 from app.api.sample_guard import SampleReadOnlyGuard
+from app.api.security_headers import SecurityHeaders
 from app.api.upload_limit import ImportUploadGuard
-from app.config import check_login_allowlist_at_startup
+from app.config import api_docs_urls, check_login_allowlist_from_env, load_settings
 from app.db.session import dispose_engine, ensure_db_ready
+
+# 운영에서 허용 목록을 빠뜨리면 앱을 불러오는 순간 멈춘다(F-015). 시작 처리(lifespan)가 아니라 여기서 — 배포 런타임이
+# lifespan을 건너뛰거나 시작 오류를 삼켜도 열린 채로 뜨지 않게(D-032, F-016 1차 리뷰 R2).
+check_login_allowlist_from_env()
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    check_login_allowlist_at_startup()  # 운영에서 허용 목록을 빠뜨리면 시작하지 않는다(F-015)
     ensure_db_ready()
     yield
     dispose_engine()
 
 
-app = FastAPI(title="Didim API", lifespan=lifespan)
+# 문서 경로는 앱을 만들 때 정해져서, 시작할 때의 환경변수로 한 번 정한다(운영이면 끔 — D-032)
+app = FastAPI(title="Didim API", lifespan=lifespan, **api_docs_urls(load_settings()))
 
 # 기록 가져오기는 본문을 다 받기 전에 로그인 쿠키 · 크기부터 본다(F-002). 라우터보다 먼저 돌아야 해서 미들웨어로 둔다.
 app.add_middleware(ImportUploadGuard)
@@ -53,3 +58,6 @@ app.include_router(interview.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
 app.include_router(home.router, prefix="/api")
+
+# 가장 바깥(마지막에 더한 미들웨어가 먼저 돈다) — 가드의 403 · 413까지 모든 응답에 붙는다(D-032)
+app.add_middleware(SecurityHeaders)

@@ -104,7 +104,7 @@ test("드래그 예외: 파일이 아닌 것은 무시, 안쪽 요소를 지나�
   await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 });
 
-test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 이유를 보여 준다", async ({ context, page }) => {
+test("21개를 고르거나 합계가 3MB를 넘으면 보내기 전에 막고 이유를 보여 준다", async ({ context, page }) => {
   await logIn(context);
   await page.goto("/home");
   await page.getByRole("complementary").getByRole("button", { name: "기록 추가" }).click();
@@ -115,12 +115,12 @@ test("21개를 고르거나 합계가 20MB를 넘으면 보내기 전에 막고 
   await expect(dialog.getByRole("alert")).toHaveText("한 번에 20개까지 올릴 수 있어요.");
   await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 
-  const big = Buffer.alloc(11 * 1024 * 1024, "a");
+  const big = Buffer.alloc(2 * 1024 * 1024, "a");
   await input.setInputFiles([
     { name: "a.md", mimeType: "text/markdown", buffer: big },
     { name: "b.md", mimeType: "text/markdown", buffer: big },
   ]);
-  await expect(dialog.getByRole("alert")).toHaveText("한 번에 올릴 수 있는 용량(20MB)을 넘었어요.");
+  await expect(dialog.getByRole("alert")).toHaveText("한 번에 올릴 수 있는 용량(3MB)을 넘었어요.");
   await expect(dialog.getByRole("button", { name: /가져오기$/ })).toBeDisabled();
 });
 
@@ -149,11 +149,11 @@ test("서버 응답별로 맞는 화면이 나온다: 401 · 413 · 네트워크
     route.fulfill({
       status: 413,
       contentType: "application/json",
-      body: JSON.stringify({ detail: "한 번에 올릴 수 있는 용량(20MB)을 넘었어요." }),
+      body: JSON.stringify({ detail: "한 번에 올릴 수 있는 용량(3MB)을 넘었어요." }),
     }),
   );
   dialog = await openAndSubmit(page);
-  await expect(dialog.getByRole("alert")).toHaveText("한 번에 올릴 수 있는 용량(20MB)을 넘었어요.");
+  await expect(dialog.getByRole("alert")).toHaveText("한 번에 올릴 수 있는 용량(3MB)을 넘었어요.");
   await page.unrouteAll();
 
   await page.route("**/api/notes/import", (route) => route.abort("connectionreset"));

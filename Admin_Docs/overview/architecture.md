@@ -51,7 +51,7 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   src/app/robots.ts, sitemap.ts   검색 엔진 안내
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes · import-records · record-search · quiz-review · experience-cards · notion-import · applications.spec.ts, mock-backend.mjs — 가짜 FastAPI)
 backend/                  FastAPI (uv)
-  app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어 · 샘플 읽기 전용 미들웨어(바깥), 라우터를 /api 아래에 붙임
+  app/main.py             앱 생성(불러올 때 허용 목록 검사 F-015 · 운영이면 문서 경로 끔 · 보안 머리말 미들웨어 D-032), lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어 · 샘플 읽기 전용 미들웨어(바깥), 라우터를 /api 아래에 붙임
   app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함), 로그인 허용 목록 · 운영 판단 · 시작 확인(F-015 — main.py lifespan이 부름)
   app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, applications.py, drafts.py, interview.py, demo.py — 샘플 세션 열기, report.py — 공개 평가 리포트, deps.py) + schemas.py(여러 라우터가 같이 쓰는 ServiceOut · RAW_INPUT_SLACK, F-008 3차 리뷰 R1) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어, `route_path`는 샘플 가드도 씀) + sample_guard.py(샘플 세션의 쓰기 · AI 호출을 라우터 앞에서 403 — 기본이 막기, F-010 · D-029)
   app/importers/          가져오기 어댑터(D-001) — 파일 · 노션 페이지를 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py, notion.py — 블록 나무 → 마크다운 글, 노션을 부르지 않는 순수 함수). 노션도 입력 모양(파일 바이트 · 블록 나무)이 달라 Protocol 없이 함수 두 개로 둠(F-005)
@@ -145,7 +145,7 @@ backend/                  FastAPI (uv)
 - AI 출력: 정해진 스키마로 받고, 형식이 틀리면 재시도 · 실패 처리.
 - LLM에 보내는 범위 최소화: 필요한 조각만, 무엇을 보내는지 안내.
 - 평가 가능하게: 매칭 · 근거 검사 결과를 로그로 남겨 평가 세트로 채점(D-005).
-- 브라우저 → `/api/*` → Next rewrites → FastAPI 프록시는 기본 30초에 끊긴다. [문제 만들기]가 AI를 최대 180초 기다리므로 `next.config.ts`의 `experimental.proxyTimeout`을 200초로 둔다(F-004, 리뷰 때 확인).
+- 브라우저 → `/api/*` → Next rewrites → FastAPI 프록시는 기본 30초에 끊긴다. [문제 만들기]가 AI를 최대 100초 기다리므로 `next.config.ts`의 `experimental.proxyTimeout`을 120초로 둔다(F-004 → D-032에서 180 · 200초를 낮춤 — 배포 Vercel은 바깥 서버로 넘긴 요청을 120초에 끊음).
 - 오래 걸리는 처리(가져오기 · 초안 생성)는 진행 상태를 저장해서 나갔다 와도 이어 보기(IMP_01_002). 1주차 가져오기는 AI 호출이 없어 요청 한 번에 처리하고, 이어 보기 방식(백그라운드 작업 · 폴링 · 스트리밍)은 AI 단계를 붙일 때 정해요(F-002 설계 의도, Q-008).
 
 최종 수정: 2026-11-11 · 관련: D-001, D-003, D-004, D-008, D-010

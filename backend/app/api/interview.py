@@ -6,7 +6,7 @@ GET    /api/applications/{application_id}/interview   — 이 공고에 매칭�
 카드 상세 응답(GET /api/cards/{id})에도 그 카드의 질문이 들어 있다(api/cards.py).
 
 AI 엔드포인트는 초안 쓰기(api/drafts.py)와 같은 구조다: 일반 함수(def)라 작업 스레드에서 DB를 다루고,
-AI 호출(async, 최대 180초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
+AI 호출(async, 최대 100초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
 """
 
 from collections.abc import Callable

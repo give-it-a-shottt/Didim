@@ -9,7 +9,7 @@ POST   /api/applications/{id}/requirements       — ① 요구 역량 뽑기(AI
 POST   /api/applications/{id}/matches            — ② 매칭(AI 1번, 몇 번이든 — 이전 매칭을 바꿈). 후보 카드가 없으면 AI 없이 끝.
 
 AI 엔드포인트는 문제 만들기 · 카드 후보 찾기(api/cards.py)와 같은 구조다: 일반 함수(def)라 작업 스레드에서 DB를 다루고,
-AI 호출(async, 최대 180초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
+AI 호출(async, 최대 100초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
 """
 
 from datetime import date, datetime

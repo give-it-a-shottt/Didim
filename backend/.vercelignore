@@ -1,0 +1,6 @@
+# Vercel CLI 배포 때 올리지 않을 파일(D-032) — Git 연동 배포는 .gitignore를 따르지만 CLI는 이 파일을 따른다
+.env
+.env.*
+__pycache__/
+.pytest_cache/
+.venv/

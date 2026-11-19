@@ -5,7 +5,8 @@ import { detailOf, readJson } from "@/lib/json";
 // 서버(backend/app/config.py · app/importers/markdown.py)와 같은 값. 화면에서 먼저 알려 주려고 두고, 최종 확인은 서버가 한다.
 export const MAX_IMPORT_FILES = 20;
 export const MAX_IMPORT_FILE_MB = 1;
-export const MAX_IMPORT_TOTAL_MB = MAX_IMPORT_FILES * MAX_IMPORT_FILE_MB;
+// 합계 3MB — 서버(backend/app/config.py MAX_IMPORT_TOTAL_BYTES)와 같은 값. 배포(Vercel)의 요청 크기 상한 4.5MB 때문(D-032)
+export const MAX_IMPORT_TOTAL_MB = 3;
 export const ACCEPTED_EXTENSIONS = ".md,.markdown";
 const BYTES_PER_MB = 1024 * 1024;
 

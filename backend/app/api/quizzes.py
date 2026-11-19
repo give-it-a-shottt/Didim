@@ -7,7 +7,7 @@ POST /api/quizzes/{quiz_id}/answer — 답 제출 → 채점 · 해설 · 근거
 GET  /api/wrong-answers          — 오답노트.
 목록에는 정답 · 해설 · 인용을 넣지 않는다(답을 낸 뒤에만 보여 줌).
 
-엔드포인트는 일반 함수(def)라 FastAPI가 작업 스레드에서 돌린다. DB 작업은 그 스레드에서 하고, AI 호출(async, 최대 180초)만
+엔드포인트는 일반 함수(def)라 FastAPI가 작업 스레드에서 돌린다. DB 작업은 그 스레드에서 하고, AI 호출(async, 최대 100초)만
 anyio.from_thread.run으로 이벤트 루프에 맡긴다. 동기 DB 세션이 이벤트 루프를 막지 않게 하려는 구조다.
 """
 

@@ -3,8 +3,9 @@ from typing import Any
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
-from app.config import DB_CONNECT_TIMEOUT_SECONDS, load_settings
+from app.config import DB_CONNECT_TIMEOUT_SECONDS, is_production, load_settings
 from app.db.schema_version import ensure_db_migrated
 
 
@@ -12,11 +13,13 @@ class DatabaseConfigError(RuntimeError):
     """DATABASE_URL 환경변수가 비어 있을 때 발생한다."""
 
 
-def create_db_engine(database_url: str) -> Engine:
+def create_db_engine(database_url: str, *, pooled: bool = True) -> Engine:
     """DB 엔진을 만든다.
 
     운영 · 개발 DB는 PostgreSQL이다(D-008). SQLite는 테스트(tests/conftest.py)에서만 명시적으로 쓰고,
     그때도 외래키(ON DELETE CASCADE)가 동작하도록 PRAGMA를 켠다.
+    pooled=False면 연결을 쥐고 있지 않는다(NullPool) — 운영(Vercel 함수 여러 개 + Supabase 풀러)에서 놀고 있는 함수가
+    연결을 붙잡아 풀러가 꽉 차지 않게(D-032, F-016 1차 리뷰 R2).
     """
     if not database_url:
         raise DatabaseConfigError(
@@ -30,7 +33,8 @@ def create_db_engine(database_url: str) -> Engine:
         connect_args["connect_timeout"] = DB_CONNECT_TIMEOUT_SECONDS
 
     # hide_parameters: DB 오류 메시지 · 로그에 INSERT 값(노트 원문 등 개인 기록)이 찍히지 않게 한다(F-002 1차 R2)
-    engine = create_engine(database_url, connect_args=connect_args, future=True, hide_parameters=True)
+    pool_args: dict[str, Any] = {} if pooled else {"poolclass": NullPool}
+    engine = create_engine(database_url, connect_args=connect_args, future=True, hide_parameters=True, **pool_args)
 
     if database_url.startswith("sqlite"):
         @event.listens_for(engine, "connect")
@@ -50,7 +54,9 @@ def get_engine() -> Engine:
     """앱이 쓰는 엔진 하나. 처음 부를 때 환경변수 DATABASE_URL로 만들고, 이후는 같은 것을 돌려준다."""
     global _engine
     if _engine is None:
-        _engine = create_db_engine(load_settings().database_url)
+        settings = load_settings()
+        # 운영이면 연결을 쥐고 있지 않는다(NullPool — 위 create_db_engine 설명)
+        _engine = create_db_engine(settings.database_url, pooled=not is_production(settings))
     return _engine
 
 

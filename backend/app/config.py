@@ -39,7 +39,8 @@ MAX_DB_ID = 2_147_483_647
 # 기록 가져오기 상한 (F-002 설계 의도, 사용자 확인). 화면(frontend/src/lib/import-records.ts)에도 같은 값이 있다.
 MAX_IMPORT_FILES = 20
 MAX_IMPORT_FILE_BYTES = 1 * BYTES_PER_MB  # 파일당 1MB
-MAX_IMPORT_TOTAL_BYTES = MAX_IMPORT_FILES * MAX_IMPORT_FILE_BYTES  # 파일 합계 20MB
+# 파일 합계 3MB — 배포(Vercel)는 요청 하나를 4.5MB까지만 받아서, 아래 요청 상한(합계 + 1MB = 4MB)이 그 안에 들게(D-032, 원래 20MB)
+MAX_IMPORT_TOTAL_BYTES = 3 * BYTES_PER_MB
 # 요청 본문 전체 상한: 파일 합계 + 여러 파일을 묶는 형식(multipart)의 머리말 몫 1MB
 MAX_IMPORT_REQUEST_BYTES = MAX_IMPORT_TOTAL_BYTES + 1 * BYTES_PER_MB
 # 조각 기준 길이(글자 수). 넘으면 문단 경계에서 다시 자른다. 임시값 — 2주차 검색 품질을 보고 조정.
@@ -81,7 +82,7 @@ QUIZ_OX_CHOICES = ("O", "X")
 # 복습 간격(일): 단계 0 → 당일, 1 → 1일, 2 → 3일, 3 → 7일, 4 → 14일 뒤
 QUIZ_REVIEW_INTERVAL_DAYS = (0, 1, 3, 7, 14)
 # [문제 만들기] 선점이 이보다 오래되면 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초).
-# AI 전체 시간 상한 180초(app/llm/settings.py) + 저장 여유. 사용자 확인 2026-11-11
+# AI 전체 시간 상한 100초(app/llm/settings.py) + 저장 여유. 사용자 확인 2026-11-11
 QUIZ_CLAIM_STALE_SECONDS = 300
 # '오늘 복습' 한 번에 보내는 문제 수 상한(오래 밀린 것부터). 전체 개수는 따로 알려 준다. 임시값 — 리뷰 때 확인
 MAX_REVIEW_SESSION_QUIZZES = 100
@@ -206,11 +207,12 @@ NOTION_MAX_IMPORT_PAGES = 20  # 한 번에 가져오는 페이지 수 — 마크
 NOTION_MAX_BLOCKS_PER_PAGE = 2_000  # 페이지 하나에서 읽는 블록 수 상한. 넘으면 그 페이지만 실패
 NOTION_MAX_BLOCK_DEPTH = 6  # 토글 · 목록 안쪽으로 내려가는 깊이 상한
 # 가져오기 한 번의 시간 예산(초). 넘으면 남은 페이지는 시작하지 않고 실패로 알려 준다.
-# Next 프록시 상한 200초(frontend/next.config.ts, T-005) 안에서 끝나게.
+# 배포(Vercel)가 바깥 서버로 넘긴 요청을 끊는 120초(로컬 Next 프록시도 120초 — next.config.ts, T-005) 안에서 끝나게.
 # 마감은 노션 호출 '사이'뿐 아니라 호출 하나 안에서도 지킨다(요청 시간 상한 · 재시도 대기를 남은 시간으로 자름, 1차 리뷰 C).
 # 요청이 들어온 시각부터 센다. httpx 시간 상한은 연결 · 읽기 단계마다 따로라 요청 하나가 상한을 조금 넘을 수 있어
 # 150초에서 140초로 낮췄다(2차 리뷰 R2, 사용자 확인 범위 — "C를 고치며 더 낮출 수 있음").
-NOTION_IMPORT_TIME_BUDGET_SECONDS = 140.0
+# 배포 상한 120초에 맞춰 80초로 — 요청 하나가 넘칠 여유 40초(D-032, 사용자 선택 2026-11-19, F-016 1차 리뷰 R3 · R4).
+NOTION_IMPORT_TIME_BUDGET_SECONDS = 80.0
 # 사용자당 가져오기 하나(1차 리뷰 D, 사용자 선택). 이보다 오래된 '가져오는 중' 표시는 서버가 도중에 죽은 것으로 보고 새 요청이 가져간다(초).
 NOTION_IMPORT_CLAIM_STALE_SECONDS = 300
 NOTION_PAGE_ID_LENGTH = 36  # 하이픈 있는 UUID (DB notes.notion_page_id 길이)
@@ -274,7 +276,7 @@ def check_login_allowlist(settings: "Settings", raw_allowlist: str = "") -> None
     """운영인데 허용 목록이 비어 있으면 시작하지 않는다(F-015 리뷰 R2 · 사용자 선택 2026-11-19).
     목록이 비면 누구나 로그인해 남의 기록이 체험판 AI로 가므로(D-031), 빠뜨린 채 조용히 열리지 않게 한다. 로컬은 그대로.
     raw_allowlist(환경변수 원문)에서 ASCII가 아니라 버린 항목이 있으면 개수만 경고한다(이메일 값은 로그에 쓰지 않음).
-    요청마다 부르는 load_settings가 아니라 시작할 때 한 번만 부른다 — 경고가 요청마다 쌓이지 않게."""
+    요청마다 부르는 load_settings가 아니라 앱을 불러올 때 한 번만 부른다 — 경고가 요청마다 쌓이지 않게."""
     dropped = sum(1 for item in raw_allowlist.split(",") if item.strip() and not item.strip().isascii())
     if dropped:
         logger.warning("ALLOWED_LOGIN_EMAILS에서 ASCII가 아닌 항목 %d개를 뺐어요.", dropped)
@@ -290,8 +292,15 @@ def check_login_allowlist(settings: "Settings", raw_allowlist: str = "") -> None
         logger.warning("운영으로 보이는데 COOKIE_SECURE가 꺼져 있어요 — 세션 쿠키에 Secure가 붙지 않아요.")
 
 
-def check_login_allowlist_at_startup() -> None:
-    """서버 시작(main.py lifespan)에서 부른다 — 환경변수를 읽어 위 확인을 한 번 한다."""
+def api_docs_urls(settings: "Settings") -> dict[str, str | None]:
+    """FastAPI 문서 경로. 운영(is_production)에서는 끈다 — API 목록을 공개하지 않게(D-032, F-000 리뷰 R2 제안)."""
+    if is_production(settings):
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {"docs_url": "/docs", "redoc_url": "/redoc", "openapi_url": "/openapi.json"}
+
+
+def check_login_allowlist_from_env() -> None:
+    """앱을 불러올 때(main.py 모듈 수준) 한 번 부른다 — 환경변수를 읽어 위 확인을 한다(F-015, D-032)."""
     check_login_allowlist(load_settings(), os.getenv("ALLOWED_LOGIN_EMAILS", ""))
 
 

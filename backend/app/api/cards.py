@@ -8,7 +8,7 @@ DELETE /api/cards/{card_id}                   — 후보 버리기 · 카드 삭
 PUT    /api/cards/{card_id}/fields/{slot}     — 내 답 저장 · 인용 빼기.
 
 후보 찾기 엔드포인트는 문제 만들기(api/quizzes.py)와 같은 구조다: 일반 함수(def)라 작업 스레드에서 DB를 다루고,
-AI 호출(async, 최대 180초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
+AI 호출(async, 최대 100초)만 anyio.from_thread.run으로 이벤트 루프에 맡긴다.
 """
 
 from datetime import datetime

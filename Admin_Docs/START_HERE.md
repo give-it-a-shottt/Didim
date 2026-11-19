@@ -9,7 +9,7 @@
 - 무엇: 공부 기록을 퀴즈로 복습하고, 그 기록을 근거로 자소서 · 면접을 준비하는 서비스
 - 누구를 위해: 공부 기록은 쌓이는데 복습도 지원서도 매번 처음부터 하는 취준생(첫 사용자는 나)
 
-**지금 상태** — [STATUS.md](STATUS.md): 됨 16 · 일부 1 · 다음 0 · 열린 질문 2개
+**지금 상태** — [STATUS.md](STATUS.md): 됨 17 · 일부 1 · 다음 0 · 열린 질문 1개
 
 - 끝난 것: 서비스 이름(디딤), 경험 카드 10장(노션), 디자인 기획(IA v2 · 플로우 · 디자인 4안 · 모드 · 토큰 → `didim-design.md`), 결정 D-001~D-018, 개발 환경 세팅(F-000), 화면 뼈대 + SEO 기본 + Playwright 스모크 테스트(F-013), 계정 · 사용자별 데이터 분리 1주차(F-001, 5차 리뷰 [통과]), LLM 연결 구조(F-014, 3차 리뷰 [통과], 실제 EXAONE 연결 확인), DB 구조 변경 도구 Alembic(D-015, F-001 fix-01 2차 리뷰 [통과], 개발 DB 적용 확인), 마크다운 가져오기 1주차(F-002, 4차 리뷰 [통과], SQLite · PostgreSQL 테스트 통과), 기록 검색(F-003, 키워드 검색 D-016, 2차 리뷰 [통과], 평가 기준선 낱말 겹침 1.00 · 다른낱말 0.60)
 - 다음(이 순서로):
@@ -110,7 +110,7 @@ Admin_Docs/
 | [D-019](decisions/D-019-figma-is-design-source.md) | 화면 디자인은 Figma 디딤 파일이 원본(md와 다르면 Figma), 글꼴 next/font, 모바일은 PC 기준 + 안 깨지게 | [통과] |
 | [D-020](decisions/D-020-one-ai-job-per-user.md) | 사용자당 진행 중인 AI 작업은 기능을 가리지 않고 1개(퀴즈 만드는 중엔 카드 찾기 409) | [통과] |
 | [D-021](decisions/D-021-notion-oauth-connection.md) | 노션은 공개 OAuth로 연결, 토큰은 암호화해 사용자당 하나, 다시 해도 안 될 때만 끊김(갱신 토큰 무효 · 토큰을 못 풂 · 새 토큰도 거절), 가져오기는 사용자당 하나 | [통과] |
-| [D-022](decisions/D-022-long-ai-work-in-request.md) | AI를 오래 부르는 처리는 요청 한 번 + 180초 상한 유지(백그라운드 작업 안 씀) | [통과] |
+| [D-022](decisions/D-022-long-ai-work-in-request.md) | AI를 오래 부르는 처리는 요청 한 번 + 시간 상한 유지(백그라운드 작업 안 씀 — 상한은 D-032에서 180 → 100초) | [통과] |
 | [D-023](decisions/D-023-two-folder-repo.md) | 레포는 frontend/(npm) + backend/(uv) 두 폴더 | [통과] |
 | [D-024](decisions/D-024-signed-cookie-session-kept.md) | 로그인 세션은 서명 쿠키 그대로, 서버 무효화 없음(공개 배포 때 다시) | [통과] |
 | [D-025](decisions/D-025-sample-data-in-sample-account.md) | 샘플 체험 데이터는 샘플 전용 계정 하나에 | [통과] |
@@ -120,6 +120,7 @@ Admin_Docs/
 | [D-029](decisions/D-029-sample-session-public-report.md) | 샘플 체험은 샘플 계정 세션으로 기존 화면을 둘러봄(쓰기 · AI 호출은 서버가 막음), 샘플 · 평가 리포트는 로그인 없이 공개(리포트 `/report`) | [통과] |
 | [D-030](decisions/D-030-report-read-no-cache-until-deploy.md) | 평가 리포트 읽기(랜딩 수치 · `/report`)는 배포(Q-012)를 정할 때까지 캐시하지 않음 — 못 읽을 때 화면은 고장 난 백엔드 e2e로 지킴 | [통과] |
 | [D-031](decisions/D-031-public-site-sample-only-ai-owner-only.md) | 공개 배포는 랜딩 · 리포트 · 샘플 체험만, 구글 로그인(=AI 기능)은 서버가 허용한 이메일(본인)만 — 타인 기록을 체험판 AI로 보내지 않으려고 | [통과] |
+| [D-032](decisions/D-032-deploy-vercel-supabase.md) | 배포는 Vercel 두 프로젝트(화면 · 백엔드) + Supabase — Vercel 상한에 맞춰 AI 전체 상한 100초 · 가져오기 합계 3MB, 운영 /docs 끔 · 보안 머리말 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
@@ -139,6 +140,7 @@ Admin_Docs/
 | [F-011](features/F-011-landing/feature.md) | 랜딩 | 8 | [됨] 6차 리뷰 · 화면 확인(사용자) |
 | [F-012](features/F-012-home-onboarding/feature.md) | 홈 · 첫 방문 안내 | 8 | [됨] 2차 [통과] |
 | [F-015](features/F-015-login-allowlist/feature.md) | 로그인 허용 목록(D-031) | 8 | [됨] 4차 [통과] |
+| [F-016](features/F-016-deploy-prep/feature.md) | 배포 준비(D-032) | 8 | [됨] 3차 [통과] · 배포는 체크리스트 |
 
 일정이 밀리면 줄이는 순서: ① 랜딩을 "히어로 + 고정 섹션 1개"로(D-007) ② 근거 검사는 규칙 기반 단순 버전 유지(D-003) ③ 노션 연결을 7주 이후로(D-001)
 
