@@ -60,10 +60,62 @@ export function runDate(run: ReportRun): string {
   return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : run.run_id;
 }
 
-export function isReportRuns(value: unknown): value is { runs: ReportRun[] } {
+// 배열은 객체로 보지 않는다
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringOrNull(value: unknown): boolean {
+  return value === null || value === undefined || typeof value === "string";
+}
+
+function isReportMetric(value: unknown): value is ReportMetric {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    Array.isArray((value as { runs?: unknown }).runs)
+    isRecord(value) &&
+    typeof value.key === "string" &&
+    typeof value.label === "string" &&
+    typeof value.kind === "string" &&
+    (value.value === null || (typeof value.value === "number" && Number.isFinite(value.value)))
   );
+}
+
+function isReportEval(value: unknown): value is ReportEval {
+  return (
+    isRecord(value) &&
+    typeof value.key === "string" &&
+    typeof value.title === "string" &&
+    typeof value.status === "string" &&
+    isStringOrNull(value.error) &&
+    isStringOrNull(value.model) &&
+    typeof value.labels_pending === "number" &&
+    Array.isArray(value.metrics) &&
+    value.metrics.every(isReportMetric)
+  );
+}
+
+function isReportRun(value: unknown): value is ReportRun {
+  return (
+    isRecord(value) &&
+    typeof value.run_id === "string" &&
+    isStringOrNull(value.started_at) &&
+    isStringOrNull(value.finished_at) &&
+    isStringOrNull(value.provider) &&
+    isStringOrNull(value.model) &&
+    isStringOrNull(value.commit) &&
+    isRecord(value.data) &&
+    Object.values(value.data).every((size) => typeof size === "number") &&
+    Array.isArray(value.evals) &&
+    value.evals.every(isReportEval)
+  );
+}
+
+/**
+ * 응답 모양 검사. 화면이 읽는 칸(evals · metrics · data)까지 본다 — 배열인지만 보면 회차 안쪽이 틀린 응답에서
+ * run.evals.find 같은 곳이 서버 렌더 중에 터져 화면 전체가 오류가 된다(e2e tests/report-unavailable.spec.ts).
+ * 회차 하나라도 틀리면 응답 전체를 '못 읽음'으로 본다(설계 원칙 3, D-030) — 틀린 회차만 건너뛰면 최신 회차가 틀렸을 때
+ * 옛 회차가 '최근 회차'처럼 보인다. 백엔드(report.py)는 회차마다 검사해 틀린 회차를 빼므로 버전이 어긋날 때만 갈린다.
+ * 위 타입(ReportMetric · ReportEval · ReportRun)을 바꾸면 이 검사도 같이 고친다.
+ */
+export function isReportRuns(value: unknown): value is { runs: ReportRun[] } {
+  return isRecord(value) && Array.isArray(value.runs) && value.runs.every(isReportRun);
 }

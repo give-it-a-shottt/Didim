@@ -19,5 +19,6 @@
 | [T-009](T-009-pretendard-badge-text-sits-high.md) | 배지 안의 한글이 가운데가 아니라 위로 치우쳐 보임(Pretendard) | [통과] | 2026-11-13 |
 | [T-010](T-010-postgres-tests-fail-when-docker-is-off.md) | Docker가 꺼져 있으면 PostgreSQL 테스트가 대부분 오류(연결 시간 초과) | [통과] | 2026-11-13 |
 | [T-011](T-011-react-transitioncancel-has-no-property-name.md) | React onTransitionCancel은 propertyName이 비어 있고, 펼치는 중 접으면 '펼치기 취소' 신호가 옴 | [통과] | 2026-11-17 |
+| [T-012](T-012-report-shape-check-only-array.md) | 평가 리포트 응답의 회차 안쪽 모양이 틀리면 랜딩 · /report 서버 렌더가 TypeError로 터짐(검사가 배열만 봄) | [통과] | 2026-11-19 |
 
 최종 수정: 2026-11-13

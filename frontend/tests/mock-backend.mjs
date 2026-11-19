@@ -1232,29 +1232,52 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, "127.0.0.1");
 
-// 고장 난 백엔드(F-011 · F-010 '리포트를 통째로 못 읽을 때'): 준비 확인(/api/health) 말고는 모두 500.
-// 화면 서버가 백엔드를 직접 불러 page.route로는 못 가로채서, 같은 빌드의 두 번째 next start만 이쪽을 보게 한다(playwright.config.ts).
-// 위 서버에 '고장' 스위치를 두면 병렬로 도는 다른 테스트까지 고장 나서 따로 띄운다.
+// 고장 난 백엔드(F-011 · F-010 '리포트를 못 읽을 때 · 빈 회차'): 화면 서버가 백엔드를 직접 불러 page.route로는 못 가로채서,
+// 같은 빌드의 두 번째 next start만 이쪽을 보게 한다(playwright.config.ts). 위 서버에 스위치를 두면 병렬로 도는 다른 테스트까지
+// 바뀌어서 따로 띄운다. 이 서버는 tests/report-unavailable.spec.ts만 쓰고, 그 파일은 테스트를 차례로 돌린다(스위치를 같이 씀).
 // 포트 기본값은 tests/helpers.ts 한 곳 — config가 넘겨 줄 때만 띄운다(따로 돌릴 때 값이 어긋나지 않게).
 const FAILING_PORT = process.env.MOCK_BACKEND_FAILING_PORT;
+// /api/report가 돌려줄 것: fail 500(기본) · empty 회차 0개 · not-json 200 + JSON 아닌 본문 · bad-run 200 + 회차에 칸이 빠짐
+// · bad-metric 200 + 회차 · 평가는 맞는데 수치 값이 문자열
+const BAD_METRIC_RUN = {
+  run_id: "20261119-000000", started_at: null, finished_at: null, provider: null, model: null, commit: null,
+  data: { experiences: 20 },
+  evals: [{ key: "interview_planted", title: "면접 · 심은 질문", status: "ok", error: null, model: null, labels_pending: 0,
+    metrics: [{ key: "catch_rate", label: "심은 질문 잡은 비율", kind: "rate", value: "0.75" }] }],
+};
+const REPORT_MODES = {
+  fail: { status: 500, type: "application/json", body: JSON.stringify({ detail: "mock backend failure" }) },
+  empty: { status: 200, type: "application/json", body: JSON.stringify({ runs: [] }) },
+  "not-json": { status: 200, type: "text/html", body: "<html>gateway page</html>" },
+  "bad-run": { status: 200, type: "application/json", body: JSON.stringify({ runs: [{ run_id: "20261119-000000" }] }) },
+  "bad-metric": { status: 200, type: "application/json", body: JSON.stringify({ runs: [BAD_METRIC_RUN] }) },
+};
 if (FAILING_PORT) {
   // 받은 /api/report 수 — 테스트가 '화면 서버가 정말 이 고장 난 백엔드를 봤는지' 확인한다(BACKEND_URL이 안 먹어 연결 실패로 통과하는 것을 막음)
   let reportRequests = 0;
+  let reportMode = "fail";
+  const sendJson = (res, status, body) => {
+    res.writeHead(status, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(body));
+  };
   http
     .createServer((req, res) => {
-      if (req.method === "GET" && req.url === "/api/health") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok" }));
+      if (req.method === "GET" && req.url === "/api/health") return sendJson(res, 200, { status: "ok" });
+      if (req.method === "GET" && req.url === "/__test/report-requests") return sendJson(res, 200, { count: reportRequests });
+      const modeMatch = req.method === "POST" && req.url?.match(/^\/__test\/report-mode\/([a-z-]+)$/);
+      if (modeMatch) {
+        if (!(modeMatch[1] in REPORT_MODES)) return sendJson(res, 400, { detail: "unknown mode" });
+        reportMode = modeMatch[1];
+        return sendJson(res, 200, { mode: reportMode });
+      }
+      if (req.method === "GET" && req.url === "/api/report") {
+        reportRequests += 1;
+        const { status, type, body } = REPORT_MODES[reportMode];
+        res.writeHead(status, { "Content-Type": type });
+        res.end(body);
         return;
       }
-      if (req.method === "GET" && req.url === "/__test/report-requests") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ count: reportRequests }));
-        return;
-      }
-      if (req.url === "/api/report") reportRequests += 1;
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ detail: "mock backend failure" }));
+      sendJson(res, 500, { detail: "mock backend failure" });
     })
     .listen(Number(FAILING_PORT), "127.0.0.1");
 }
