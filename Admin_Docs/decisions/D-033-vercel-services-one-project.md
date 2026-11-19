@@ -27,6 +27,8 @@
 - CLI 배포용 `.vercelignore`는 레포 맨 위 하나(Root가 `./`라서) — `.env` · `.env.*`(예시 파일 제외), 하위 폴더 것은 지운다(4차 R2). `next.config.ts`의 `/api/*` rewrites는 배포(`VERCEL`)에서 끈다 — 맨 위 규칙에 안 걸린 요청이 빌드 때 기본값(localhost)으로 넘겨지다 실패하지 않게.
 - D-032의 값(AI 100초 · 노션 80초 · 가져오기 3MB · 서울 · NullPool · 보안)은 그대로 둔다. 120초 상한이 Services에선 안 걸릴 가능성이 높지만 문서에 명시가 없어([추정]) 보수적으로 유지.
 
+- 덧붙임(2026-11-19): 지역은 `sin1`(싱가포르)로 바뀜 — DB를 Neon(서울 없음, 싱가포르)으로 바꿔서([D-034](D-034-neon-via-vercel-singapore.md)).
+
 ### 확인한 근거 (2026-11-19, Vercel 문서 — Services · Services routing · Service bindings · Service configuration reference)
 - Services는 모든 플랜에서 Beta. 서비스는 맨 위 rewrites가 가리킬 때만 공개, 받은 원래 경로를 그대로 봄(`/api/users` → `/api/users`).
 - 서비스 방식에선 `functions` · `installCommand` · `buildCommand` · `devCommand` · `ignoreCommand` · `outputDirectory` · `framework`를 맨 위에 둘 수 없음(서비스 안으로).

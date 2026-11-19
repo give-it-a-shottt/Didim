@@ -120,8 +120,9 @@ Admin_Docs/
 | [D-029](decisions/D-029-sample-session-public-report.md) | 샘플 체험은 샘플 계정 세션으로 기존 화면을 둘러봄(쓰기 · AI 호출은 서버가 막음), 샘플 · 평가 리포트는 로그인 없이 공개(리포트 `/report`) | [통과] |
 | [D-030](decisions/D-030-report-read-no-cache-until-deploy.md) | 평가 리포트 읽기(랜딩 수치 · `/report`)는 배포(Q-012)를 정할 때까지 캐시하지 않음 — 못 읽을 때 화면은 고장 난 백엔드 e2e로 지킴 | [통과] |
 | [D-031](decisions/D-031-public-site-sample-only-ai-owner-only.md) | 공개 배포는 랜딩 · 리포트 · 샘플 체험만, 구글 로그인(=AI 기능)은 서버가 허용한 이메일(본인)만 — 타인 기록을 체험판 AI로 보내지 않으려고 | [통과] |
-| [D-032](decisions/D-032-deploy-vercel-supabase.md) | 배포는 Vercel + Supabase(구성은 D-033 — Services 한 프로젝트로 대체) — Vercel 상한에 맞춰 AI 전체 상한 100초 · 가져오기 합계 3MB, 운영 /docs 끔 · 보안 머리말 | [통과] |
+| [D-032](decisions/D-032-deploy-vercel-supabase.md) | 배포는 Vercel + Supabase(구성은 D-033 — Services 한 프로젝트로, DB · 지역은 D-034 — Neon 싱가포르로 대체) — Vercel 상한에 맞춰 AI 전체 상한 100초 · 가져오기 합계 3MB, 운영 /docs 끔 · 보안 머리말 | [통과] |
 | [D-033](decisions/D-033-vercel-services-one-project.md) | Vercel은 프로젝트 두 개 대신 Services 한 프로젝트(주소 하나, `/api/*` → backend 서비스, frontend는 binding으로 `BACKEND_URL`) — 백엔드 주소가 따로 공개되지 않음 | [통과] Beta |
+| [D-034](decisions/D-034-neon-via-vercel-singapore.md) | DB는 Supabase 대신 Vercel 연동 Neon(싱가포르 — 서울 없음), Vercel 함수도 싱가포르(sin1). 주소는 Vercel이 넣어 줌(`DATABASE_URL`), 디딤이 psycopg 형식으로 바꿔 씀 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |

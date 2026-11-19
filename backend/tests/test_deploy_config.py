@@ -88,7 +88,7 @@ def test_production_without_allowlist_fails_on_import() -> None:
 
 
 def test_production_engine_does_not_hold_connections(tmp_path: Path) -> None:
-    """운영 엔진은 NullPool — 함수가 놀 때 Supabase 풀러 연결을 쥐고 있지 않는다(1차 리뷰 R2)."""
+    """운영 엔진은 NullPool — 함수가 놀 때 DB 풀러(Neon) 연결을 쥐고 있지 않는다(1차 리뷰 R2)."""
     from sqlalchemy.pool import NullPool
 
     from app.db.session import create_db_engine
@@ -114,7 +114,7 @@ def test_root_vercel_services_config() -> None:
         {"source": "/api/(.*)", "destination": {"service": "backend"}},
         {"source": "/(.*)", "destination": {"service": "frontend"}},  # 맨 마지막(모두 받는 규칙)
     ]
-    assert config["regions"] == ["icn1"]  # 서울 — Supabase ap-northeast-2와 같게(D-032)
+    assert config["regions"] == ["sin1"]  # 싱가포르 — Neon aws-ap-southeast-1과 같게(D-034, Neon엔 서울이 없음)
     # 서비스 방식에선 실행 설정을 맨 위에 둘 수 없다(서비스 안으로)
     assert not {"functions", "buildCommand", "installCommand", "outputDirectory", "framework"} & set(config)
     assert not (BACKEND_DIR / "vercel.json").exists() and not (BACKEND_DIR.parent / "frontend" / "vercel.json").exists()

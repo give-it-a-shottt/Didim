@@ -31,6 +31,7 @@
   - 다음에(MVP 뒤): DB 두 번째 겹 — public 테이블 RLS(정책 없이) + Supabase 공개 역할 권한 회수, 실행용 최소 권한 역할.
 - 백엔드(②) 주소는 화면이 넘기려면 공개여야 해서 사실상 공개 API다 — 주소가 숨겨졌다는 데 기대지 않고, 앞단이 넣는 머리말을 신뢰 근거로 삼지 않는다(Origin 검사는 CSRF 방어일 뿐), IP 기준 제한은 Vercel 방화벽에서. 지금 구조는 안전 — `vercel.app`은 공개 접미사라 ①의 쿠키가 ②로 가지 않고, CORS가 없고, 매 요청 쿠키를 확인한다(F-016 1차 리뷰 R2).
 - 덧붙임(2026-11-19): **구성은 [D-033](D-033-vercel-services-one-project.md)으로 바뀌었다** — Vercel 프로젝트 두 개 대신 Services 한 프로젝트(주소 하나, `/api/*`는 Vercel이 바로 backend로). 위의 값(100초 · 80초 · 3MB · 서울 · NullPool · 보안)은 그대로.
+- 덧붙임(2026-11-19): **DB는 Supabase 대신 Vercel 연동 Neon(싱가포르), 지역은 icn1 대신 sin1** — [D-034](D-034-neon-via-vercel-singapore.md). 위의 Supabase 전용 항목(서울 · Data API 끄기 · RLS · Enforce SSL · verify-full)은 D-034로 대체. 100초 · 80초 · 3MB · NullPool · 보안 머리말은 그대로.
 - 이 결정으로 Q-012(FastAPI를 어디에)를 닫는다. 남은 것: 주소(Q-015), 운영에서 Secure 쿠키를 코드로 강제할지(지금은 `COOKIE_SECURE=true`로 설정하고 꺼져 있으면 시작 경고 — F-015).
 
 ### 확인한 근거 (2026-11-19 검색)

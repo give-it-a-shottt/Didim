@@ -82,3 +82,43 @@ def test_create_db_engine_sets_connect_timeout_for_postgresql(monkeypatch: pytes
     create_db_engine("postgresql+psycopg://DB_USER:DB_PASSWORD@127.0.0.1:5432/didim_test")
 
     assert captured["kwargs"]["connect_args"]["connect_timeout"] == DB_CONNECT_TIMEOUT_SECONDS
+
+
+def test_neon_style_url_gets_the_psycopg_driver() -> None:
+    """Neon · Vercel 연동은 'postgresql://' · 'postgres://'로 준다 — 디딤 드라이버(psycopg 3)로 맞춘다(D-034)."""
+    from app.db.session import normalize_database_url
+
+    tail = "user:pw@ep-x-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    assert normalize_database_url(f"postgresql://{tail}") == f"postgresql+psycopg://{tail}"
+    assert normalize_database_url(f"postgres://{tail}") == f"postgresql+psycopg://{tail}"
+    assert normalize_database_url(f" postgresql+psycopg://{tail} ") == f"postgresql+psycopg://{tail}"  # 이미 맞으면 그대로
+    assert normalize_database_url("sqlite://") == "sqlite://"
+    assert normalize_database_url("") == ""
+    assert normalize_database_url(f"POSTGRESQL://{tail}") == f"postgresql+psycopg://{tail}"  # 스킴 대소문자 무시
+    assert normalize_database_url(f"postgresql+psycopg2://{tail}") == f"postgresql+psycopg2://{tail}"  # 다른 드라이버는 손대지 않음
+
+
+def test_create_db_engine_converts_neon_url_before_choosing_options(monkeypatch: pytest.MonkeyPatch) -> None:
+    """create_db_engine이 변환을 먼저 해서, 'postgres://' 주소도 psycopg 드라이버 · connect_timeout을 받는다(D-034).
+
+    이 테스트가 실패한다면: 변환 줄이 빠졌거나 PostgreSQL 판별(connect_timeout 분기)보다 뒤로 갔다는 뜻.
+    """
+    captured: dict[str, Any] = {}
+
+    def fake_create_engine(url: str, **kwargs: Any) -> object:
+        captured["url"] = url
+        captured["kwargs"] = kwargs
+        return object()
+
+    monkeypatch.setattr(db_session_module, "create_engine", fake_create_engine)
+
+    create_db_engine("postgres://DB_USER:DB_PASSWORD@ep-x.ap-southeast-1.aws.neon.tech/neondb?sslmode=require")
+
+    assert captured["url"].startswith("postgresql+psycopg://")
+    assert captured["kwargs"]["connect_args"]["connect_timeout"] == DB_CONNECT_TIMEOUT_SECONDS
+
+
+def test_create_db_engine_rejects_blank_url() -> None:
+    """공백만 있는 DATABASE_URL도 빈 값처럼 이유를 적은 오류로 멈춘다."""
+    with pytest.raises(DatabaseConfigError):
+        create_db_engine("   ")

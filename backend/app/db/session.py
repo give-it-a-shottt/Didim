@@ -13,14 +13,34 @@ class DatabaseConfigError(RuntimeError):
     """DATABASE_URL 환경변수가 비어 있을 때 발생한다."""
 
 
+# 디딤이 쓰는 드라이버(psycopg 3)를 주소에 적는다. Neon · Vercel 연동은 `postgresql://`(또는 `postgres://`)로 주는데,
+# SQLAlchemy는 드라이버가 없는 주소를 psycopg2(설치 안 함)로 읽어서 붙지 못한다(D-034).
+_POSTGRES_SCHEMES = ("postgresql://", "postgres://")
+_PSYCOPG_SCHEME = "postgresql+psycopg://"
+
+
+def normalize_database_url(database_url: str) -> str:
+    """'postgresql://…' · 'postgres://…' → 'postgresql+psycopg://…'(스킴 대소문자 무시).
+
+    드라이버가 이미 적혀 있거나(`+psycopg2`처럼 다른 드라이버도) 다른 DB(sqlite)면 그대로 둔다.
+    """
+    url = database_url.strip()
+    lowered = url.lower()
+    for scheme in _POSTGRES_SCHEMES:
+        if lowered.startswith(scheme):
+            return _PSYCOPG_SCHEME + url[len(scheme):]
+    return url
+
+
 def create_db_engine(database_url: str, *, pooled: bool = True) -> Engine:
     """DB 엔진을 만든다.
 
     운영 · 개발 DB는 PostgreSQL이다(D-008). SQLite는 테스트(tests/conftest.py)에서만 명시적으로 쓰고,
     그때도 외래키(ON DELETE CASCADE)가 동작하도록 PRAGMA를 켠다.
-    pooled=False면 연결을 쥐고 있지 않는다(NullPool) — 운영(Vercel 함수 여러 개 + Supabase 풀러)에서 놀고 있는 함수가
+    pooled=False면 연결을 쥐고 있지 않는다(NullPool) — 운영(Vercel 함수 여러 개 + DB 풀러 — Neon, D-034)에서 놀고 있는 함수가
     연결을 붙잡아 풀러가 꽉 차지 않게(D-032, F-016 1차 리뷰 R2).
     """
+    database_url = normalize_database_url(database_url)
     if not database_url:
         raise DatabaseConfigError(
             "환경변수 DATABASE_URL이 비어 있어요. 예) postgresql+psycopg://DB_USER:DB_PASSWORD@127.0.0.1:5432/didim "
