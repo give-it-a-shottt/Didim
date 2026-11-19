@@ -12,7 +12,7 @@
 ## 닫힘
 | 번호 | 질문 | 답이 옮겨진 곳 | 닫은 날짜 |
 |---|---|---|---|
-| Q-012 | FastAPI는 어디에 올릴까? (Vercel에 같이 vs 별도 서버) | [D-032](decisions/D-032-deploy-vercel-supabase.md) — Vercel 두 프로젝트(화면 · 백엔드) + Supabase. 배포 확인 항목(허용 목록 · COOKIE_SECURE · 프록시 머리말 · pg_trgm · 실제 구글 로그인 등)은 [overview/deployment.md](overview/deployment.md). 남은 것: 주소 Q-015, 운영 Secure 강제 여부 | 2026-11-19 |
+| Q-012 | FastAPI는 어디에 올릴까? (Vercel에 같이 vs 별도 서버) | [D-032](decisions/D-032-deploy-vercel-supabase.md) — Vercel + Supabase, 구성은 [D-033](decisions/D-033-vercel-services-one-project.md) Services 한 프로젝트(처음 안은 두 프로젝트). 배포 확인 항목(허용 목록 · COOKIE_SECURE · 프록시 머리말 · pg_trgm · 실제 구글 로그인 등)은 [overview/deployment.md](overview/deployment.md). 남은 것: 주소 Q-015, 운영 Secure 강제 여부 | 2026-11-19 |
 | Q-030 | README.md의 서비스 소개(첫 문단 · 왜 만들었나 · 쓰는 법)는 어떻게 쓸까? | [README.md](../README.md) — 사용자 요청으로 작성(소개 · 왜 만들었나 · 쓰는 법 · 설계에서 지킨 것 · 기술 스택 · 실행), 평가 표 부분은 그대로 | 2026-11-19 |
 | Q-031 | 홈 단계 띠의 칸 이름 · 단위 글자 · 누르면 가는 곳, 그리고 오늘 복습이 0일 때 [복습 시작]을 숨길까? | [F-012 feature.md](features/F-012-home-onboarding/feature.md) 설계 의도 '화면' — 임시 값 그대로 | 2026-11-18 |
 | Q-028 | 자소서 [확인함] · [확인 풀기]를 누르면 문항 '완료' 표시도 지울까? | F-008 feature.md 설계 의도 '확인 필요' ⑥ · D-028 | 2026-11-17 |

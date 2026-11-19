@@ -96,3 +96,31 @@ def test_production_engine_does_not_hold_connections(tmp_path: Path) -> None:
     url = f"sqlite:///{tmp_path / 'p.db'}"
     assert isinstance(create_db_engine(url, pooled=False).pool, NullPool)
     assert not isinstance(create_db_engine(url).pool, NullPool)
+
+
+def test_root_vercel_services_config() -> None:
+    """레포 맨 위 vercel.json(D-033): /api/*는 backend, 나머지는 frontend, frontend는 binding으로 BACKEND_URL을 받는다.
+    값이 의도와 같은지만 고정한다 — Vercel이 실제로 받아들이는지(진입 index:app · 맨 위 regions · binding 주입)는
+    배포 체크리스트 5번에서만 본다(F-016 4차 리뷰 R3)."""
+    import json
+
+    config = json.loads((BACKEND_DIR.parent / "vercel.json").read_text(encoding="utf-8"))
+    services = config["services"]
+    assert services["backend"]["root"] == "backend/" and services["backend"]["entrypoint"] == "index:app"
+    assert services["frontend"]["root"] == "frontend/"
+    assert services["frontend"]["installCommand"] == "npm ci"  # lockfile 그대로만 설치 — 새 버전이 몰래 들어오는 것만 막음, 설치 스크립트는 그대로(4차 · 5차 R2)
+    assert services["frontend"]["bindings"] == [{"type": "service", "service": "backend", "format": "url", "env": "BACKEND_URL"}]
+    assert config["rewrites"] == [
+        {"source": "/api/(.*)", "destination": {"service": "backend"}},
+        {"source": "/(.*)", "destination": {"service": "frontend"}},  # 맨 마지막(모두 받는 규칙)
+    ]
+    assert config["regions"] == ["icn1"]  # 서울 — Supabase ap-northeast-2와 같게(D-032)
+    # 서비스 방식에선 실행 설정을 맨 위에 둘 수 없다(서비스 안으로)
+    assert not {"functions", "buildCommand", "installCommand", "outputDirectory", "framework"} & set(config)
+    assert not (BACKEND_DIR / "vercel.json").exists() and not (BACKEND_DIR.parent / "frontend" / "vercel.json").exists()
+
+def test_root_vercelignore_keeps_secrets_out() -> None:
+    """CLI 배포 때 로컬 비밀값 파일이 올라가지 않게 — Services라 Root가 레포 맨 위라서 맨 위 .vercelignore 하나(4차 R2)."""
+    lines = {line.strip() for line in (BACKEND_DIR.parent / ".vercelignore").read_text(encoding="utf-8").splitlines()}
+    assert {".env", ".env.*", "**/.env", "**/.env.*"} <= lines
+    assert not (BACKEND_DIR / ".vercelignore").exists() and not (BACKEND_DIR.parent / "frontend" / ".vercelignore").exists()

@@ -120,7 +120,8 @@ Admin_Docs/
 | [D-029](decisions/D-029-sample-session-public-report.md) | 샘플 체험은 샘플 계정 세션으로 기존 화면을 둘러봄(쓰기 · AI 호출은 서버가 막음), 샘플 · 평가 리포트는 로그인 없이 공개(리포트 `/report`) | [통과] |
 | [D-030](decisions/D-030-report-read-no-cache-until-deploy.md) | 평가 리포트 읽기(랜딩 수치 · `/report`)는 배포(Q-012)를 정할 때까지 캐시하지 않음 — 못 읽을 때 화면은 고장 난 백엔드 e2e로 지킴 | [통과] |
 | [D-031](decisions/D-031-public-site-sample-only-ai-owner-only.md) | 공개 배포는 랜딩 · 리포트 · 샘플 체험만, 구글 로그인(=AI 기능)은 서버가 허용한 이메일(본인)만 — 타인 기록을 체험판 AI로 보내지 않으려고 | [통과] |
-| [D-032](decisions/D-032-deploy-vercel-supabase.md) | 배포는 Vercel 두 프로젝트(화면 · 백엔드) + Supabase — Vercel 상한에 맞춰 AI 전체 상한 100초 · 가져오기 합계 3MB, 운영 /docs 끔 · 보안 머리말 | [통과] |
+| [D-032](decisions/D-032-deploy-vercel-supabase.md) | 배포는 Vercel + Supabase(구성은 D-033 — Services 한 프로젝트로 대체) — Vercel 상한에 맞춰 AI 전체 상한 100초 · 가져오기 합계 3MB, 운영 /docs 끔 · 보안 머리말 | [통과] |
+| [D-033](decisions/D-033-vercel-services-one-project.md) | Vercel은 프로젝트 두 개 대신 Services 한 프로젝트(주소 하나, `/api/*` → backend 서비스, frontend는 binding으로 `BACKEND_URL`) — 백엔드 주소가 따로 공개되지 않음 | [통과] Beta |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |
@@ -140,7 +141,7 @@ Admin_Docs/
 | [F-011](features/F-011-landing/feature.md) | 랜딩 | 8 | [됨] 6차 리뷰 · 화면 확인(사용자) |
 | [F-012](features/F-012-home-onboarding/feature.md) | 홈 · 첫 방문 안내 | 8 | [됨] 2차 [통과] |
 | [F-015](features/F-015-login-allowlist/feature.md) | 로그인 허용 목록(D-031) | 8 | [됨] 4차 [통과] |
-| [F-016](features/F-016-deploy-prep/feature.md) | 배포 준비(D-032) | 8 | [됨] 3차 [통과] · 배포는 체크리스트 |
+| [F-016](features/F-016-deploy-prep/feature.md) | 배포 준비(D-032 · D-033) | 8 | [됨] 5차 [통과] · 배포는 체크리스트 |
 
 일정이 밀리면 줄이는 순서: ① 랜딩을 "히어로 + 고정 섹션 1개"로(D-007) ② 근거 검사는 규칙 기반 단순 버전 유지(D-003) ③ 노션 연결을 7주 이후로(D-001)
 
