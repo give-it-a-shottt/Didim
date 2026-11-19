@@ -28,6 +28,7 @@
 - D-032의 값(AI 100초 · 노션 80초 · 가져오기 3MB · 서울 · NullPool · 보안)은 그대로 둔다. 120초 상한이 Services에선 안 걸릴 가능성이 높지만 문서에 명시가 없어([추정]) 보수적으로 유지.
 
 - 덧붙임(2026-11-19): 지역은 `sin1`(싱가포르)로 바뀜 — DB를 Neon(서울 없음, 싱가포르)으로 바꿔서([D-034](D-034-neon-via-vercel-singapore.md)).
+- 덧붙임(2026-11-19, 배포 확인): 맨 위 `regions`는 Services에서 **먹지 않았다** — 함수가 미국에 있어서 대시보드 Settings → Functions에서 sin1로 골랐다([T-013](../troubleshooting/T-013-vercel-services-region-and-neon-setup.md)). `vercel.json`의 값은 의도 기록으로 남김. 진입 `index:app` · binding · `/api/*` 넘김은 배포에서 동작 확인.
 
 ### 확인한 근거 (2026-11-19, Vercel 문서 — Services · Services routing · Service bindings · Service configuration reference)
 - Services는 모든 플랜에서 Beta. 서비스는 맨 위 rewrites가 가리킬 때만 공개, 받은 원래 경로를 그대로 봄(`/api/users` → `/api/users`).

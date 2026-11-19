@@ -20,5 +20,6 @@
 | [T-010](T-010-postgres-tests-fail-when-docker-is-off.md) | Docker가 꺼져 있으면 PostgreSQL 테스트가 대부분 오류(연결 시간 초과) | [통과] | 2026-11-13 |
 | [T-011](T-011-react-transitioncancel-has-no-property-name.md) | React onTransitionCancel은 propertyName이 비어 있고, 펼치는 중 접으면 '펼치기 취소' 신호가 옴 | [통과] | 2026-11-17 |
 | [T-012](T-012-report-shape-check-only-array.md) | 평가 리포트 응답의 회차 안쪽 모양이 틀리면 랜딩 · /report 서버 렌더가 TypeError로 터짐(검사가 배열만 봄) | [통과] | 2026-11-19 |
+| [T-013](T-013-vercel-services-region-and-neon-setup.md) | 첫 배포: Services에선 vercel.json `regions`가 먹지 않아 함수가 미국(DB는 싱가포르) + Neon 지역 · Prefix · 예전 배포 · 주소 따옴표 함정 | [통과] | 2026-11-19 |
 
-최종 수정: 2026-11-13
+최종 수정: 2026-11-19

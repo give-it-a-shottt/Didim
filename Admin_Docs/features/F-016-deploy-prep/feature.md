@@ -27,13 +27,13 @@
 - 체크리스트([overview/deployment.md](../../overview/deployment.md)): Vercel 안에서 Neon 만들기(싱가포르 · Production만 · 마이그레이션은 직접 주소 — D-034), 비밀값을 셸 기록에 남기지 않는 명령, Sensitive 환경변수, Fork Protection, Firewall 횟수 제한, Fluid compute · Max Duration 확인, 공개는 한 주소의 `/api/*`뿐이라는 점 · 환경변수 공유 규칙(D-033).
 - 테스트: backend `tests/test_deploy_config.py` 9(맨 위 vercel.json · .vercelignore 포함, 요청 크기 · 한 요청 시간 · 문서 경로 함수 · 진입 파일 · 운영 앱 /docs 404(하위 프로세스) · 목록 없는 운영은 불러올 때 실패 · NullPool), `tests/test_security_headers.py` 3(nosniff · no-store · 가드 401/403 · 404), conftest가 앱을 불러오기 전에 운영 환경변수를 지움. frontend `tests/security-headers.spec.ts` 6경로(/ · /login · /report · /demo · /home · 없는 주소). 의존성 취약점 npm audit(운영) 0 · pip-audit 0.
 - DB 주소 형식: `db/session.py` `normalize_database_url` — Neon · Vercel 연동의 `postgresql://` · `postgres://`를 `postgresql+psycopg://`로(D-034), 테스트 `test_db_config.py`.
-- 실제 Vercel · Neon 배포로는 아직 확인 안 함(체크리스트 5).
+- 실제 배포 확인(2026-11-19, `https://didim-gamma.vercel.app`): `/api/health` ok, 랜딩 평가 수치 · `/report`, 샘플 체험 · 체험 끝내기, 본인 Gmail 로그인 · 다른 Gmail은 샘플 안내, AI 퀴즈 1분 안, 보안 머리말 · `/docs` 404 · robots · sitemap, 함수 지역 sin1(`x-vercel-id`). 첫 배포에서 겪은 일은 [T-013](../../troubleshooting/T-013-vercel-services-region-and-neon-setup.md). 아직: 10분 쉰 뒤 첫 요청, 10번 새로 고침, 허용 목록 뺀 미리보기 확인, 노션 운영 연결.
 
 ## 리뷰
 - [review/SUMMARY.md](review/SUMMARY.md) — 1차 [위험](노션 예산 140초 — 고침) → 2차 [주의](지역 · 테스트 · 문서) → 3차 [통과] → 4차 [주의](D-033 Services 전환 — .vercelignore · 환경변수 공유 · 문서) → 5차 [통과](제안 4 반영).
 - 다음에 고칠 것: DB 두 번째 겹(RLS 정책 없이 + 공개 역할 권한 회수, 최소 권한 실행 역할) — MVP 뒤. `npm ci --ignore-scripts`를 미리보기로 시험할지.
 
 ## 열린 질문
-- Q-015 주소, 운영 Secure 강제 여부(D-032 '남은 것')
+- Q-015 주소 → 닫힘(2026-11-19, `didim-gamma.vercel.app` 그대로). 운영 Secure 강제 여부(D-032 '남은 것')
 
 최종 수정: 2026-11-19 · 관련: D-032, D-031, D-022, F-002, F-015, T-005

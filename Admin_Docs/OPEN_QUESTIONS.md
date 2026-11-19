@@ -1,18 +1,18 @@
 # 열린 질문
 
 ## 한눈에 보기
-열림 2개 · 닫힘 30개
+열림 1개 · 닫힘 31개
 최종 수정: 2026-11-19
 
 ## 열림
 | 번호 | 질문 | 누가 정해야 하나 | 올린 사람 | 관련 | 임시 처리 | 날짜 |
 |---|---|---|---|---|---|---|
-| Q-015 | 사이트 주소(도메인)는 무엇으로 할까? sitemap · robots · 링크 미리보기에 쓰여요 | 사용자 | AI | F-013, Q-012 | 배포(Q-012) 때 같이 정함(사용자 확인 2026-11-13). 환경변수 SITE_URL, 없으면 http://localhost:3000. 형식이 틀리면 이유를 적은 오류로 빌드가 멈춤. robots · sitemap은 빌드 때 만들어져서 배포 시 빌드 환경변수로 넣어야 함 | 2026-11-09 |
 | Q-032 | Neon 접속에서 서버 인증서까지 확인할까?(지금은 Neon 주소 그대로 `sslmode=require` + `channel_binding=require` — 암호화 · 로그인 때 중간자 차단은 되고, 인증서 검증은 안 함) | 사용자 | AI(F-016 6차 R4) | D-034, D-032 | 주소 그대로 씀. 검증하려면 디딤 코드가 Neon 주소에 `sslmode=verify-full` · `sslrootcert=system`을 붙이게 바꿔야 함(Vercel이 넣는 주소는 직접 못 고침) | 2026-11-19 |
 
 ## 닫힘
 | 번호 | 질문 | 답이 옮겨진 곳 | 닫은 날짜 |
 |---|---|---|---|
+| Q-015 | 사이트 주소(도메인)는 무엇으로 할까? sitemap · robots · 링크 미리보기에 쓰여요 | Vercel 운영 주소 `https://didim-gamma.vercel.app` 그대로(사용자 결정 2026-11-19). `SITE_URL` · `FRONTEND_URL` · 구글 리디렉션이 이 주소 — [overview/deployment.md](overview/deployment.md). 도메인을 붙이면 네 곳을 같이 바꿈 | 2026-11-19 |
 | Q-012 | FastAPI는 어디에 올릴까? (Vercel에 같이 vs 별도 서버) | [D-032](decisions/D-032-deploy-vercel-supabase.md) — Vercel + Supabase, 구성은 [D-033](decisions/D-033-vercel-services-one-project.md) Services 한 프로젝트(처음 안은 두 프로젝트). 배포 확인 항목(허용 목록 · COOKIE_SECURE · 프록시 머리말 · pg_trgm · 실제 구글 로그인 등)은 [overview/deployment.md](overview/deployment.md). 남은 것: 주소 Q-015, 운영 Secure 강제 여부 | 2026-11-19 |
 | Q-030 | README.md의 서비스 소개(첫 문단 · 왜 만들었나 · 쓰는 법)는 어떻게 쓸까? | [README.md](../README.md) — 사용자 요청으로 작성(소개 · 왜 만들었나 · 쓰는 법 · 설계에서 지킨 것 · 기술 스택 · 실행), 평가 표 부분은 그대로 | 2026-11-19 |
 | Q-031 | 홈 단계 띠의 칸 이름 · 단위 글자 · 누르면 가는 곳, 그리고 오늘 복습이 0일 때 [복습 시작]을 숨길까? | [F-012 feature.md](features/F-012-home-onboarding/feature.md) 설계 의도 '화면' — 임시 값 그대로 | 2026-11-18 |

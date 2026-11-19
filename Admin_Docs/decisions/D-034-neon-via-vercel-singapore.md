@@ -29,6 +29,7 @@
 - 무료: 프로젝트 100개, 프로젝트당 1GB, 5분 쉬면 잠듦(끌 수 없음).
 - Vercel 연동: `DATABASE_URL`(풀러) · `DATABASE_URL_UNPOOLED`(직접) · `PGHOST` 등 주입, Sensitive 기본, 환경은 Production · Preview 기본 체크.
 - 확인 못 한 것(만들 때 · 배포 때): Vercel 경유 Free 플랜, 설치 화면의 지역 목록, `pg_trgm` · `btree_gin`(마이그레이션 0003이 만듦), 잠들었다 깨는 시간.
+- 덧붙임(2026-11-19, 배포 확인): Free 플랜 있음(프로젝트 100 · 1GB · 100 CU-시간), 지역 목록에 Singapore 있음(목록에서 직접 골라야 함), `alembic upgrade head` · 샘플 시드 오류 없음(`pg_trgm` · `btree_gin` 됨), Vercel 함수 지역은 대시보드에서 sin1로 맞춤([T-013](../troubleshooting/T-013-vercel-services-region-and-neon-setup.md)). 잠들었다 깨는 시간은 아직 안 잼.
 
 ### 이 결정을 바꿔야 하는 조건
 - 한국에서 응답이 눈에 띄게 느리면 → 서울 지역이 있는 DB(Supabase 등)로 옮기고 `regions`를 icn1로.
