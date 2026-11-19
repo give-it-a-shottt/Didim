@@ -53,6 +53,9 @@ class GoogleProfile:
     sub: str
     email: str
     name: str
+    # 구글이 이메일을 확인했는지(userinfo의 email_verified가 true) — 허용 목록은 확인된 이메일만 본다(F-015).
+    # 기본값은 닫는 쪽(False) — 만드는 곳이 값을 빠뜨려도 확인 안 된 이메일이 목록을 통과하지 않게.
+    email_verified: bool = False
 
 
 def _require_secret(secret: str) -> bytes:
@@ -286,7 +289,17 @@ async def exchange_google_code_for_profile(code: str, settings: Settings) -> Goo
         raise OAuthExchangeError("invalid_profile")
 
     name = raw_name or email.split("@")[0]
-    return GoogleProfile(sub=sub, email=email, name=name[:100])
+    return GoogleProfile(sub=sub, email=email, name=name[:100], email_verified=email_verified is True)
+
+
+def is_login_allowed(settings: Settings, email: str, *, email_verified: bool) -> bool:
+    """허용 목록(F-015 · D-031)에 든 이메일인지. 목록이 비어 있으면 누구나 — 로컬 개발용.
+    목록이 있으면 구글이 확인한 ASCII 이메일만 대소문자를 무시하고 비교한다(유니코드는 소문자로 바꾸며 ASCII로 접힐 수 있음)."""
+    allowed = settings.allowed_login_emails
+    if not allowed:
+        return True
+    address = email.strip()
+    return email_verified and address.isascii() and address.lower() in allowed
 
 
 def get_or_create_google_user(db: Session, profile: GoogleProfile) -> User:

@@ -1167,6 +1167,12 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "GET" && req.url === "/api/auth/me") {
     const cookieHeader = req.headers.cookie ?? "";
+    // 허용 목록에서 빠진 세션(F-015): 정상 토큰 + "-blocked" — 서버처럼 401 + 이유 머리말
+    if (cookieHeader.includes(`didim_session=${VALID_TOKEN}-blocked`)) {
+      res.writeHead(401, { "Content-Type": "application/json", "X-Didim-Login-Error": "not_allowed" });
+      res.end(JSON.stringify({ detail: "지금은 샘플 체험만 열려 있어요." }));
+      return;
+    }
     if (cookieHeader.includes(`didim_session=${VALID_TOKEN}`)) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(

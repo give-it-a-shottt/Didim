@@ -104,8 +104,11 @@ def test_settings() -> "Settings":
 
 
 @pytest.fixture()
-def client(db_session: Session, test_settings: "Settings") -> Generator["TestClient", None, None]:
+def client(db_session: Session, test_settings: "Settings", monkeypatch: pytest.MonkeyPatch) -> Generator["TestClient", None, None]:
     """요청이 db_session · test_settings를 쓰는 테스트 클라이언트. 끝나면 바꿔 끼운 것을 되돌린다."""
+    # 서버 시작 확인(F-015)은 실제 환경변수를 읽는다 — 셸에 운영 값이 있어도 테스트가 시작 단계에서 멈추지 않게 지운다
+    for name in ("COOKIE_SECURE", "FRONTEND_URL", "GOOGLE_REDIRECT_URI", "ALLOWED_LOGIN_EMAILS"):
+        monkeypatch.delenv(name, raising=False)
     from fastapi.testclient import TestClient
 
     from app.api.deps import get_settings
@@ -130,10 +133,9 @@ def empty_db_engine(tmp_path: Path) -> Generator[Engine, None, None]:
 
     버전 기록 테이블(alembic_version)은 모델에 없어서 drop_all로 지워지지 않으므로 따로 지운다.
     """
+    import app.db.models  # noqa: F401 — 모델 등록 보장
     from app.db.base import Base
     from app.db.session import create_db_engine
-
-    import app.db.models  # noqa: F401 — 모델 등록 보장
 
     engine = create_db_engine(POSTGRES_TEST_URL or f"sqlite:///{tmp_path / 'migration_test.db'}")
 

@@ -1,6 +1,10 @@
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
+
+logger = logging.getLogger(__name__)
 
 # 쿠키 이름과 만료 시간 상수 (매직 넘버 방지)
 SESSION_COOKIE_NAME = "didim_session"
@@ -228,10 +232,67 @@ class Settings:
     notion_redirect_uri: str = "http://localhost:3000/api/notion/callback"
     # 노션 토큰 암호화 키(Fernet, base64 32바이트). 만들기: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     notion_token_key: str = ""
+    # 구글 로그인을 받을 이메일(F-015 · D-031). 소문자 · ASCII 보장은 parse_email_list가 한다(직접 만들면 소문자로 넣을 것).
+    # 비어 있으면 누구나(로컬 개발용) — 운영(is_production)에서 비면 서버가 시작하지 않는다(check_login_allowlist).
+    allowed_login_emails: frozenset[str] = frozenset()
 
     @property
     def notion_configured(self) -> bool:
         return bool(self.notion_client_id and self.notion_client_secret and self.notion_token_key)
+
+
+def parse_email_list(raw: str) -> frozenset[str]:
+    """'a@x.com, B@y.com' → {'a@x.com', 'b@y.com'}. 빈칸 · 빈 항목은 빼고, 대소문자를 무시하고 비교하려고 소문자로 바꾼다.
+    ASCII가 아닌 항목도 뺀다 — 유니코드는 소문자로 바꾸며 다른 글자가 ASCII로 접힐 수 있어서(켈빈 기호 → k, F-015 1차 리뷰 R2)."""
+    items = (item.strip() for item in raw.split(","))
+    return frozenset(item.lower() for item in items if item and item.isascii())  # ASCII 확인은 소문자로 바꾸기 전에
+
+
+class LoginConfigError(RuntimeError):
+    """운영 설정에 허용 목록이 빠짐 — 서버를 시작하지 않는다."""
+
+
+_LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _is_public_url(url: str) -> bool:
+    """https이거나 localhost가 아닌 주소. 스킴이 없거나 빈 주소도 공개로 본다(닫는 쪽)."""
+    parts = urlsplit(url)
+    return parts.scheme == "https" or (parts.hostname or "") not in _LOCAL_HOSTS
+
+
+def is_production(settings: "Settings") -> bool:
+    """운영인지 — COOKIE_SECURE=true이거나, 화면 주소(FRONTEND_URL) · 구글 로그인 돌아올 주소(GOOGLE_REDIRECT_URI) 중
+    하나라도 https이거나 localhost가 아니면 운영으로 본다(F-015 2 · 3차 리뷰 R2).
+    COOKIE_SECURE 하나만 보면 .env.example을 그대로 복사한 운영(false)에서 확인을 건너뛰고, 화면 주소만 보면 그것까지
+    기본값으로 둔 운영을 놓친다. 구글은 localhost가 아닌 http 주소로 돌려보내지 않으므로 공개 로그인이 되는 배포는
+    돌아올 주소가 반드시 공개 주소다."""
+    return settings.cookie_secure or any(_is_public_url(url) for url in (settings.frontend_url, settings.google_redirect_uri))
+
+
+def check_login_allowlist(settings: "Settings", raw_allowlist: str = "") -> None:
+    """운영인데 허용 목록이 비어 있으면 시작하지 않는다(F-015 리뷰 R2 · 사용자 선택 2026-11-19).
+    목록이 비면 누구나 로그인해 남의 기록이 체험판 AI로 가므로(D-031), 빠뜨린 채 조용히 열리지 않게 한다. 로컬은 그대로.
+    raw_allowlist(환경변수 원문)에서 ASCII가 아니라 버린 항목이 있으면 개수만 경고한다(이메일 값은 로그에 쓰지 않음).
+    요청마다 부르는 load_settings가 아니라 시작할 때 한 번만 부른다 — 경고가 요청마다 쌓이지 않게."""
+    dropped = sum(1 for item in raw_allowlist.split(",") if item.strip() and not item.strip().isascii())
+    if dropped:
+        logger.warning("ALLOWED_LOGIN_EMAILS에서 ASCII가 아닌 항목 %d개를 뺐어요.", dropped)
+    if not is_production(settings):
+        return
+    if not settings.allowed_login_emails:
+        raise LoginConfigError(
+            "운영 설정(COOKIE_SECURE=true, 또는 https · localhost가 아닌 FRONTEND_URL · GOOGLE_REDIRECT_URI)에 "
+            "ALLOWED_LOGIN_EMAILS가 비어 있어요. 로그인을 받을 이메일을 쉼표로 적어 주세요(D-031)."
+        )
+    if not settings.cookie_secure:
+        # 운영에서 Secure를 강제할지는 배포 방식을 정할 때 같이 정한다(Q-012, 사용자 선택 2026-11-19) — 지금은 알리기만
+        logger.warning("운영으로 보이는데 COOKIE_SECURE가 꺼져 있어요 — 세션 쿠키에 Secure가 붙지 않아요.")
+
+
+def check_login_allowlist_at_startup() -> None:
+    """서버 시작(main.py lifespan)에서 부른다 — 환경변수를 읽어 위 확인을 한 번 한다."""
+    check_login_allowlist(load_settings(), os.getenv("ALLOWED_LOGIN_EMAILS", ""))
 
 
 def load_settings() -> Settings:
@@ -257,4 +318,5 @@ def load_settings() -> Settings:
             "http://localhost:3000/api/notion/callback",
         ).strip(),
         notion_token_key=os.getenv("NOTION_TOKEN_KEY", "").strip(),
+        allowed_login_emails=parse_email_list(os.getenv("ALLOWED_LOGIN_EMAILS", "")),
     )

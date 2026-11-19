@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { VALID_SESSION_TOKEN } from "./helpers";
+import { logIn, VALID_SESSION_TOKEN } from "./helpers";
 
 const MEMBER_SCREENS = [
   { path: "/home", screenId: "HOM_01_001" },
@@ -33,6 +33,20 @@ test("공개 페이지(/, /login)와 로그인 에러 배너가 정상 렌더링
 
   await page.goto("/login?error=oauth_access_denied");
   await expect(page.getByText("구글 로그인이 취소되었어요. 다시 시도해 주세요.")).toBeVisible();
+
+  // 허용 목록 밖(F-015 · D-031): 샘플 체험 안내와 샘플 입구가 같이 보인다
+  await page.goto("/login?error=not_allowed");
+  await expect(page.getByRole("alert").filter({ hasText: "지금은 샘플 체험만 열려 있어요" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "로그인 없이 샘플로 둘러보기" })).toHaveAttribute("href", "/demo");
+});
+
+test("허용 목록에서 빠진 세션으로 회원 화면에 오면 '샘플 체험만' 안내가 있는 로그인 화면으로 간다(F-015)", async ({ context, page }) => {
+  await logIn(context, `${VALID_SESSION_TOKEN}-blocked`);
+  for (const path of ["/home", "/records"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login\?error=not_allowed$/);
+    await expect(page.getByRole("alert").filter({ hasText: "지금은 샘플 체험만 열려 있어요" })).toBeVisible();
+  }
 });
 
 test("비로그인 상태에서 회원 화면(14개 URL)에 접근하면 /login으로 이동한다", async ({

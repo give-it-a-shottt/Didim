@@ -52,7 +52,7 @@ frontend/                 Next.js 16 (App Router, TypeScript, Tailwind 4)
   tests/                  Playwright E2E · 스모크 테스트 (auth-and-routes · import-records · record-search · quiz-review · experience-cards · notion-import · applications.spec.ts, mock-backend.mjs — 가짜 FastAPI)
 backend/                  FastAPI (uv)
   app/main.py             앱 생성, lifespan에서 DB 버전 확인 · 종료 때 연결 닫기, 업로드 크기 미들웨어 · 샘플 읽기 전용 미들웨어(바깥), 라우터를 /api 아래에 붙임
-  app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함)
+  app/config.py           환경변수 · 쿠키/상한 상수(가져오기 개수 · 용량, 조각 길이 포함), 로그인 허용 목록 · 운영 판단 · 시작 확인(F-015 — main.py lifespan이 부름)
   app/api/                라우터 (health.py, auth.py, notes.py, search.py, quizzes.py, cards.py, notion.py, applications.py, drafts.py, interview.py, demo.py — 샘플 세션 열기, report.py — 공개 평가 리포트, deps.py) + schemas.py(여러 라우터가 같이 쓰는 ServiceOut · RAW_INPUT_SLACK, F-008 3차 리뷰 R1) + errors.py(여러 라우터가 같이 쓰는 문구 · AI 오류 → HTTP 상태 변환 — 라우터끼리 서로 가져다 쓰지 않게, F-006 1차 리뷰 R1) + upload_limit.py(가져오기 요청의 로그인 쿠키 · 크기를 본문 받기 전 · 받는 동안 확인하는 ASGI 미들웨어, `route_path`는 샘플 가드도 씀) + sample_guard.py(샘플 세션의 쓰기 · AI 호출을 라우터 앞에서 403 — 기본이 막기, F-010 · D-029)
   app/importers/          가져오기 어댑터(D-001) — 파일 · 노션 페이지를 같은 기록 모양(ImportedDocument)으로 (base.py, markdown.py, notion.py — 블록 나무 → 마크다운 글, 노션을 부르지 않는 순수 함수). 노션도 입력 모양(파일 바이트 · 블록 나무)이 달라 Protocol 없이 함수 두 개로 둠(F-005)
   app/notion/             노션 REST API 클라이언트(F-005) — 토큰 교환 · 갱신 · 회수 · 검색 · 페이지 · 블록 읽기, 호출 간격 · 429 · 5xx 재시도(토큰 요청은 다시 보내지 않음), 시간 예산(호출 안에서도 마감을 지킴). HTTP만 맡고 DB는 모름

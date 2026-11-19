@@ -28,6 +28,7 @@ from app.services.auth_service import (
     create_session_token,
     exchange_google_code_for_profile,
     get_or_create_google_user,
+    is_login_allowed,
     is_sample_user,
     verify_oauth_state_token,
 )
@@ -100,6 +101,9 @@ async def google_callback(
 
     try:
         profile = await exchange_google_code_for_profile(code, settings)
+        # 허용 목록 밖이면 계정을 만들지 않고 로그인 화면의 샘플 체험 안내로(F-015 · D-031)
+        if not is_login_allowed(settings, profile.email, email_verified=profile.email_verified):
+            return _login_error_redirect(settings, "not_allowed")
         user = get_or_create_google_user(db, profile)
         session_token = create_session_token(user.id, settings.session_secret)
     except OAuthConfigError:

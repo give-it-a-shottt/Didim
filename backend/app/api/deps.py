@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.services.auth_service import (
     SessionConfigError,
     get_user_by_id,
+    is_login_allowed,
     is_sample_session_token,
     is_sample_user,
     verify_session_token,
@@ -24,6 +25,9 @@ from app.services.auth_service import (
 LOGIN_REQUIRED_DETAIL = "로그인이 필요해요."
 SESSION_EXPIRED_DETAIL = "로그인이 만료되었어요. 다시 로그인해 주세요."
 AUTH_NOT_CONFIGURED_DETAIL = "서버 인증 설정이 완료되지 않았어요."
+NOT_ALLOWED_DETAIL = "지금은 샘플 체험만 열려 있어요."
+# 401의 이유를 화면에 알리는 머리말(값: not_allowed) — frontend/src/lib/auth.ts가 읽어 /login?error=not_allowed로 보낸다
+LOGIN_ERROR_HEADER = "X-Didim-Login-Error"
 CROSS_SITE_DETAIL = "다른 사이트에서 보낸 요청은 받지 않아요."
 # 같은 사이트 화면의 fetch(same-origin)와 주소창 · 북마크(none)만 받는다
 ALLOWED_FETCH_SITES = frozenset({"same-origin", "none"})
@@ -104,6 +108,16 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="유효하지 않은 계정이에요. 다시 로그인해 주세요.",
+        )
+    # 허용 목록에서 빠진 사람은 세션이 남아 있어도(최대 7일) 다음 요청부터 막는다. 샘플 계정은 목록과 상관없다(F-015 · D-031).
+    # email_verified=True: DB 이메일은 로그인 때 받은 것 — 목록이 있을 때는 확인된 이메일만 들어온다(목록이 빈 채 들어온
+    # 확인 안 된 주소를 나중에 목록에 넣는 경우만 남는데, 구글 계정 이메일은 사실상 늘 확인돼 있다).
+    # 화면이 '샘플 체험만 열려 있어요' 안내로 보내게 머리말로 알린다(문구가 아니라 머리말로 구분 — F-015 1차 리뷰 R3).
+    if not account_is_sample and not is_login_allowed(settings, user.email, email_verified=True):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=NOT_ALLOWED_DETAIL,
+            headers={LOGIN_ERROR_HEADER: "not_allowed"},
         )
 
     return user

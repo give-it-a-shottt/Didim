@@ -25,6 +25,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   oauth_access_denied: "구글 로그인이 취소되었어요. 다시 시도해 주세요.",
   oauth_not_configured: "구글 로그인 환경 설정이 아직 완료되지 않았어요.",
   invalid_oauth_state: "로그인 요청이 만료되었거나 유효하지 않아요. 다시 시도해 주세요.",
+  // 허용 목록 밖(F-015 · D-031) — 아래 [로그인 없이 샘플로 둘러보기]로 이어진다
+  not_allowed: "지금은 샘플 체험만 열려 있어요. 아래 '로그인 없이 샘플로 둘러보기'로 디딤을 둘러볼 수 있어요.",
 };
 
 async function LoginErrorBanner({

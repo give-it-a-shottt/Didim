@@ -20,11 +20,13 @@ from app.api import (
 )
 from app.api.sample_guard import SampleReadOnlyGuard
 from app.api.upload_limit import ImportUploadGuard
+from app.config import check_login_allowlist_at_startup
 from app.db.session import dispose_engine, ensure_db_ready
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    check_login_allowlist_at_startup()  # 운영에서 허용 목록을 빠뜨리면 시작하지 않는다(F-015)
     ensure_db_ready()
     yield
     dispose_engine()
