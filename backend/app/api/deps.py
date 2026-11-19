@@ -1,4 +1,6 @@
-from fastapi import Cookie, Depends, HTTPException, Response, status
+from urllib.parse import urlsplit
+
+from fastapi import Cookie, Depends, Header, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import (
@@ -22,10 +24,38 @@ from app.services.auth_service import (
 LOGIN_REQUIRED_DETAIL = "로그인이 필요해요."
 SESSION_EXPIRED_DETAIL = "로그인이 만료되었어요. 다시 로그인해 주세요."
 AUTH_NOT_CONFIGURED_DETAIL = "서버 인증 설정이 완료되지 않았어요."
+CROSS_SITE_DETAIL = "다른 사이트에서 보낸 요청은 받지 않아요."
+# 같은 사이트 화면의 fetch(same-origin)와 주소창 · 북마크(none)만 받는다
+ALLOWED_FETCH_SITES = frozenset({"same-origin", "none"})
 
 
 def get_settings() -> Settings:
     return load_settings()
+
+
+def reject_cross_site(
+    sec_fetch_site: str | None = Header(default=None),
+    origin: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """세션 쿠키를 바꾸는 요청(샘플 세션 열기 · 로그아웃)에 건다 — 다른 사이트가 form을 보내 방문자를 몰래
+    로그아웃시키거나 샘플 세션으로 바꿔 끼우지 못하게(로그인 CSRF).
+    - 브라우저가 붙이는 Sec-Fetch-Site가 same-origin · none이 아니면 403.
+    - Sec-Fetch-Site가 없으면(오래된 브라우저, 또는 앞단 프록시가 뺀 경우) Origin을 본다 — 화면 주소(FRONTEND_URL)와 다르면 403.
+    - 둘 다 없으면(테스트 · curl) 받는다. 화면은 같은 주소의 /api/*(Next 프록시)로만 부르고, 배포 프록시가 두 머리말을 넘겨야 한다(Q-012).
+    """
+    if sec_fetch_site is not None:
+        if sec_fetch_site.lower() not in ALLOWED_FETCH_SITES:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=CROSS_SITE_DETAIL)
+        return
+    if origin is not None and origin.rstrip("/").lower() != _origin_of(settings.frontend_url):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=CROSS_SITE_DETAIL)
+
+
+def _origin_of(url: str) -> str:
+    """'http://localhost:3000/경로' → 'http://localhost:3000'(브라우저가 Origin에 싣는 모양)."""
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}".lower()
 
 
 def get_current_user(

@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from app.config import EVAL_SUMMARY_DIR
 from app.services.eval_report import (
-    EVAL_SUMMARY_DIR,
     STEP_BY_KEY,
     STEPS,
     SUMMARY_VERSION,
@@ -37,11 +37,10 @@ from app.services.eval_report import (
     format_value,
     list_summaries,
     parse_result_path,
-    readme_table,
-    replace_readme_block,
     step_entry,
 )
 from scripts.eval_files import PROVIDER_HELP, write_json_atomic
+from scripts.eval_readme import readme_table, replace_readme_block
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 EVAL_DIR = BACKEND_DIR / "eval"
@@ -163,31 +162,46 @@ def _ordered(evals: Sequence[dict[str, object]]) -> list[dict[str, object]]:
     return sorted(evals, key=lambda entry: order.get(str(entry.get("key")), len(order)))
 
 
+def _now() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _new_summary(options: Options, out: Path, *, sizes: dict[str, int], commit: tuple[str | None, bool]) -> dict[str, object]:
+    """새 회차 요약의 첫 모양 — 평가 칸은 단계가 끝날 때마다 채운다."""
+    return {
+        "version": SUMMARY_VERSION,
+        "run_id": out.stem.removeprefix("run-"),
+        "started_at": _now(),
+        "finished_at": None,
+        "provider": options.provider,
+        "model": None,
+        "commit": commit[0],
+        "dirty": commit[1],
+        "data": sizes,
+        "evals": [],
+    }
+
+
+def _resume_summary(resume: dict[str, object], options: Options) -> tuple[dict[str, object], list[dict[str, object]]]:
+    """멈춘 회차를 이어 쓸 요약과, 다시 돌리지 않을(이미 'ok'인) 평가 칸. 새로 만들지 않고 resume을 그대로 고쳐
+    (resumed_at · finished_at) 돌려준다 — 같은 요약 파일에 이어 쓰므로."""
+    previous = resume.get("evals")
+    kept = [e for e in previous if isinstance(e, dict) and e.get("status") == "ok"] if isinstance(previous, list) else []
+    # --only로 고른 단계는 'ok'여도 다시 돌려 그 칸을 바꾼다(예: 결과 파일 모양을 바꾼 뒤 매칭만 다시)
+    kept = [e for e in kept if str(e.get("key")) not in options.only]
+    resume["resumed_at"] = _now()
+    resume["finished_at"] = None  # 이어 하다 또 멈추면 '끝난 회차'로 보이지 않게
+    return resume, kept
+
+
 def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, sizes: dict[str, int] | None = None,
             commit: tuple[str | None, bool] = (None, False), resume: dict[str, object] | None = None) -> dict[str, object]:
     """평가를 차례로 돌려 out에 요약을 쓴다. resume(같은 out의 이전 요약)이 있으면 'ok'인 단계는 건너뛰고 이어 쓴다."""
-    evals: list[dict[str, object]] = []
     if resume is not None:
-        summary = resume
-        previous = resume.get("evals")
-        evals = [e for e in previous if isinstance(e, dict) and e.get("status") == "ok"] if isinstance(previous, list) else []
-        # --only로 고른 단계는 'ok'여도 다시 돌려 그 칸을 바꾼다(예: 결과 파일 모양을 바꾼 뒤 매칭만 다시)
-        evals = [e for e in evals if str(e.get("key")) not in options.only]
-        summary["resumed_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
-        summary["finished_at"] = None  # 이어 하다 또 멈추면 '끝난 회차'로 보이지 않게
+        summary, evals = _resume_summary(resume, options)
     else:
-        summary = {
-            "version": SUMMARY_VERSION,
-            "run_id": out.stem.removeprefix("run-"),
-            "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "finished_at": None,
-            "provider": options.provider,
-            "model": None,
-            "commit": commit[0],
-            "dirty": commit[1],
-            "data": sizes if sizes is not None else data_sizes(),
-            "evals": [],
-        }
+        summary = _new_summary(options, out, sizes=sizes if sizes is not None else data_sizes(), commit=commit)
+        evals = []
     done = {str(entry.get("key")) for entry in evals}
     steps = [step for step in STEPS if (not options.only or step.key in options.only) and step.key not in done]
     if done:
@@ -203,7 +217,7 @@ def run_all(options: Options, out: Path, *, runner: Runner = run_streaming, size
         summary["evals"] = evals
         summary["model"] = run_model(evals)
         write_json_atomic(out, summary)
-    summary["finished_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
+    summary["finished_at"] = _now()
     write_json_atomic(out, summary)
     return summary
 

@@ -134,7 +134,7 @@ Admin_Docs/
 | [F-007](features/F-007-posting-analysis/feature.md) | 공고 분석 · 매칭 | 5 | [됨] 4차 [통과] · 평가 성공 공고 3개 적중 10/10 · 없는 근거 매칭 0 · 화면 확인(사용자) |
 | [F-008](features/F-008-evidence-draft/feature.md) | 근거 달린 자소서 + 근거 검사 | 6 | [됨] |
 | [F-009](features/F-009-interview-practice/feature.md) | 면접 연습 | 6 | [됨] 구현 · 평가 · 리뷰 4차 반영(2026-11-16) |
-| [F-010](features/F-010-eval-and-sample/feature.md) | 평가 세트 · 리포트 · 샘플 체험 | 7 | [됨] 4차 [통과] |
+| [F-010](features/F-010-eval-and-sample/feature.md) | 평가 세트 · 리포트 · 샘플 체험 | 7 | [됨] 5차 [통과] |
 | [F-011](features/F-011-landing/feature.md) | 랜딩 | 8 | [됨] 6차 리뷰 · 화면 확인(사용자) |
 | [F-012](features/F-012-home-onboarding/feature.md) | 홈 · 첫 방문 안내 | 8 | [됨] 2차 [통과] |
 

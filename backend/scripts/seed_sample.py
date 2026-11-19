@@ -18,8 +18,9 @@ import json
 import sys
 from pathlib import Path
 
+from app.config import EVAL_SUMMARY_DIR
 from app.db.session import dispose_engine, ensure_db_ready, get_session_factory
-from app.services.eval_report import EVAL_SUMMARY_DIR, list_summaries
+from app.services.eval_report import list_summaries
 from app.services.sample_seed import SeedError, seed_sample, sources_from_summary
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent

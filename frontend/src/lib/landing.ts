@@ -5,7 +5,7 @@
 // [가상] 바구니마켓 · Java 백엔드 개발자 (신입)의 2번 문항 초안(backend/scripts/seed_sample.py로 넣은 평가 회차 결과).
 // 샘플을 다시 시드해 글이 바뀌면 여기를 같이 고친다.
 import type { CardSlot } from "@/lib/card-slots";
-import { dataSizeItems, formatMetric, type ReportRun } from "@/lib/report";
+import { dataSizeText, type ReportRun } from "@/lib/report";
 
 type Evidence = { card: string; slot: CardSlot; quote: string };
 
@@ -91,14 +91,13 @@ export function heroMetrics(run: ReportRun): HeroMetric[] {
     const evaluation = run.evals.find((item) => item.key === evalKey);
     const metric = evaluation?.metrics.find((item) => item.key === metricKey);
     if (!evaluation || !metric || evaluation.status === "failed") return [];
-    return [{ key: `${evalKey}.${metricKey}`, label: metric.label, value: formatMetric(metric, evaluation.labels_pending) }];
+    return [{ key: `${evalKey}.${metricKey}`, label: metric.label, value: metric.display }];
   });
 }
 
+const HERO_DATA_KEYS = new Set(["experiences", "postings"]);
+
 /** 수치 아래 각주의 데이터 규모 — Figma처럼 카드 · 공고 두 가지만(전체는 리포트에). */
 export function heroDataSize(run: ReportRun): string {
-  const { experiences, postings } = run.data;
-  return dataSizeItems({ ...(experiences === undefined ? {} : { experiences }), ...(postings === undefined ? {} : { postings }) }).join(
-    " · ",
-  );
+  return dataSizeText(run.data_items.filter((item) => HERO_DATA_KEYS.has(item.key)));
 }

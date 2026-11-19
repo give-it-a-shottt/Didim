@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 # 쿠키 이름과 만료 시간 상수 (매직 넘버 방지)
 SESSION_COOKIE_NAME = "didim_session"
@@ -15,6 +16,10 @@ SAMPLE_GOOGLE_SUB = "didim-sample"
 # 샘플 시드가 채우는 동안의 임시 계정(F-010). 공개되지 않고 어떤 토큰으로도 로그인할 수 없다(get_current_user가 401).
 # 이것만 config에 둔 이유: 인증(deps)도 읽기 때문. 시드만 쓰는 상수(상한 · 이메일)는 app/services/sample_seed.py에 있다.
 SAMPLE_SEEDING_SUB = "didim-sample-seeding"
+
+# 평가 회차 요약 폴더 backend/eval/summary(F-010) — scripts/eval_all.py가 쓰고 리포트 API · 샘플 시드가 읽는다(레포에 올림).
+# 배포할 때 이 폴더가 백엔드와 같이 실려야 리포트가 보인다(없으면 /api/report는 빈 목록, Q-012).
+EVAL_SUMMARY_DIR = Path(__file__).resolve().parents[1] / "eval" / "summary"
 
 # 사용자 기본 하루 AI 호출 상한 (didim-design.md SET_01_001 기준 30회)
 DEFAULT_DAILY_LIMIT = 30

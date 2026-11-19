@@ -42,13 +42,14 @@
 - 샘플(완료 기준 4): `POST /api/demo/session`이 서명 안에 `sample` 표시를 넣은 세션 토큰을 발급, `SampleReadOnlyGuard`(가장 바깥 미들웨어)가 그 표시로 읽기 메서드 외 403(허용: 로그아웃 · 체험 열기, GET 막기: 노션 연결 · 콜백). `/api/auth/me`의 `is_sample` → 회원 화면 위 '샘플' 알림 · [체험 끝내기]. 입구 `/demo`(`(guest)/demo`, noindex) · 로그인 화면 링크.
 - 시드: `scripts/seed_sample.py` + `app/services/sample_seed.py` — 회차 결과의 AI 출력을 MockLLMClient로 다시 들려줘 실제 `prepare → save`로 넣고, 결과 파일과 저장 개수를 비교. 초안은 정답지 매칭으로, 분석 탭은 AI 결과로(사용자 선택 2026-11-18). 이를 위해 매칭 평가 결과에 저장 줄(`saved`)을 남김(`posting_evaluation.py`).
 - 첫 회차(`eval/summary/run-20261117-164539.json`, NVIDIA Ultra): 퀴즈 버림 0% · 정답 · 해설 100% / 카드 찾음 20/20 · 함정 0 · 빈칸 100% / 매칭 적중 94.1% · 틀린 매칭 5 / 심은 문장 경고 100% / AI 초안 지어냄 4개 모두 경고 · 잘못 경고 1 / 심은 질문 75%(덧붙인 전제 0/20) / AI 질문 전제 0/81. 판정은 AI(사용자 위임) · 경계는 사용자 확인 — `eval/drafts/labels-20261118.md` · `eval/interview/labels-20261118.md`.
-- 설계 의도와 다른 점: README 서비스 소개는 비워 둠(Q-030). 평가 도중 컴퓨터가 꺼져 `--resume`을 추가함.
+- 설계 의도와 다른 점: README 서비스 소개는 비워 뒀다가 사용자 요청으로 채움(Q-030 닫힘, 2026-11-19). 평가 도중 컴퓨터가 꺼져 `--resume`을 추가함.
+- 1 · 2차 '다음에 고칠 것' 정리(2026-11-19): ① README 표 만들기를 `scripts/eval_readme.py`로 옮기고 요약 폴더 위치를 `config.EVAL_SUMMARY_DIR`로(배포 때 같이 실려야 함 주석) ② 긴 함수 나누기 — `sample_seed._seed_applications` → `_seed_drafts` · `_seed_analysis` + `_count`, `eval_all.run_all` → `_new_summary` · `_resume_summary` ③ `step_entry` 중복 `isinstance` 제거, TS `kind` · `status`는 `값 목록 | (string & {})`(목록이 타입에 남고 모르는 값도 받음) ④ 로그아웃도 다른 사이트 요청이면 403(`deps.reject_cross_site`, 체험 열기와 공용 — Next 프록시가 `Sec-Fetch-Site`를 그대로 넘기는 것 확인) ⑤ 첫 시드가 실패하면 체험 열기 503 연결 테스트 ⑥ 표시 규칙 두 언어 복제 → 서버가 `display` · `data_items`(데이터 칸 글자 '심은 경험 20개'까지)를 내려 주고 화면의 `formatMetric` · `DATA_LABELS`를 지움, 화면은 쓰지 않는 `data`를 검사하지 않음(사용자 선택). 5차 리뷰 반영: 큰 정수는 '—'(리포트 전체 500 방지), `Sec-Fetch-Site`가 없으면 `Origin`을 화면 주소와 비교. /report 캐시는 D-030, 에러 · 빈 화면 테스트는 F-011 `report-unavailable.spec.ts`로 끝남.
 
 ## 리뷰
-- [review/SUMMARY.md](review/SUMMARY.md) — 4차(2026-11-18) [통과]. 1차 [주의] 주의 7 → 2차 [주의] 주의 6(샘플 검색 허용 · 로그 없음 D-029 덧붙임) → 3차 [주의] 주의 2(실패 시 옛 샘플 유지 D-029 덧붙임) → 4차 [통과] 제안 4. 회차별 판정은 REVIEW_LOG · git 기록.
+- [review/SUMMARY.md](review/SUMMARY.md) — 5차(2026-11-19) [통과]. 1차 [주의] 주의 7 → 2차 [주의] 주의 6(샘플 검색 허용 · 로그 없음 D-029 덧붙임) → 3차 [주의] 주의 2(실패 시 옛 샘플 유지 D-029 덧붙임) → 4차 [통과] 제안 4 → 5차 [통과] 제안 9(1 · 2차 '다음에 고칠 것' 정리, 전부 반영). 회차별 판정은 REVIEW_LOG · git 기록.
 
 ## 열린 질문
-- Q-030(README 서비스 소개 — 사용자 작성 칸)
+- 없음(Q-030 닫힘 2026-11-19)
 
 ## 면접 예상 질문
 - Q1. 샘플 계정을 읽기 전용으로 만들 때 왜 라우트마다가 아니라 미들웨어 한 곳에서 막았나요? 그 방식의 빈틈은 무엇이었나요? (리뷰에서 GET 검색이 로그를 저장하는 길이 나옴)

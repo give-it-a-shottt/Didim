@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { dataSizeItems, formatMetric, runDate, type ReportEval, type ReportRun } from "@/lib/report";
+import { dataSizeText, runDate, type ReportEval, type ReportRun } from "@/lib/report";
 import { getReportRuns } from "@/lib/report-data";
 import { CARD, CARD_LABEL, TEXT_BUTTON } from "@/lib/ui-classes";
 
@@ -77,7 +77,7 @@ async function ReportBody() {
 }
 
 function LatestRun({ run }: { run: ReportRun }) {
-  const sizes = dataSizeItems(run.data);
+  const sizes = dataSizeText(run.data_items);
   return (
     <section aria-labelledby="latest-title" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -87,7 +87,7 @@ function LatestRun({ run }: { run: ReportRun }) {
         <p className="text-body-3 text-text-sub">
           모델 {run.model ?? "—"}
           {run.commit ? ` · 코드 ${run.commit}` : ""}
-          {sizes.length ? ` · ${sizes.join(" · ")}` : ""}
+          {sizes ? ` · ${sizes}` : ""}
         </p>
       </div>
       <ul className="grid gap-4 md:grid-cols-2">
@@ -115,7 +115,7 @@ function EvalCard({ item }: { item: ReportEval }) {
             <div key={metric.key} className="flex items-baseline justify-between gap-4">
               <dt className="text-body-3 text-text-sub">{metric.label}</dt>
               <dd className="shrink-0 text-body-1 font-semibold text-text-main">
-                {formatMetric(metric, item.labels_pending)}
+                {metric.display}
               </dd>
             </div>
           ))}
@@ -163,7 +163,7 @@ function RunComparison({ runs }: { runs: ReportRun[] }) {
                     const sameMetric = sameEval?.metrics.find((other) => other.key === metric.key);
                     return (
                       <td key={run.run_id} className="py-2 pr-4 whitespace-nowrap text-text-main">
-                        {sameEval && sameMetric ? formatMetric(sameMetric, sameEval.labels_pending) : "—"}
+                        {sameMetric ? sameMetric.display : "—"}
                       </td>
                     );
                   })}

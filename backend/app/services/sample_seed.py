@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import SAMPLE_GOOGLE_SUB, SAMPLE_SEEDING_SUB
@@ -244,10 +244,16 @@ def _reset_analysis(db: Session, *, user_id: int, application_id: int) -> None:
     db.commit()
 
 
+def _count(db: Session, statement: Select[tuple[int]]) -> int:
+    """select(func.count()) 결과(없으면 0) — 저장 개수를 결과 파일과 맞춰 보려고."""
+    return int(db.scalar(statement) or 0)
+
+
 async def _seed_applications(
     db: Session, report: SeedReport, *, user_id: int, eval_dir: Path, experience_card: Mapping[str, int],
     drafts: Mapping[str, Any], postings: Mapping[str, Any],
 ) -> None:
+    """공고마다 ① 자소서 초안을 깔고 ② 분석 탭(역량 · 매칭)을 AI가 뽑았던 대로 다시 채운다."""
     posting_keys = parse_posting_key(json.loads((eval_dir / "postings" / "answers.json").read_text(encoding="utf-8")))
     question_keys = parse_question_key(json.loads((eval_dir / "drafts" / "questions.json").read_text(encoding="utf-8")), posting_keys)
     draft_items = {(item["file"], item["index"]): item for item in drafts.get("questions") or []}
@@ -255,51 +261,66 @@ async def _seed_applications(
 
     for file_name, key in posting_keys.items():
         posting_text = (eval_dir / "postings" / "postings" / file_name).read_text(encoding="utf-8").strip()
-        questions = question_keys.get(file_name, ())
         application_id, question_ids = create_eval_application(
-            db, user_id=user_id, file_name=file_name, posting_text=posting_text, questions=questions
+            db, user_id=user_id, file_name=file_name, posting_text=posting_text, questions=question_keys.get(file_name, ())
         )
         # ① 초안: 초안 평가처럼 정답지 매칭을 깔고 다시 들려준다
         seed_fixed_matches(
             db, user_id=user_id, application_id=application_id, posting_text=posting_text, key=key, experience_card=experience_card
         )
-        for index, question_id in enumerate(question_ids, start=1):
-            sentences = (draft_items.get((file_name, index)) or {}).get("sentences") or []
-            if not sentences:
-                continue
-            plan = prepare_draft(db, user_id=user_id, application_id=application_id, question_id=question_id, overwrite=True)
-            reply = await request_draft(_reply(draft_reply(sentences, experience_card)), plan.messages)
-            save_draft(db, plan, reply)
-            rows = db.scalars(
-                select(DraftSentence).join(Draft, Draft.id == DraftSentence.draft_id)
-                .where(Draft.user_id == user_id, Draft.question_id == question_id)
-            ).all()
-            report.add("자소서 문장", len(sentences), len(rows))
-            report.add("근거 붙은 문장", sum(1 for s in sentences if s.get("supported")), sum(1 for r in rows if r.card_id is not None))
-
+        sentences_by_question = {
+            question_id: (draft_items.get((file_name, index)) or {}).get("sentences") or []
+            for index, question_id in enumerate(question_ids, start=1)
+        }
+        await _seed_drafts(db, report, user_id=user_id, application_id=application_id, sentences_by_question=sentences_by_question,
+                           experience_card=experience_card)
         # ② 분석 탭: 역량 줄을 지우고 AI가 뽑은 역량 · 매칭을 다시 들려준다
         saved = (posting_items.get(file_name) or {}).get("saved")
         if saved is None:
             raise SeedError(f"{file_name}: 매칭 결과에 저장 줄(saved)이 없어요. 매칭 평가를 다시 돌려 주세요.")
         _reset_analysis(db, user_id=user_id, application_id=application_id)
-        if not saved:
+        await _seed_analysis(db, report, user_id=user_id, application_id=application_id, saved=saved, experience_card=experience_card)
+
+
+async def _seed_drafts(
+    db: Session, report: SeedReport, *, user_id: int, application_id: int,
+    sentences_by_question: Mapping[int, Sequence[Mapping[str, Any]]], experience_card: Mapping[str, int],
+) -> None:
+    """문항마다 평가 때 AI가 쓴 초안 문장을 다시 들려줘 저장한다(문장이 없는 문항은 건너뜀)."""
+    for question_id, sentences in sentences_by_question.items():
+        if not sentences:
             continue
-        extract_plan = prepare_extract(db, user_id=user_id, application_id=application_id)
-        requirements = [{"name": r["name"], "kind": r["kind"], "quote": r["quote"]} for r in saved]
-        save_extract(db, extract_plan, await request_requirements(_reply({"requirements": requirements}), extract_plan.messages))
-        stored_requirements = db.scalar(
-            select(func.count()).select_from(PostingRequirement).where(PostingRequirement.application_id == application_id)
-        ) or 0
-        report.add("요구 역량", len(saved), stored_requirements)
-        match_plan = prepare_match(db, user_id=user_id, application_id=application_id)
-        reply_payload = match_reply(saved, match_plan.messages, experience_card) if match_plan.needs_ai else None
-        match_answer = await request_matches(_reply(reply_payload), match_plan.messages) if reply_payload is not None else None
-        save_match(db, match_plan, match_answer)
-        stored_matches = db.scalar(
-            select(func.count()).select_from(RequirementMatch).join(PostingRequirement, PostingRequirement.id == RequirementMatch.requirement_id)
-            .where(PostingRequirement.application_id == application_id)
-        ) or 0
-        report.add("매칭", sum(len(r.get("matches") or []) for r in saved), stored_matches)
+        plan = prepare_draft(db, user_id=user_id, application_id=application_id, question_id=question_id, overwrite=True)
+        save_draft(db, plan, await request_draft(_reply(draft_reply(sentences, experience_card)), plan.messages))
+        rows = db.scalars(
+            select(DraftSentence).join(Draft, Draft.id == DraftSentence.draft_id)
+            .where(Draft.user_id == user_id, Draft.question_id == question_id)
+        ).all()
+        report.add("자소서 문장", len(sentences), len(rows))
+        report.add("근거 붙은 문장", sum(1 for s in sentences if s.get("supported")), sum(1 for r in rows if r.card_id is not None))
+
+
+async def _seed_analysis(
+    db: Session, report: SeedReport, *, user_id: int, application_id: int,
+    saved: Sequence[Mapping[str, Any]], experience_card: Mapping[str, int],
+) -> None:
+    """평가 때 AI가 뽑은 요구 역량과 매칭을 다시 들려줘 분석 탭을 채운다(뽑은 역량이 없으면 '분석 전' 그대로)."""
+    if not saved:
+        return
+    extract_plan = prepare_extract(db, user_id=user_id, application_id=application_id)
+    requirements = [{"name": r["name"], "kind": r["kind"], "quote": r["quote"]} for r in saved]
+    save_extract(db, extract_plan, await request_requirements(_reply({"requirements": requirements}), extract_plan.messages))
+    report.add("요구 역량", len(saved), _count(
+        db, select(func.count()).select_from(PostingRequirement).where(PostingRequirement.application_id == application_id)
+    ))
+    match_plan = prepare_match(db, user_id=user_id, application_id=application_id)
+    reply_payload = match_reply(saved, match_plan.messages, experience_card) if match_plan.needs_ai else None
+    match_answer = await request_matches(_reply(reply_payload), match_plan.messages) if reply_payload is not None else None
+    save_match(db, match_plan, match_answer)
+    report.add("매칭", sum(len(r.get("matches") or []) for r in saved), _count(
+        db, select(func.count()).select_from(RequirementMatch).join(PostingRequirement, PostingRequirement.id == RequirementMatch.requirement_id)
+        .where(PostingRequirement.application_id == application_id)
+    ))
 
 
 # --- 면접 질문 ---
@@ -316,10 +337,9 @@ async def _seed_interview(
         plan = prepare_interview(db, user_id=user_id, card_id=card_id)
         payload = {"questions": [{"slot": q["slot"], "question": q["question"], "quote": q["quote"]} for q in kept]}
         save_interview(db, plan, await request_interview_questions(_reply(payload), plan.messages))
-        stored = db.scalar(
-            select(func.count()).select_from(InterviewQuestion).where(InterviewQuestion.user_id == user_id, InterviewQuestion.card_id == card_id)
-        ) or 0
-        report.add("면접 질문", len(kept), stored)
+        report.add("면접 질문", len(kept), _count(
+            db, select(func.count()).select_from(InterviewQuestion).where(InterviewQuestion.user_id == user_id, InterviewQuestion.card_id == card_id)
+        ))
 
 
 async def seed_sample(db: Session, *, eval_dir: Path, sources: SeedSources) -> SeedReport:

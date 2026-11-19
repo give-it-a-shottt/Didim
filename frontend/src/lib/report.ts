@@ -1,17 +1,23 @@
-// 평가 리포트(SET_02_001, F-010) 응답 모양과 표시 규칙. 서버 응답은 backend/app/api/report.py.
-// 대표 수치의 이름 · 종류는 서버(app/services/eval_report.py)가 정해서 보내므로 화면은 그대로 그린다.
+// 평가 리포트(SET_02_001, F-010) 응답 모양. 서버 응답은 backend/app/api/report.py.
+// 대표 수치의 이름 · 종류와 표시 글자(display · data_items)는 서버(app/services/eval_report.py)가 정해서 보내므로
+// 화면은 그대로 그린다 — 수치를 글자로 바꾸는 규칙을 화면에 두지 않는다(README · 랜딩 · 리포트가 같은 글자).
+
+// 지금 서버가 쓰는 값. 서버가 값을 늘려도 화면이 깨지지 않게 다른 문자열도 받는다(`string & {}` — 목록은 자동 완성에 남음)
+export type MetricKind = "rate" | "count" | "per";
+export type EvalStatus = "ok" | "partial" | "failed";
 
 export type ReportMetric = {
   key: string;
   label: string;
-  kind: "rate" | "count" | "per" | string;
+  kind: MetricKind | (string & {});
   value: number | null; // null = 판정 대기(labels_pending > 0) 또는 값 없음
+  display: string; // 화면에 그대로 보일 글자 — "75.0%" · "0.58" · "5개" · "판정 대기" · "—"
 };
 
 export type ReportEval = {
   key: string;
   title: string;
-  status: "ok" | "partial" | "failed" | string;
+  status: EvalStatus | (string & {});
   error: string | null;
   model: string | null;
   labels_pending: number;
@@ -25,33 +31,16 @@ export type ReportRun = {
   provider: string | null;
   model: string | null;
   commit: string | null;
-  data: Record<string, number>;
+  // 서버는 원래 칸 data(키 → 개수)도 보내지만 화면은 쓰지 않아 타입 · 검사에 넣지 않는다(쓰지 않는 칸이 틀려도 리포트를 숨기지 않게)
+  data_items: ReportDataItem[]; // 데이터 규모를 서버가 정한 이름 · 순서 · 글자로 — 화면은 이것만 그린다
   evals: ReportEval[];
 };
 
-// 데이터 규모 칸 이름(backend/scripts/eval_all.py data_sizes). README 표도 같은 목록을 쓴다(backend/app/services/eval_report.py
-// DATA_LABELS) — 이름 · 순서를 바꾸면 두 곳을 같이 고친다. formatMetric도 eval_report.format_value와 같은 규칙.
-const DATA_LABELS: Record<string, string> = {
-  quiz_notes: "퀴즈 노트",
-  card_notes: "경험 노트",
-  experiences: "심은 경험",
-  postings: "공고",
-  requirements: "요구 역량",
-  draft_questions: "자소서 문항",
-};
+export type ReportDataItem = { key: string; label: string; count: number; display: string }; // display — "심은 경험 20개"
 
-export function dataSizeItems(data: Record<string, number>): string[] {
-  return Object.entries(DATA_LABELS)
-    .filter(([key]) => typeof data[key] === "number")
-    .map(([key, label]) => `${label} ${data[key]}개`);
-}
-
-/** 수치 한 칸을 글자로. 값이 없으면 판정 대기인지 그냥 없는지 구분한다. */
-export function formatMetric(metric: ReportMetric, labelsPending: number): string {
-  if (metric.value === null) return labelsPending > 0 ? "판정 대기" : "—";
-  if (metric.kind === "rate") return `${(metric.value * 100).toFixed(1)}%`;
-  if (metric.kind === "per") return metric.value.toFixed(2);
-  return `${metric.value}개`;
+/** 데이터 규모 한 줄 — "심은 경험 20개 · 공고 10개". 글자 · 순서는 서버가 준 그대로 잇기만 한다. */
+export function dataSizeText(items: ReportDataItem[]): string {
+  return items.map((item) => item.display).join(" · ");
 }
 
 /** "2026-11-17T16:44:58+09:00" → "2026-11-17". 형식이 다르면 회차 번호를 쓴다. */
@@ -75,7 +64,18 @@ function isReportMetric(value: unknown): value is ReportMetric {
     typeof value.key === "string" &&
     typeof value.label === "string" &&
     typeof value.kind === "string" &&
-    (value.value === null || (typeof value.value === "number" && Number.isFinite(value.value)))
+    (value.value === null || (typeof value.value === "number" && Number.isFinite(value.value))) &&
+    typeof value.display === "string"
+  );
+}
+
+function isReportDataItem(value: unknown): value is ReportDataItem {
+  return (
+    isRecord(value) &&
+    typeof value.key === "string" &&
+    typeof value.label === "string" &&
+    typeof value.count === "number" &&
+    typeof value.display === "string"
   );
 }
 
@@ -102,8 +102,8 @@ function isReportRun(value: unknown): value is ReportRun {
     isStringOrNull(value.provider) &&
     isStringOrNull(value.model) &&
     isStringOrNull(value.commit) &&
-    isRecord(value.data) &&
-    Object.values(value.data).every((size) => typeof size === "number") &&
+    Array.isArray(value.data_items) &&
+    value.data_items.every(isReportDataItem) &&
     Array.isArray(value.evals) &&
     value.evals.every(isReportEval)
   );

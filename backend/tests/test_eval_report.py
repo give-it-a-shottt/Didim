@@ -9,10 +9,13 @@ from pathlib import Path
 from app.services.eval_report import (
     STEP_BY_KEY,
     STEPS,
+    data_items,
+    format_value,
     headline,
     list_summaries,
     parse_result_path,
     step_entry,
+    with_display,
 )
 from scripts import eval_all
 
@@ -146,7 +149,7 @@ def test_data_sizes_match_d005_scale() -> None:
 
 
 def test_readme_table_and_block(tmp_path: Path) -> None:
-    from app.services.eval_report import README_END, README_START
+    from scripts.eval_readme import README_END, README_START
 
     run = {
         "version": 1, "run_id": "20261117-1", "started_at": "2026-11-17T10:00:00+09:00", "model": "ultra",
@@ -313,3 +316,36 @@ def test_rescore_goes_on_when_a_process_cannot_start(tmp_path: Path) -> None:
     saved = json.loads(out.read_text(encoding="utf-8"))
     by_key = {e["key"]: e for e in saved["evals"]}
     assert by_key["drafts_ai"]["metrics"][0]["value"] == 0.8 and saved["rescored_at"]
+
+
+def test_format_value_rules() -> None:
+    """화면 · 랜딩 · README가 같이 쓰는 표시 규칙 한 곳(F-010 1 · 2차 리뷰 R1 — 두 언어 복제를 없앰)."""
+    assert format_value({"kind": "rate", "value": 0.75}, 0) == "75.0%"
+    assert format_value({"kind": "per", "value": 0.583}, 0) == "0.58"
+    assert format_value({"kind": "count", "value": 5}, 0) == "5개"
+    assert format_value({"kind": "count", "value": 5.0}, 0) == "5개"  # 검사 모델을 거쳐 실수가 돼도
+    assert format_value({"kind": "count", "value": 2.5}, 0) == "2.5개"
+    assert format_value({"kind": "rate", "value": None}, 2) == "판정 대기"
+    assert format_value({"kind": "rate", "value": None}, 0) == "—"
+    assert format_value({"kind": "rate", "value": True}, 0) == "—"  # bool은 숫자로 보지 않음
+    for kind in ("rate", "per", "count"):  # 실수로 바꿀 수 없을 만큼 큰 정수도 터지지 않음
+        assert format_value({"kind": kind, "value": 10**400}, 0) == "—", kind
+
+
+def test_data_items_keep_label_order_and_drop_unknown() -> None:
+    items = data_items({"postings": 10, "experiences": 20, "unknown": 3, "requirements": "48", "quiz_notes": True})
+    assert items == [
+        {"key": "experiences", "label": "심은 경험", "count": 20, "display": "심은 경험 20개"},
+        {"key": "postings", "label": "공고", "count": 10, "display": "공고 10개"},
+    ]
+
+
+def test_with_display_leaves_broken_shapes_for_the_model_to_reject() -> None:
+    """모양이 틀린 칸은 고치지 않고 그대로 둔다 — 검사(API 모델)가 그 회차를 뺀다. 여기서 터지지 않아야 한다."""
+    shown = with_display({"data": "x", "evals": ["not a dict", {"metrics": "x"}, {"labels_pending": None, "metrics": [1, {"kind": "rate", "value": 0.5}]}]})
+    assert shown["data_items"] == []
+    evals = shown["evals"]
+    assert isinstance(evals, list)
+    assert evals[0] == "not a dict" and evals[1] == {"metrics": "x"}
+    assert evals[2]["metrics"] == [1, {"kind": "rate", "value": 0.5, "display": "50.0%"}]
+    assert "evals" not in with_display({"run_id": "1"})

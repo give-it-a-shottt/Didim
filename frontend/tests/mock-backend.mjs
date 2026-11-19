@@ -1128,24 +1128,30 @@ const server = http.createServer((req, res) => {
 
   // 평가 리포트(F-010) · 랜딩 수치(F-011): 로그인 없이. 회차 두 개 — 최근 회차에는 판정 대기 · 실패 칸이 있다
   if (req.method === "GET" && req.url === "/api/report") {
-    const metric = (key, label, kind, value) => ({ key, label, kind, value });
+    // display는 서버(eval_report.format_value)가 만든 글자 — 화면은 이것을 그대로 보인다
+    const metric = (key, label, kind, value, display) => ({ key, label, kind, value, display });
     const run = (runId, model, quizDrop, pending) => ({
       run_id: runId, started_at: `${runId.slice(0, 4)}-${runId.slice(4, 6)}-${runId.slice(6, 8)}T10:00:00+09:00`,
       finished_at: null, provider: "nvidia", model, commit: "abc1234",
       data: { experiences: 20, postings: 10, draft_questions: 20 },
+      data_items: [
+        { key: "experiences", label: "심은 경험", count: 20, display: "심은 경험 20개" },
+        { key: "postings", label: "공고", count: 10, display: "공고 10개" },
+        { key: "draft_questions", label: "자소서 문항", count: 20, display: "자소서 문항 20개" },
+      ],
       evals: [
         { key: "quiz", title: "퀴즈", status: "ok", error: null, model, labels_pending: 0,
-          metrics: [metric("drop_rate", "버려진 문제 비율", "rate", quizDrop)] },
+          metrics: [metric("drop_rate", "버려진 문제 비율", "rate", quizDrop, `${(quizDrop * 100).toFixed(1)}%`)] },
         { key: "drafts_ai", title: "자소서 · AI 초안", status: "ok", error: null, model, labels_pending: pending,
-          metrics: [metric("warn_rate", "지어낸 문장 경고율", "rate", pending ? null : 0.8),
-            metric("unsupported_per_draft", "초안당 근거 없는 문장", "per", 0.58)] },
+          metrics: [metric("warn_rate", "지어낸 문장 경고율", "rate", pending ? null : 0.8, pending ? "판정 대기" : "80.0%"),
+            metric("unsupported_per_draft", "초안당 근거 없는 문장", "per", 0.58, "0.58")] },
         { key: "cards", title: "경험 카드", status: runId.startsWith("20261117") ? "failed" : "ok", error: null, model,
-          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("found_rate", "심은 경험 찾은 비율", "rate", 0.5)] },
+          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("found_rate", "심은 경험 찾은 비율", "rate", 0.5, "50.0%")] },
         // 랜딩 첫 화면 수치(F-011)가 고르는 나머지 두 칸. 최근 회차는 공고 매칭을 돌리지 못함 — 랜딩은 그 칸을 뺀다
         { key: "postings", title: "공고 매칭", status: runId.startsWith("20261117") ? "failed" : "ok", error: null, model,
-          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("false_matches", "없는 근거로 만든 매칭 수", "count", 5)] },
+          labels_pending: 0, metrics: runId.startsWith("20261117") ? [] : [metric("false_matches", "없는 근거로 만든 매칭 수", "count", 5, "5개")] },
         { key: "interview_planted", title: "면접 · 심은 질문", status: "ok", error: null, model, labels_pending: 0,
-          metrics: [metric("catch_rate", "심은 질문 잡은 비율", "rate", 0.75)] },
+          metrics: [metric("catch_rate", "심은 질문 잡은 비율", "rate", 0.75, "75.0%")] },
       ],
     });
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -1241,9 +1247,9 @@ const FAILING_PORT = process.env.MOCK_BACKEND_FAILING_PORT;
 // · bad-metric 200 + 회차 · 평가는 맞는데 수치 값이 문자열
 const BAD_METRIC_RUN = {
   run_id: "20261119-000000", started_at: null, finished_at: null, provider: null, model: null, commit: null,
-  data: { experiences: 20 },
+  data: { experiences: 20 }, data_items: [{ key: "experiences", label: "심은 경험", count: 20, display: "심은 경험 20개" }],
   evals: [{ key: "interview_planted", title: "면접 · 심은 질문", status: "ok", error: null, model: null, labels_pending: 0,
-    metrics: [{ key: "catch_rate", label: "심은 질문 잡은 비율", kind: "rate", value: "0.75" }] }],
+    metrics: [{ key: "catch_rate", label: "심은 질문 잡은 비율", kind: "rate", value: "0.75", display: "75.0%" }] }],
 };
 const REPORT_MODES = {
   fail: { status: 500, type: "application/json", body: JSON.stringify({ detail: "mock backend failure" }) },

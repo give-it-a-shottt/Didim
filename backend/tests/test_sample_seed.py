@@ -6,14 +6,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.config import SAMPLE_GOOGLE_SUB
+from app.config import EVAL_SUMMARY_DIR, SAMPLE_GOOGLE_SUB, SESSION_COOKIE_NAME
 from app.db.models import Application, Card, Note, PostingRequirement, User
 from app.llm import Message
 from app.services.chunking import split_markdown
-from app.services.eval_report import EVAL_SUMMARY_DIR, list_summaries
+from app.services.eval_report import list_summaries
 from app.services.note_service import create_note_for_user
 from app.services.sample_seed import (
     SAMPLE_SEEDING_SUB,
@@ -284,3 +285,13 @@ def test_mismatches_report_counts_that_differ() -> None:
     report.add("퀴즈", 1, 0)
     report.add("매칭", 2, 2)
     assert report.mismatches == ["퀴즈: 결과 6 · 저장 5"]
+
+
+def test_first_failed_seed_leaves_sample_closed(client: TestClient, db_session: Session, tmp_path: Path) -> None:
+    """처음 넣는 시드가 실패하면 샘플이 없어서 체험 열기는 503 — 반쯤 채운 임시 계정으로 열리지 않는다(F-010 2차 리뷰 R3)."""
+    with pytest.raises(SeedError):
+        asyncio.run(seed_sample(db_session, eval_dir=EVAL_DIR, sources=_broken_sources(tmp_path)))
+    assert db_session.scalar(select(func.count()).select_from(User)) == 0  # 임시 계정까지 정리됨
+    response = client.post("/api/demo/session")
+    assert response.status_code == 503
+    assert SESSION_COOKIE_NAME not in response.cookies

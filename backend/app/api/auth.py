@@ -5,7 +5,12 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_settings, set_session_cookie
+from app.api.deps import (
+    get_current_user,
+    get_settings,
+    reject_cross_site,
+    set_session_cookie,
+)
 from app.config import (
     OAUTH_STATE_COOKIE_NAME,
     OAUTH_STATE_MAX_AGE_SECONDS,
@@ -125,9 +130,9 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> Current
     )
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(reject_cross_site)])
 def logout(settings: Settings = Depends(get_settings)) -> Response:
-    """세션 쿠키를 삭제하고 204를 돌려준다."""
+    """세션 쿠키를 삭제하고 204를 돌려준다. 다른 사이트가 보낸 요청이면 403(샘플 세션 열기와 같은 출처 확인)."""
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,

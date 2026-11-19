@@ -334,3 +334,31 @@ def test_duplicate_note_per_user_and_cascade_delete_on_user_removal(
     # 사용자 B의 노트와 조각은 그대로 남아 있음
     assert [n.id for n in list_notes_for_user(db_session, user_id=user_b.id)] == [note_b.id]
     assert len(list_chunks_for_user(db_session, user_id=user_b.id)) == 1
+
+
+def test_logout_refuses_cross_site_requests(client: TestClient, db_session: Session, test_settings: Settings) -> None:
+    """다른 사이트가 보낸 form으로 방문자를 몰래 로그아웃시키지 못하게(F-010 1차 리뷰 R2 — 샘플 세션 열기와 같은 규칙)."""
+    user = get_or_create_google_user(db_session, GoogleProfile(sub="logout-1", email="l@example.com", name="로"))
+    client.cookies.set(SESSION_COOKIE_NAME, create_session_token(user.id, test_settings.session_secret))
+    for site in ("cross-site", "same-site", "Cross-Site"):
+        response = client.post("/api/auth/logout", headers={"Sec-Fetch-Site": site})
+        assert response.status_code == 403, site
+        assert "set-cookie" not in response.headers  # 쿠키를 지우지 않음
+    assert client.get("/api/auth/me").status_code == 200  # 아직 로그인 상태
+    for site in ("same-origin", "none"):
+        assert client.post("/api/auth/logout", headers={"Sec-Fetch-Site": site}).status_code == 204, site
+    assert client.post("/api/auth/logout").status_code == 204  # 머리말이 없는 요청(테스트 · curl)
+
+
+def test_cross_site_check_falls_back_to_origin(client: TestClient, test_settings: Settings) -> None:
+    """Sec-Fetch-Site가 없으면(오래된 브라우저 · 앞단 프록시가 뺀 경우) Origin을 화면 주소와 비교한다(F-010 5차 리뷰 R2)."""
+    for path in ("/api/auth/logout", "/api/demo/session"):
+        response = client.post(path, headers={"Origin": "https://evil.example"})
+        assert response.status_code == 403, path
+        assert "set-cookie" not in response.headers
+        assert client.post(path, headers={"Origin": "null"}).status_code == 403, path
+    # 화면 주소와 같은 출처(대소문자 · 끝 / 차이는 같게 봄)는 받는다
+    assert client.post("/api/auth/logout", headers={"Origin": test_settings.frontend_url}).status_code == 204
+    assert client.post("/api/auth/logout", headers={"Origin": test_settings.frontend_url.upper() + "/"}).status_code == 204
+    # Sec-Fetch-Site가 있으면 그것이 먼저 — same-origin이면 Origin이 무엇이든 받는다(브라우저가 둘을 같이 붙임)
+    assert client.post("/api/auth/logout", headers={"Sec-Fetch-Site": "same-origin", "Origin": test_settings.frontend_url}).status_code == 204
