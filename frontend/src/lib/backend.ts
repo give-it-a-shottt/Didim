@@ -6,7 +6,9 @@ import { cookies } from "next/headers";
 // 브라우저가 아니라 Next 서버가 BACKEND_URL로 직접 부르므로, 브라우저가 보낸 httpOnly 세션 쿠키를 그대로 붙여 준다(D-010).
 const SESSION_COOKIE_NAME = "didim_session";
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
+// 배포(Vercel Services, D-033)에서는 Vercel이 실행 때 backend 서비스의 내부 주소를 넣어 준다(binding — 빌드 때는 없음).
+// 끝에 '/'가 붙어 와도 `${BACKEND_URL}/api/...`가 '//api'가 되지 않게 지운다.
+const BACKEND_URL = (process.env.BACKEND_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 
 /** 세션 쿠키를 붙여 FastAPI를 부른다. 쿠키가 없거나 연결이 안 되면 null(호출부는 null을 "확인 못 함"으로 다룬다). */
 export async function fetchBackendAsUser(path: string): Promise<Response | null> {

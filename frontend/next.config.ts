@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 // 브라우저는 항상 같은 주소의 /api/* 로만 요청하고, Next.js가 FastAPI로 넘긴다.
 // 화면과 서버가 같은 주소처럼 보여야 FastAPI가 준 로그인 쿠키(httpOnly)가 그대로 오간다. (D-010, Q-012)
 // BACKEND_URL은 서버에서만 읽는 환경변수라 브라우저 번들에 들어가지 않는다.
+// 이 rewrites는 로컬(next dev · next start · Playwright)용이다. 배포(Vercel Services, D-033)에서는 레포 맨 위 vercel.json이
+// /api/*를 화면을 거치지 않고 backend 서비스로 바로 보내서 여기까지 오지 않는다(빌드 때는 BACKEND_URL이 없어 기본값).
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 
 // rewrites 프록시는 기본 30초가 지나면 요청을 끊는다(node_modules/next/dist/server/lib/router-utils/proxy-request.js).
@@ -58,6 +60,9 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    // 배포(Vercel)에서는 끈다 — /api/*는 맨 위 vercel.json이 backend 서비스로 보내고, 여기 목적지는 빌드 때 기본값(localhost)이라
+    // 맨 위 규칙에 안 걸린 요청(/api 같은)이 localhost로 넘겨지다 실패하며 함수 시간만 쓰지 않게(F-016 4차 리뷰 R2). VERCEL은 Vercel이 넣는 변수.
+    if (process.env.VERCEL) return [];
     return [
       {
         source: "/api/:path*",

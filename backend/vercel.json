@@ -1,6 +1,0 @@
-{
-  "regions": ["icn1"],
-  "functions": {
-    "index.py": { "maxDuration": 150 }
-  }
-}
