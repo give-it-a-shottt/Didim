@@ -118,6 +118,7 @@ Admin_Docs/
 | [D-027](decisions/D-027-nvidia-free-api-main.md) | 메인 AI를 NVIDIA 무료 API로(메인 Nemotron 3 Ultra · 예비 Nemotron 3.5 Bolt, .env로 고름, EXAONE은 비교용) | [통과] |
 | [D-028](decisions/D-028-added-fact-check.md) | 자소서 근거 검사가 '덧붙인 사실'도 의심(빈 칸을 '기록 없음'으로 알림 + 규칙 R1 · R3 → '확인 필요' 표시, AI 추가 호출 없음) | [통과] 만듦(2026-11-16) |
 | [D-029](decisions/D-029-sample-session-public-report.md) | 샘플 체험은 샘플 계정 세션으로 기존 화면을 둘러봄(쓰기 · AI 호출은 서버가 막음), 샘플 · 평가 리포트는 로그인 없이 공개(리포트 `/report`) | [통과] |
+| [D-030](decisions/D-030-report-read-no-cache-until-deploy.md) | 평가 리포트 읽기(랜딩 수치 · `/report`)는 배포(Q-012)를 정할 때까지 캐시하지 않음 — 못 읽을 때 화면은 고장 난 백엔드 e2e로 지킴 | [통과] |
 
 ### 기능 (8주 로드맵)
 | 번호 | 기능 | 주차 | 상태 |

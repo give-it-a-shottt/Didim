@@ -1231,3 +1231,30 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, "127.0.0.1");
+
+// 고장 난 백엔드(F-011 · F-010 '리포트를 통째로 못 읽을 때'): 준비 확인(/api/health) 말고는 모두 500.
+// 화면 서버가 백엔드를 직접 불러 page.route로는 못 가로채서, 같은 빌드의 두 번째 next start만 이쪽을 보게 한다(playwright.config.ts).
+// 위 서버에 '고장' 스위치를 두면 병렬로 도는 다른 테스트까지 고장 나서 따로 띄운다.
+// 포트 기본값은 tests/helpers.ts 한 곳 — config가 넘겨 줄 때만 띄운다(따로 돌릴 때 값이 어긋나지 않게).
+const FAILING_PORT = process.env.MOCK_BACKEND_FAILING_PORT;
+if (FAILING_PORT) {
+  // 받은 /api/report 수 — 테스트가 '화면 서버가 정말 이 고장 난 백엔드를 봤는지' 확인한다(BACKEND_URL이 안 먹어 연결 실패로 통과하는 것을 막음)
+  let reportRequests = 0;
+  http
+    .createServer((req, res) => {
+      if (req.method === "GET" && req.url === "/api/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "ok" }));
+        return;
+      }
+      if (req.method === "GET" && req.url === "/__test/report-requests") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ count: reportRequests }));
+        return;
+      }
+      if (req.url === "/api/report") reportRequests += 1;
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ detail: "mock backend failure" }));
+    })
+    .listen(Number(FAILING_PORT), "127.0.0.1");
+}
